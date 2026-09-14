@@ -1,122 +1,141 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import React from "react";
+import "./App.scss";
+import { GoogleAuthButton, GoogleAuthWrapper } from "./components/index.ts";
+import { UserProvider } from "./context/UserContext.tsx";
+import { useUser } from "./context/useUser.ts";
 
-function App() {
-  const [count, setCount] = useState(0)
+// Dutch text constants per project plan (Keep UI in Dutch)
+const DUTCH_TEXT = {
+  title: "boekjehokje",
+  subtitle: "Ruimte boeken voor de NYMA Makersplaats",
+  loading: "Laden...",
+  welcome: "Welkom",
+  loginPrompt: "Meld je aan om ruimtes te boeken",
+  bookedBy: "Geboekt door",
+} as const;
+
+/**
+ * Main application component
+ * Wrapped with UserProvider and GoogleAuthWrapper
+ */
+function App(): React.JSX.Element {
+  // For now, we need a client ID. In production, this should be from environment
+  // For development, you need to register your app with Google
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+    <UserProvider>
+      <GoogleAuthWrapper clientId={clientId}>
+        <AppContent />
+      </GoogleAuthWrapper>
+    </UserProvider>
+  );
 }
 
-export default App
+/**
+ * Application content component
+ * Uses the useUser hook to access auth state
+ */
+function AppContent(): React.JSX.Element {
+  const { isLoggedIn, profile, isLoading } = useUser();
+
+  if (isLoading) {
+    return (
+      <div className="loading-container">
+        <p>{DUTCH_TEXT.loading}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="app-container">
+      <header className="app-header">
+        <div className="header-content">
+          <h1 className="app-title">
+            {DUTCH_TEXT.title}
+          </h1>
+          <p className="app-subtitle">
+            {DUTCH_TEXT.subtitle}
+          </p>
+        </div>
+      </header>
+
+      <main>
+        {isLoggedIn && profile
+          ? <MainContent profile={profile} />
+          : <LandingPage />}
+      </main>
+    </div>
+  );
+}
+
+/**
+ * Landing page shown when user is not authenticated
+ */
+function LandingPage(): React.JSX.Element {
+  return (
+    <div className="landing-page">
+      <h2 className="landing-title">
+        {DUTCH_TEXT.welcome}
+      </h2>
+      <p className="landing-text">
+        {DUTCH_TEXT.loginPrompt}
+      </p>
+      <GoogleAuthButton />
+    </div>
+  );
+}
+
+/**
+ * Main content shown when user is authenticated
+ */
+function MainContent(
+  { profile }: { profile: { name: string; email: string; picture?: string } },
+): React.JSX.Element {
+  return (
+    <div>
+      <div className="welcome-card">
+        <h2 className="welcome-title">
+          Welkom, {profile.name}!
+        </h2>
+        <p className="welcome-text">
+          Je bent ingelogd als {profile.email}
+        </p>
+      </div>
+
+      <section className="rooms-section">
+        <h3>Beschikbare ruimtes</h3>
+        <p>Selecteer een ruimte om te boeken.</p>
+        {/* Room list will be added in future tasks */}
+        <div className="rooms-grid">
+          <RoomCard name="Makersruimte 1" capacity={10} />
+          <RoomCard name="Makersruimte 2" capacity={8} />
+          <RoomCard name="Vergaderruimte" capacity={6} />
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/**
+ * Room card component - placeholder for future development
+ */
+function RoomCard(
+  { name, capacity }: { name: string; capacity: number },
+): React.JSX.Element {
+  return (
+    <div className="room-card">
+      <h4 className="room-name">
+        {name}
+      </h4>
+      <p className="room-capacity">
+        Capaciteit: {capacity} personen
+      </p>
+      <button type="button" className="room-button">
+        Bekijken
+      </button>
+    </div>
+  );
+}
+
+export default App;
