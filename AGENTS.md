@@ -101,3 +101,31 @@ deno task dev
 deno task build
 deno task lint
 ```
+
+## Releasing
+
+Releases are cut from `main` as tags. A tag triggers the `build.yml` workflow,
+which builds and deploys to GitHub Pages.
+
+To cut a release:
+
+1. Make sure `main` is up to date and the working tree is clean:
+   ```bash
+   git -C <repo> checkout main
+   git -C <repo> pull --ff-only origin main
+   ```
+2. Bump `"version"` in `package.json` to the new `x.y.z` (semver). Only the
+   version field changes; do not hand-edit other `package.json` entries.
+3. Commit and tag, then push both to `origin`:
+   ```bash
+   git -C <repo> add package.json
+   git -C <repo> commit -m "chore: release vX.Y.Z"
+   git -C <repo> tag vX.Y.Z
+   git -C <repo> push origin main
+   git -C <repo> push origin vX.Y.Z
+   ```
+
+The pushed tag is what deploys: once `refs/tags/vX.Y.Z` is on `origin`, the
+CI build/deploy jobs run automatically. Confirm a release lands on `main`
+before tagging, and verify the GitHub Pages deploy succeeds after pushing the
+tag.
