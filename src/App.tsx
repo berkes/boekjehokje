@@ -1,6 +1,6 @@
 import React from "react";
 import "./App.scss";
-import CssBaseline from '@mui/material/CssBaseline';
+import CssBaseline from "@mui/material/CssBaseline";
 import { GoogleAuthButton, GoogleAuthWrapper } from "./components/index.ts";
 import { UserProvider } from "./context/UserContext.tsx";
 import { useUser } from "./context/useUser.ts";
@@ -25,7 +25,7 @@ function App(): React.JSX.Element {
 
   return (
     <React.Fragment>
-      <CssBaseline enableColorScheme/>
+      <CssBaseline enableColorScheme />
       <UserProvider>
         <GoogleAuthWrapper clientId={clientId}>
           <Container>
