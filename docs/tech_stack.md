@@ -1,48 +1,85 @@
 # Tech Stack for "boekjehokje"
 
 ## Overview
-This document outlines the technology stack for the "boekjehokje" project, focusing on leveraging open-source libraries and TypeScript for a robust and maintainable codebase.
+
+This document outlines the technology stack for the "boekjehokje" project,
+focusing on leveraging open-source libraries and TypeScript for a robust and
+maintainable codebase.
 
 ## Frontend Framework
+
 - **React.js with TypeScript**:
-  - **Why**: React.js is a popular choice for building interactive UIs and has excellent support for TypeScript. This combination ensures type safety, better code maintainability, and improved developer experience.
+  - **Why**: React.js is a popular choice for building interactive UIs and has
+    excellent support for TypeScript. This combination ensures type safety,
+    better code maintainability, and improved developer experience.
 
 ## Styling
+
 - **Material-UI (MUI) with TypeScript**:
-  - **Why**: MUI is a popular React UI library that provides pre-made components and styling out of the box. It has built-in TypeScript support, ensuring type safety when using its components.
+  - **Why**: MUI is a popular React UI library that provides pre-made components
+    and styling out of the box. It has built-in TypeScript support, ensuring
+    type safety when using its components.
 
 ## Calendar Component
+
 - **FullCalendar with TypeScript**:
-  - **Why**: FullCalendar is a widely used open-source library for displaying and managing calendar events. It has TypeScript support and provides a range of customization options for displaying events and availability.
+  - **Why**: FullCalendar is a widely used open-source library for displaying
+    and managing calendar events. It has TypeScript support and provides a range
+    of customization options for displaying events and availability.
 
 ## State Management
+
 - **Context API with TypeScript**:
-  - **Why**: The Context API in React.js works well with TypeScript. You can define types for the context values, ensuring type safety when accessing and updating the state.
+  - **Why**: The Context API in React.js works well with TypeScript. You can
+    define types for the context values, ensuring type safety when accessing and
+    updating the state.
 
 ## Authentication
+
 - **Google OAuth with TypeScript**:
-  - **Why**: Google OAuth libraries and APIs have TypeScript support. This ensures that the authentication process is type-safe and integrates well with the rest of the codebase.
+  - **Why**: Google OAuth libraries and APIs have TypeScript support. This
+    ensures that the authentication process is type-safe and integrates well
+    with the rest of the codebase.
 
 ## API Integration
+
 - **Google Calendar API with TypeScript**:
-  - **Why**: The Google Calendar API has TypeScript support, and there are type definitions available. This ensures that the API interactions are type-safe and well-documented.
+  - **Why**: The Google Calendar API has TypeScript support, and there are type
+    definitions available. This ensures that the API interactions are type-safe
+    and well-documented.
 
 ## Testing
+
 - **Jest and React Testing Library with TypeScript**:
-  - **Why**: Jest and React Testing Library both support TypeScript. You can write type-safe tests, ensuring that the test code is as robust as the application code.
+  - **Why**: Jest and React Testing Library both support TypeScript. You can
+    write type-safe tests, ensuring that the test code is as robust as the
+    application code.
 
 ## Hosting and Deployment
+
 - **Statichost.eu: https://www.statichost.eu/**
-  - **Why**: Supports TypeScript out of the box. You can deploy the TypeScript-based React.js app without any additional configuration. Use gitlab CI to trigger builds by calling the statichost.eu webhook, when we push a new tag.
+  - **Why**: Supports TypeScript out of the box. You can deploy the
+    TypeScript-based React.js app without any additional configuration. Use
+    gitlab CI to trigger builds by calling the statichost.eu webhook, when we
+    push a new tag.
 
 ## Why This Stack?
-- **Type Safety**: TypeScript helps catch errors early in the development process, reducing bugs and improving code quality.
-- **Better Developer Experience**: TypeScript provides better tooling, autocompletion, and documentation, making the development process smoother.
-- **Maintainability**: TypeScript makes the codebase more maintainable and easier to understand, especially as the project grows.
-- **Community Support**: TypeScript has a large and active community, ensuring that you can find support and resources easily.
-- **Leverage Open-Source Libraries**: Using libraries like FullCalendar or react-big-calendar for the calendar component and MUI for styling will save development time and provide a polished UI out of the box.
+
+- **Type Safety**: TypeScript helps catch errors early in the development
+  process, reducing bugs and improving code quality.
+- **Better Developer Experience**: TypeScript provides better tooling,
+  autocompletion, and documentation, making the development process smoother.
+- **Maintainability**: TypeScript makes the codebase more maintainable and
+  easier to understand, especially as the project grows.
+- **Community Support**: TypeScript has a large and active community, ensuring
+  that you can find support and resources easily.
+- **Leverage Open-Source Libraries**: Using libraries like FullCalendar or
+  react-big-calendar for the calendar component and MUI for styling will save
+  development time and provide a polished UI out of the box.
 
 ## Next Steps
+
 - [x] Discuss the tech stack and gather feedback.
 - [x] Finalize the tech stack based on the discussion.
-- [ ] Begin setting up the project with the chosen tech stack and integrating the open-source libraries.
+- [ ] Begin setting up the project with the chosen tech stack and integrating
+      the open-source libraries.

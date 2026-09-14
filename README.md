@@ -4,11 +4,15 @@ A simple web app for booking meeting rooms at NYMA Makersplaats.
 
 ## What it does
 
-boekjehokje makes it easy to see room availability and book meeting rooms. It guides users toward available time slots while still allowing direct Google Calendar usage.
+boekjehokje makes it easy to see room availability and book meeting rooms. It
+guides users toward available time slots while still allowing direct Google
+Calendar usage.
 
 ## For users
 
-See room availability and book rooms through an intuitive interface. All data is stored in Google Calendar, so you can continue using Google Calendar directly if you prefer.
+See room availability and book rooms through an intuitive interface. All data is
+stored in Google Calendar, so you can continue using Google Calendar directly if
+you prefer.
 
 ## For more information
 

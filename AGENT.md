@@ -35,7 +35,8 @@
 
 ### Do
 
-- Use `deno install` etc to manage packages. This will change package.json, but we never edit package.json manually.
+- Use `deno install` etc to manage packages. This will change package.json, but
+  we never edit package.json manually.
 - Use `deno run` to run commands
 - Define interfaces for all props, API responses, and context values
 - Prefer `type` for simple unions, `interface` for object shapes
