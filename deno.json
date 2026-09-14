@@ -1,0 +1,8 @@
+{
+  "fmt": {
+    "exclude": [
+      "public/**/*.svg",
+      "src/assets/**/*.svg"
+    ]
+  }
+}
