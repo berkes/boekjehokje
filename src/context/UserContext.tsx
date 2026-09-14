@@ -8,9 +8,9 @@ import {
   isAuthenticated,
   saveAuthTokens,
   saveUserProfile,
-} from "../utils/storage";
-import type { AuthTokens } from "../utils/storage";
-import { UserContext } from "./useUser";
+} from "../utils/storage.ts";
+import type { AuthTokens } from "../utils/storage.ts";
+import { UserContext } from "./useUser.ts";
 
 // Type definitions
 export interface UserProfile {

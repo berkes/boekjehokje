@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { UserContextType } from "./UserContext";
+import type { UserContextType } from "./UserContext.tsx";
 
 // Create context with initial values
 export const UserContext = createContext<UserContextType | undefined>(

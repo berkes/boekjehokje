@@ -1,3 +1,3 @@
-export { UserProvider } from "./UserContext";
-export { UserContext, useUser } from "./useUser";
-export type { AuthState, UserProfile } from "./UserContext";
+export { UserProvider } from "./UserContext.tsx";
+export { UserContext, useUser } from "./useUser.ts";
+export type { AuthState, UserProfile } from "./UserContext.tsx";
