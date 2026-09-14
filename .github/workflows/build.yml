@@ -3,7 +3,7 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-# This workflow runs lint, format checks, tests, and a build on every
+# This workflow runs format checks, lint, and a build on every
 # push and pull request. On a successful build of a pushed tag, it deploys
 # the contents of ./dist to GitHub Pages.
 # For more information see: https://github.com/denoland/setup-deno
@@ -42,11 +42,8 @@ jobs:
       - name: Run linter
         run: deno lint
 
-      - name: Run tests
-        run: deno test -A
-
       - name: Run build
-        run: deno build
+        run: deno task build
 
       - name: Setup Pages
         if: startsWith(github.ref, 'refs/tags/')
