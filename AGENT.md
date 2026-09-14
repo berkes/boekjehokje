@@ -2,14 +2,14 @@
 
 ## Tech Stack Overview
 
-- **Package and runtime**: Deno, with vite
-- **Frontend**: React 18+ with TypeScript
-- **UI**: Material-UI (MUI) v5/v6 with TypeScript
+- **Runtime**: Deno with Vite
+- **Frontend**: React 19+ with TypeScript
+- **UI**: Material-UI (MUI) v6 with TypeScript
 - **Calendar**: FullCalendar with TypeScript
 - **State**: React Context API with typed hooks
 - **Auth**: Google OAuth 2.0
 - **API**: Google Calendar API
-- **Storage**: Google Calendar for events and localStorage for user preferences
+- **Storage**: Google Calendar for events, localStorage for user preferences
 - **Testing**: Jest + React Testing Library
 - **Hosting**: statichost.eu via GitLab CI
 
@@ -17,41 +17,35 @@
 
 ```
 .
-├── docs/          # Project documentation
+├── docs/              # Project documentation
 │   ├── tech_stack.md   # Stack rationale
 │   ├── project_plan.md # Features, scope, timeline
 │   └── workflow.md     # Booking workflow details
-└── src/          # (Future) Source code
+├── src/               # Source code
+│   ├── App.tsx         # Main application
+│   ├── main.tsx        # Entry point
+│   └── assets/         # Static assets
+├── public/            # Static files
+├── package.json       # Dependencies & scripts
+├── vite.config.ts     # Vite configuration
+└── tsconfig.json      # TypeScript configuration
 ```
-
-## Where to Find What
-
-| Topic | Location |
-|-------|----------|
-| Tech stack decisions | `docs/tech_stack.md` |
-| Project scope & features | `docs/project_plan.md` |
-| Booking workflow | `docs/workflow.md` |
-| Room types & UI flow | `docs/workflow.md` section 3 |
 
 ## TypeScript Best Practices
 
 ### Do
+- Use strict mode (`strict: true` in tsconfig)
 - Define interfaces for all props, API responses, and context values
 - Prefer `type` for simple unions, `interface` for object shapes
 - Use `as const` for static value arrays/objects
 - Export types alongside components (`export type { Props }`)
 - Use generics for reusable hooks/components
-- Use `deno` for package management (`deno install`, `deno remove` etc)
-- Use `deno run` to run commands
-- Use `deno lint` and `deno fmt` to check, lint and format all touched code
 
 ### Don't
 - Use `any` - prefer `unknown` if type is truly dynamic
 - Use type assertions (`as Type`) without validation
 - Ignore ESLint `@typescript-eslint` rules
 - Mix `interface` and `type` for the same concept
-- Write to `package.json` to add, remove or update depedencies
-- Write or change tsconfig, vite.config, eslint config etc without explicit permission
 
 ## MUI Best Practices
 
@@ -90,6 +84,10 @@
 - Tests: Type-safe, alongside implementation files
 - Commits: Follow conventional commits (feat, fix, docs, etc.)
 
-## Getting Started (Future)
+## Getting Started
 
-TODO
+```bash
+deno task dev
+deno task build
+deno task lint
+```
