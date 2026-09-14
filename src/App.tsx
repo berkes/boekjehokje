@@ -1,8 +1,10 @@
 import React from "react";
 import "./App.scss";
+import CssBaseline from '@mui/material/CssBaseline';
 import { GoogleAuthButton, GoogleAuthWrapper } from "./components/index.ts";
 import { UserProvider } from "./context/UserContext.tsx";
 import { useUser } from "./context/useUser.ts";
+import Container from "@mui/material/Container";
 
 // Dutch text constants per project plan (Keep UI in Dutch)
 const DUTCH_TEXT = {
@@ -19,16 +21,19 @@ const DUTCH_TEXT = {
  * Wrapped with UserProvider and GoogleAuthWrapper
  */
 function App(): React.JSX.Element {
-  // For now, we need a client ID. In production, this should be from environment
-  // For development, you need to register your app with Google
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
   return (
-    <UserProvider>
-      <GoogleAuthWrapper clientId={clientId}>
-        <AppContent />
-      </GoogleAuthWrapper>
-    </UserProvider>
+    <React.Fragment>
+      <CssBaseline enableColorScheme/>
+      <UserProvider>
+        <GoogleAuthWrapper clientId={clientId}>
+          <Container>
+            <AppContent />
+          </Container>
+        </GoogleAuthWrapper>
+      </UserProvider>
+    </React.Fragment>
   );
 }
 

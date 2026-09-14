@@ -49,7 +49,6 @@ export function GoogleAuthButton(): React.JSX.Element {
     return <div className="auth-loading">Laden...</div>;
   }
 
-
   if (isLoggedIn && profile) {
     return (
       <div className="auth-container">

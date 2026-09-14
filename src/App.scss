@@ -1,5 +1,9 @@
 /* App.scss - Styles for non-MUI components */
 
+body {
+  background-color: black;
+}
+
 /* Loading container */
 .loading-container {
   display: flex;
