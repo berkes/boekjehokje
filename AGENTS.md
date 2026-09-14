@@ -125,7 +125,6 @@ To cut a release:
    git -C <repo> push origin vX.Y.Z
    ```
 
-The pushed tag is what deploys: once `refs/tags/vX.Y.Z` is on `origin`, the
-CI build/deploy jobs run automatically. Confirm a release lands on `main`
-before tagging, and verify the GitHub Pages deploy succeeds after pushing the
-tag.
+The pushed tag is what deploys: once `refs/tags/vX.Y.Z` is on `origin`, the CI
+build/deploy jobs run automatically. Confirm a release lands on `main` before
+tagging, and verify the GitHub Pages deploy succeeds after pushing the tag.
