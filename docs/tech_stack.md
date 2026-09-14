@@ -57,11 +57,10 @@ maintainable codebase.
 
 ## Hosting and Deployment
 
-- **Statichost.eu: https://www.statichost.eu/**
-  - **Why**: Supports TypeScript out of the box. You can deploy the
-    TypeScript-based React.js app without any additional configuration. Use
-    gitlab CI to trigger builds by calling the statichost.eu webhook, when we
-    push a new tag.
+- **GitHub Pages** hosts the static SPA, built and deployed by **GitHub Actions
+  CI**.
+  - **Why**: No extra hosting account needed; builds run in CI on every push and
+    PR, and tagged releases are deployed to Pages automatically.
 
 ## Why This Stack?
 
