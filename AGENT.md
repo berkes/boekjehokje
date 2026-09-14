@@ -34,7 +34,9 @@
 ## TypeScript Best Practices
 
 ### Do
-- Use strict mode (`strict: true` in tsconfig)
+
+- Use `deno install` etc to manage packages. This will change package.json, but we never edit package.json manually.
+- Use `deno run` to run commands
 - Define interfaces for all props, API responses, and context values
 - Prefer `type` for simple unions, `interface` for object shapes
 - Use `as const` for static value arrays/objects
@@ -42,6 +44,8 @@
 - Use generics for reusable hooks/components
 
 ### Don't
+
+- Use npm, npx or other runners. Only use deno.
 - Use `any` - prefer `unknown` if type is truly dynamic
 - Use type assertions (`as Type`) without validation
 - Ignore ESLint `@typescript-eslint` rules
@@ -50,6 +54,7 @@
 ## MUI Best Practices
 
 ### Do
+
 - Use MUI components directly (not custom wrappers)
 - Leverage `sx` prop for simple styling overrides
 - Define theme in a central file with TypeScript support
@@ -57,6 +62,7 @@
 - Customize default props via theme for consistency
 
 ### Don't
+
 - Deeply nest MUI components unnecessarily
 - Override MUI base styles without design system rationale
 - Create custom components when MUI provides equivalent
@@ -65,6 +71,7 @@
 ## Dos and Don'ts
 
 ### Do
+
 - Follow the pure frontend architecture (Google Calendar = source of truth)
 - Keep UI in Dutch as specified in project plan
 - Guide users visually, don't enforce rules strictly
@@ -72,6 +79,7 @@
 - Write type-safe API interactions with Google Calendar
 
 ### Don't
+
 - Implement admin dashboards (out of scope for MVP)
 - Add email or in-app notifications (per project plan)
 - Store event data anywhere but Google Calendar
@@ -79,6 +87,7 @@
 - Add features without updating corresponding docs
 
 ### Code Quality
+
 - Components: Small, single-responsibility, typed props
 - Hooks: Reusable, typed, prefixed with `use`
 - Tests: Type-safe, alongside implementation files
