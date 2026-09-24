@@ -80,6 +80,8 @@
 - Guide users visually, don't enforce rules strictly
 - Use localStorage only for user preferences, not business data
 - Write type-safe API interactions with Google Calendar
+- Attach a screenshot to the PR for any GUI change, following
+  [docs/skills/gui-screenshot.md](docs/skills/gui-screenshot.md)
 
 ### Don't
 
