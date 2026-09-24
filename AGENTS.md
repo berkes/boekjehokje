@@ -4,7 +4,7 @@
 
 - **Runtime**: Deno with Vite
 - **Frontend**: React 19+ with TypeScript
-- **UI**: Material-UI (MUI) v6 with TypeScript
+- **UI**: Material-UI (MUI) v9 with TypeScript
 - **Calendar**: FullCalendar with TypeScript
 - **State**: React Context API with typed hooks
 - **Auth**: Google OAuth 2.0
@@ -57,6 +57,7 @@
 ### Do
 
 - Use MUI components directly (not custom wrappers)
+- Rely on MUI's default styling; set up MUI by default for all UI
 - Leverage `sx` prop for simple styling overrides
 - Define theme in a central file with TypeScript support
 - Use `useMediaQuery` for responsive layouts
@@ -65,6 +66,7 @@
 ### Don't
 
 - Deeply nest MUI components unnecessarily
+- Write custom CSS unless an explicit exception is made
 - Override MUI base styles without design system rationale
 - Create custom components when MUI provides equivalent
 - Inline complex styles - extract to theme or styled()
