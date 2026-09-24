@@ -1,10 +1,19 @@
 import React from "react";
 import "./App.scss";
 import CssBaseline from "@mui/material/CssBaseline";
+import Container from "@mui/material/Container";
+import Box from "@mui/material/Box";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
+import Paper from "@mui/material/Paper";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import CardActions from "@mui/material/CardActions";
+import Button from "@mui/material/Button";
+import CircularProgress from "@mui/material/CircularProgress";
 import { GoogleAuthButton, GoogleAuthWrapper } from "./components/index.ts";
 import { UserProvider } from "./context/UserContext.tsx";
 import { useUser } from "./context/useUser.ts";
-import Container from "@mui/material/Container";
 
 // Dutch text constants per project plan (Keep UI in Dutch)
 const DUTCH_TEXT = {
@@ -28,7 +37,7 @@ function App(): React.JSX.Element {
       <CssBaseline enableColorScheme />
       <UserProvider>
         <GoogleAuthWrapper clientId={clientId}>
-          <Container>
+          <Container maxWidth="lg">
             <AppContent />
           </Container>
         </GoogleAuthWrapper>
@@ -46,31 +55,50 @@ function AppContent(): React.JSX.Element {
 
   if (isLoading) {
     return (
-      <div className="loading-container">
-        <p>{DUTCH_TEXT.loading}</p>
-      </div>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "100vh",
+          gap: 2,
+        }}
+      >
+        <CircularProgress />
+        <Typography>{DUTCH_TEXT.loading}</Typography>
+      </Box>
     );
   }
 
   return (
-    <div className="app-container">
-      <header className="app-header">
-        <div className="header-content">
-          <h1 className="app-title">
+    <Box>
+      <Box
+        component="header"
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          py: 2,
+        }}
+      >
+        <Stack>
+          <Typography variant="h1">
             {DUTCH_TEXT.title}
-          </h1>
-          <p className="app-subtitle">
+          </Typography>
+          <Typography variant="subtitle1" color="text.secondary">
             {DUTCH_TEXT.subtitle}
-          </p>
-        </div>
-      </header>
+          </Typography>
+        </Stack>
+        <GoogleAuthButton />
+      </Box>
 
-      <main>
+      <Box component="main">
         {isLoggedIn && profile
           ? <MainContent profile={profile} />
           : <LandingPage />}
-      </main>
-    </div>
+      </Box>
+    </Box>
   );
 }
 
@@ -79,15 +107,15 @@ function AppContent(): React.JSX.Element {
  */
 function LandingPage(): React.JSX.Element {
   return (
-    <div className="landing-page">
-      <h2 className="landing-title">
+    <Box sx={{ textAlign: "center", py: 8 }}>
+      <Typography variant="h2">
         {DUTCH_TEXT.welcome}
-      </h2>
-      <p className="landing-text">
+      </Typography>
+      <Typography variant="body1" sx={{ mt: 2, mb: 4 }}>
         {DUTCH_TEXT.loginPrompt}
-      </p>
+      </Typography>
       <GoogleAuthButton />
-    </div>
+    </Box>
   );
 }
 
@@ -98,27 +126,35 @@ function MainContent(
   { profile }: { profile: { name: string; email: string; picture?: string } },
 ): React.JSX.Element {
   return (
-    <div>
-      <div className="welcome-card">
-        <h2 className="welcome-title">
+    <Box>
+      <Paper sx={{ p: 3, mb: 4 }}>
+        <Typography variant="h2">
           Welkom, {profile.name}!
-        </h2>
-        <p className="welcome-text">
+        </Typography>
+        <Typography color="text.secondary">
           Je bent ingelogd als {profile.email}
-        </p>
-      </div>
+        </Typography>
+      </Paper>
 
-      <section className="rooms-section">
-        <h3>Beschikbare ruimtes</h3>
-        <p>Selecteer een ruimte om te boeken.</p>
+      <Box component="section" sx={{ mb: 4 }}>
+        <Typography variant="h3">
+          Beschikbare ruimtes
+        </Typography>
+        <Typography color="text.secondary">
+          Selecteer een ruimte om te boeken.
+        </Typography>
         {/* Room list will be added in future tasks */}
-        <div className="rooms-grid">
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={2}
+          sx={{ mt: 2 }}
+        >
           <RoomCard name="Makersruimte 1" capacity={10} />
           <RoomCard name="Makersruimte 2" capacity={8} />
           <RoomCard name="Vergaderruimte" capacity={6} />
-        </div>
-      </section>
-    </div>
+        </Stack>
+      </Box>
+    </Box>
   );
 }
 
@@ -129,17 +165,19 @@ function RoomCard(
   { name, capacity }: { name: string; capacity: number },
 ): React.JSX.Element {
   return (
-    <div className="room-card">
-      <h4 className="room-name">
-        {name}
-      </h4>
-      <p className="room-capacity">
-        Capaciteit: {capacity} personen
-      </p>
-      <button type="button" className="room-button">
-        Bekijken
-      </button>
-    </div>
+    <Card>
+      <CardContent>
+        <Typography variant="h5" component="div">
+          {name}
+        </Typography>
+        <Typography color="text.secondary">
+          Capaciteit: {capacity} personen
+        </Typography>
+      </CardContent>
+      <CardActions>
+        <Button size="small">Bekijken</Button>
+      </CardActions>
+    </Card>
   );
 }
 
