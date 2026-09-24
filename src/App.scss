@@ -1,35 +1,13 @@
-/* App.scss - Styles for non-MUI components */
-
-body {
-  background-color: black;
-}
-
-/* Loading container */
-.loading-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-}
-
-/* App container */
-.app-container {
-  max-width: 1200px;
-  min-height: 100vh;
-
-  /* Header styles */
-  .app-header {
-    display: flex;
-    justify-content: space-between;
-
-    .header-content {
-      display: flex;
-      flex-direction: column;
-    }
-  }
-
-  /* Landing page styles */
-  .landing-page {
-    text-align: center;
-  }
-}
+/*
+ * App.scss - Custom style overrides for MUI components.
+ *
+ * Scope and goal: this file is only for overriding MUI styles that genuinely
+ * do not meet our needs, and for any other custom styles that cannot be
+ * expressed with MUI components or the `sx` prop.
+ *
+ * Always prefer MUI's default styling; an override here is an explicit
+ * exception (see "MUI Best Practices" in AGENTS.md).
+ *
+ * More info on customizing MUI:
+ * https://mui.com/material-ui/customization/
+ */
