@@ -13,7 +13,7 @@ name: Deno
 on:
   push:
     branches: ["main"]
-    tags: [ "v*" ]
+    tags: ["v*"]
 
   pull_request:
 
