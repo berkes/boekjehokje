@@ -4,20 +4,6 @@ import { useUser } from "../context/useUser.ts";
 import type { AuthTokens as StorageAuthTokens } from "../utils/storage.ts";
 import type { GoogleProfile } from "./GoogleAuth.tsx";
 
-// Hardcoded development user for when Google Auth is not configured
-const DEV_USER = {
-  name: "Dev User",
-  email: "dev@boekjehokje.local",
-  picture: undefined,
-} as const;
-
-// Hardcoded development tokens
-const DEV_TOKENS: StorageAuthTokens = {
-  accessToken: "dev-access-token",
-  tokenType: "Bearer",
-  expiresAt: Date.now() + 86400000, // 24 hours
-};
-
 /**
  * Helper to decode JWT without external libraries
  * Note: This is a simple base64url decode, no verification
@@ -90,10 +76,6 @@ export function useGoogleAuth() {
     console.error("Google authentication failed");
   }, []);
 
-  const loginDevUser = useCallback(() => {
-    login(DEV_TOKENS, DEV_USER);
-  }, [login]);
-
   return {
     isLoggedIn,
     profile,
@@ -103,6 +85,5 @@ export function useGoogleAuth() {
     handleError,
     login,
     logout,
-    loginDevUser,
   };
 }

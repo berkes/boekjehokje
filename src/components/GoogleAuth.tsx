@@ -29,12 +29,8 @@ export interface GoogleProfile {
  */
 export function GoogleAuthButton(): React.JSX.Element {
   const {
-    isLoggedIn,
-    profile,
-    logout,
     isLoading,
     loginGoogleUser,
-    loginDevUser,
     handleError,
   } = useGoogleAuth();
 
@@ -42,38 +38,6 @@ export function GoogleAuthButton(): React.JSX.Element {
 
   if (isLoading) {
     return <div className="auth-loading">Laden...</div>;
-  }
-
-  if (import.meta.env.DEV) {
-    loginDevUser();
-    return <div className="auth-loading">Laden...</div>;
-  }
-
-  if (isLoggedIn && profile) {
-    return (
-      <div className="auth-container">
-        <div className="profile-info">
-          <div className="profile-name">{profile.name}</div>
-          <div className="profile-email">
-            {profile.email}
-          </div>
-        </div>
-        {profile.picture && (
-          <img
-            src={profile.picture}
-            alt="Profiel"
-            className="profile-picture"
-          />
-        )}
-        <button
-          type="button"
-          onClick={() => logout()}
-          className="logout-button"
-        >
-          Uitloggen
-        </button>
-      </div>
-    );
   }
 
   return (

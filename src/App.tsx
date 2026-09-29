@@ -5,7 +5,6 @@ import Container from "@mui/material/Container";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import Paper from "@mui/material/Paper";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import CardActions from "@mui/material/CardActions";
@@ -14,6 +13,9 @@ import CircularProgress from "@mui/material/CircularProgress";
 import { GoogleAuthButton, GoogleAuthWrapper } from "./components/index.ts";
 import { UserProvider } from "./context/UserContext.tsx";
 import { useUser } from "./context/useUser.ts";
+import { ProfileMenu } from "./components/ProfileMenu.tsx";
+import AppBar from "@mui/material/AppBar";
+import Toolbar from "@mui/material/Toolbar";
 
 // Dutch text constants per project plan (Keep UI in Dutch)
 const DUTCH_TEXT = {
@@ -37,6 +39,14 @@ function App(): React.JSX.Element {
       <CssBaseline enableColorScheme />
       <UserProvider>
         <GoogleAuthWrapper clientId={clientId}>
+          <AppBar position="static" color="primary" enableColorOnDark>
+            <Toolbar>
+              <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+                {DUTCH_TEXT.title}
+              </Typography>
+              <ProfileMenu />
+            </Toolbar>
+          </AppBar>
           <Container maxWidth="lg">
             <AppContent />
           </Container>
@@ -51,7 +61,7 @@ function App(): React.JSX.Element {
  * Uses the useUser hook to access auth state
  */
 function AppContent(): React.JSX.Element {
-  const { isLoggedIn, profile, isLoading } = useUser();
+  const { isLoggedIn, isLoading } = useUser();
 
   if (isLoading) {
     return (
@@ -83,19 +93,15 @@ function AppContent(): React.JSX.Element {
         }}
       >
         <Stack>
-          <Typography variant="h1">
-            {DUTCH_TEXT.title}
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
+          <Typography variant="subtitle1">
             {DUTCH_TEXT.subtitle}
           </Typography>
         </Stack>
-        <GoogleAuthButton />
       </Box>
 
       <Box component="main">
-        {isLoggedIn && profile
-          ? <MainContent profile={profile} />
+        {isLoggedIn
+          ? <MainContent />
           : <LandingPage />}
       </Box>
     </Box>
@@ -108,9 +114,6 @@ function AppContent(): React.JSX.Element {
 function LandingPage(): React.JSX.Element {
   return (
     <Box sx={{ textAlign: "center", py: 8 }}>
-      <Typography variant="h2">
-        {DUTCH_TEXT.welcome}
-      </Typography>
       <Typography variant="body1" sx={{ mt: 2, mb: 4 }}>
         {DUTCH_TEXT.loginPrompt}
       </Typography>
@@ -123,19 +126,9 @@ function LandingPage(): React.JSX.Element {
  * Main content shown when user is authenticated
  */
 function MainContent(
-  { profile }: { profile: { name: string; email: string; picture?: string } },
 ): React.JSX.Element {
   return (
     <Box>
-      <Paper sx={{ p: 3, mb: 4 }}>
-        <Typography variant="h2">
-          Welkom, {profile.name}!
-        </Typography>
-        <Typography color="text.secondary">
-          Je bent ingelogd als {profile.email}
-        </Typography>
-      </Paper>
-
       <Box component="section" sx={{ mb: 4 }}>
         <Typography variant="h3">
           Beschikbare ruimtes
