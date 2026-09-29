@@ -32,7 +32,6 @@ export function ProfileMenu(): React.JSX.Element {
   };
 
   if (isLoggedIn) {
-    console.log(profile);
     return (
       <Box sx={{ flexGrow: 0 }}>
         <Tooltip title="Open settings">
@@ -40,7 +39,11 @@ export function ProfileMenu(): React.JSX.Element {
             <Typography sx={{ paddingRight: "0.5em"}}>Ingelogd als
             </Typography>
             <Typography sx={{ paddingRight: "1em", fontWeight: "bold"}}>{profile.name}</Typography>
-            <Avatar alt={profile.name} src={profile.picture}  sx={{ width: 56, height: 56 }}/>
+            <Avatar alt={profile.name} src={profile.picture}  slotProps={{
+              img: {
+                crossOrigin: 'anonymous',
+              },
+            }}/>
           </IconButton>
         </Tooltip>
         <Menu
