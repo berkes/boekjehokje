@@ -41,7 +41,12 @@ function App(): React.JSX.Element {
         <GoogleAuthWrapper clientId={clientId}>
           <AppBar position="static" color="primary" enableColorOnDark>
             <Toolbar>
-              <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+              <Typography
+                variant="h6"
+                component="a"
+                sx={{ flexGrow: 1, textDecoration: "none", color: "inherit" }}
+                href="/"
+              >
                 {DUTCH_TEXT.title}
               </Typography>
               <ProfileMenu />
@@ -100,9 +105,7 @@ function AppContent(): React.JSX.Element {
       </Box>
 
       <Box component="main">
-        {isLoggedIn
-          ? <MainContent />
-          : <LandingPage />}
+        {isLoggedIn ? <MainContent /> : <LandingPage />}
       </Box>
     </Box>
   );
@@ -125,8 +128,7 @@ function LandingPage(): React.JSX.Element {
 /**
  * Main content shown when user is authenticated
  */
-function MainContent(
-): React.JSX.Element {
+function MainContent(): React.JSX.Element {
   return (
     <Box>
       <Box component="section" sx={{ mb: 4 }}>
