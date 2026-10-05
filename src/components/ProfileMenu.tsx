@@ -35,10 +35,10 @@ export function ProfileMenu(): React.JSX.Element {
     return (
       <Box sx={{ flexGrow: 0 }}>
         <Tooltip title="Open settings">
-          <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-            <Typography sx={{ paddingRight: "0.5em"}}>Ingelogd als
+          <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }} color="inherit">
+            <Typography sx={{ paddingRight: "0.5em" }}>Ingelogd als
             </Typography>
-            <Typography sx={{ paddingRight: "1em", fontWeight: "bold"}}>{profile.name}</Typography>
+            <Typography sx={{ paddingRight: "1em", fontWeight: "bold"}} color="palette.primary.contrastText">{profile.name}</Typography>
             <Avatar alt={profile.name} src={profile.picture}  slotProps={{
               img: {
                 crossOrigin: 'anonymous',
@@ -76,26 +76,3 @@ export function ProfileMenu(): React.JSX.Element {
     );
   }
 }
-
-{/*<div className="auth-container">
-  <div className="profile-info">
-    <div className="profile-name">{profile.name}</div>
-    <div className="profile-email">
-      {profile.email}
-    </div>
-  </div>
-  {profile.picture && (
-    <img
-      src={profile.picture}
-      alt="Profiel"
-      className="profile-picture"
-    />
-  )}
-  <button
-    type="button"
-    onClick={() => logout()}
-    className="logout-button"
-  >
-    Uitloggen
-  </button>
-</div>*/}
