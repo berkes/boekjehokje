@@ -16,6 +16,9 @@ import { useUser } from "./context/useUser.ts";
 import { ProfileMenu } from "./components/ProfileMenu.tsx";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { Settings } from "./pages/index.ts";
+import { ProtectedRoute } from "./components/ProtectedRoute.tsx";
 
 // Dutch text constants per project plan (Keep UI in Dutch)
 const DUTCH_TEXT = {
@@ -37,26 +40,31 @@ function App(): React.JSX.Element {
   return (
     <React.Fragment>
       <CssBaseline enableColorScheme />
-      <UserProvider>
-        <GoogleAuthWrapper clientId={clientId}>
-          <AppBar position="static" color="primary" enableColorOnDark>
-            <Toolbar>
-              <Typography
-                variant="h6"
-                component="a"
-                sx={{ flexGrow: 1, textDecoration: "none", color: "inherit" }}
-                href="/"
-              >
-                {DUTCH_TEXT.title}
-              </Typography>
-              <ProfileMenu />
-            </Toolbar>
-          </AppBar>
-          <Container maxWidth="lg">
-            <AppContent />
-          </Container>
-        </GoogleAuthWrapper>
-      </UserProvider>
+      <Router>
+        <UserProvider>
+          <GoogleAuthWrapper clientId={clientId}>
+            <AppBar position="static" color="primary" enableColorOnDark>
+              <Toolbar>
+                <Typography
+                  variant="h6"
+                  component={Link}
+                  to="/"
+                  sx={{ flexGrow: 1, textDecoration: "none", color: "inherit" }}
+                >
+                  {DUTCH_TEXT.title}
+                </Typography>
+                <ProfileMenu />
+              </Toolbar>
+            </AppBar>
+            <Container maxWidth="lg">
+              <Routes>
+                <Route path="/" element={<AppContent />} />
+                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              </Routes>
+            </Container>
+          </GoogleAuthWrapper>
+        </UserProvider>
+      </Router>
     </React.Fragment>
   );
 }

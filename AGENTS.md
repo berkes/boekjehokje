@@ -13,6 +13,10 @@
 - **Testing**: Jest + React Testing Library
 - **Hosting**: statichost.eu via GitLab CI
 
+## Terminology
+
+- Use "authentication" instead of "auth" to avoid ambiguity with "authorization"
+
 ## Project Structure
 
 ```
@@ -62,6 +66,8 @@
 - Define theme in a central file with TypeScript support
 - Use `useMediaQuery` for responsive layouts
 - Customize default props via theme for consistency
+- Keep layouts simple: no cards, zebra striping, or complex styling
+- Don't use "back to" links on pages
 
 ### Don't
 
@@ -103,6 +109,12 @@ deno task dev
 deno task build
 deno task lint
 ```
+
+If the user is already running `deno task dev`, don't just willy-nilly kill that. Instead, rely on that process to auto-refresh and show the user the changes. 
+
+You can preview the changes on http://localhost:5173/
+
+If, for some reason, restarting or stopping that service is required, ensure to re-start it after finishing your task or at least notify the user that it was stopped and why it was stopped.
 
 ## Releasing
 

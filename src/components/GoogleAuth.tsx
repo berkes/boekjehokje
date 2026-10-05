@@ -1,27 +1,16 @@
 import React from "react";
 
-import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
+import { GoogleOAuthProvider, useGoogleLogin } from "@react-oauth/google";
 import { useGoogleAuth } from "./useGoogleAuth.ts";
 
-// Re-export CredentialResponse for use in index.ts
-export type { CredentialResponse } from "@react-oauth/google";
+// Re-export CredentialResponse and TokenResponse for use in index.ts
+export type { CredentialResponse, TokenResponse } from "@react-oauth/google";
 
-// Type for decoded JWT payload
-export interface GoogleProfile {
-  iss: string;
-  azp: string;
-  aud: string;
-  sub: string;
-  email: string;
-  email_verified: boolean;
-  name: string;
-  picture: string;
-  given_name: string;
-  family_name: string;
-  locale: string;
-  iat: number;
-  exp: number;
-}
+// Google OAuth scopes for People API
+const GOOGLE_OAUTH_SCOPES = [
+  "https://www.googleapis.com/auth/userinfo.profile",
+  "https://www.googleapis.com/auth/userinfo.email",
+].join(" ");
 
 /**
  * Main Google authentication button component
@@ -34,30 +23,53 @@ export function GoogleAuthButton(): React.JSX.Element {
     handleError,
   } = useGoogleAuth();
 
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+  // Use useGoogleLogin hook for implicit flow with proper scopes
+  const login = useGoogleLogin({
+    flow: "implicit",
+    scope: GOOGLE_OAUTH_SCOPES,
+    onSuccess: (tokenResponse) => {
+      // Pass the TokenResponse directly to loginGoogleUser
+      loginGoogleUser(tokenResponse);
+    },
+    onError: () => {
+      handleError();
+    },
+  });
 
   if (isLoading) {
-    return <div className="auth-loading">Laden...</div>;
+    return <div className="authentication-loading">Laden...</div>;
   }
 
   return (
-    <GoogleOAuthProvider clientId={clientId}>
-      <GoogleLogin
-        onSuccess={loginGoogleUser}
-        onError={handleError}
-        useOneTap
-        text="signin_with"
-        shape="rectangular"
-        theme="outline"
-        size="large"
+    <button
+      type="button"
+      onClick={() => login()}
+      className="google-authentication-button"
+      style={{
+        padding: "10px 20px",
+        backgroundColor: "#fff",
+        border: "1px solid #ccc",
+        borderRadius: "4px",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+        fontSize: "16px",
+      }}
+    >
+      <img
+        src="https://www.google.com/favicon.ico"
+        alt="Google"
+        style={{ width: "20px", height: "20px" }}
       />
-    </GoogleOAuthProvider>
+      Inloggen met Google
+    </button>
   );
 }
 
 /**
  * Wrapper component that provides Google OAuth context
- * This should wrap the entire application or at least the auth-dependent parts
+ * This should wrap the entire application or at least the authentication-dependent parts
  */
 export interface GoogleAuthWrapperProps {
   children: React.ReactNode;

@@ -1,15 +1,12 @@
 import React, { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import {
-  clearAuthTokens,
-  clearUserProfile,
-  getAuthTokens,
-  getUserProfile,
+  clearAuthenticationState,
+  getAuthenticationState,
   isAuthenticated,
-  saveAuthTokens,
-  saveUserProfile,
+  saveAuthenticationState,
 } from "../utils/storage.ts";
-import type { AuthTokens } from "../utils/storage.ts";
+import type { AuthenticationTokens } from "../utils/storage.ts";
 import { UserContext } from "./useUser.ts";
 
 // Type definitions
@@ -19,16 +16,16 @@ export interface UserProfile {
   picture?: string;
 }
 
-export interface AuthState {
-  tokens: AuthTokens | null;
+export interface AuthenticationState {
+  tokens: AuthenticationTokens | null;
   profile: UserProfile | null;
   isLoggedIn: boolean;
   isLoading: boolean;
   error: string | null;
 }
 
-export interface UserContextType extends AuthState {
-  login: (tokens: AuthTokens, profile: UserProfile) => void;
+export interface UserContextType extends AuthenticationState {
+  login: (tokens: AuthenticationTokens, profile: UserProfile) => void;
   logout: () => void;
   updateProfile: (profile: UserProfile) => void;
 }
@@ -41,7 +38,7 @@ interface UserProviderProps {
 export function UserProvider(
   { children }: UserProviderProps,
 ): React.JSX.Element {
-  const [state, setState] = useState<AuthState>({
+  const [state, setState] = useState<AuthenticationState>({
     tokens: null,
     profile: null,
     isLoggedIn: false,
@@ -53,24 +50,26 @@ export function UserProvider(
   useEffect(() => {
     const initialize = () => {
       try {
-        const tokens = getAuthTokens();
-        const profile = getUserProfile();
+        const authState = getAuthenticationState();
+        const isAuth = isAuthenticated();
+        // Only use profile if authenticated
+        const profile = isAuth ? authState.profile : null;
 
         setState({
-          tokens,
+          tokens: authState.tokens,
           profile,
-          isLoggedIn: isAuthenticated(),
+          isLoggedIn: isAuth,
           isLoading: false,
           error: null,
         });
       } catch (error) {
-        console.error("Failed to initialize auth state:", error);
+        console.error("Failed to initialize authentication state:", error);
         setState({
           tokens: null,
           profile: null,
           isLoggedIn: false,
           isLoading: false,
-          error: "Failed to initialize auth state",
+          error: "Failed to initialize authentication state",
         });
       }
     };
@@ -79,10 +78,9 @@ export function UserProvider(
   }, []);
 
   // Login function - saves tokens and profile to localStorage
-  const login = (tokens: AuthTokens, profile: UserProfile): void => {
+  const login = (tokens: AuthenticationTokens, profile: UserProfile): void => {
     try {
-      saveAuthTokens(tokens);
-      saveUserProfile(profile);
+      saveAuthenticationState({ tokens, profile });
 
       setState({
         tokens,
@@ -101,11 +99,10 @@ export function UserProvider(
     }
   };
 
-  // Logout function - clears all auth data
+  // Logout function - clears all authentication data
   const logout = (): void => {
     try {
-      clearAuthTokens();
-      clearUserProfile();
+      clearAuthenticationState();
 
       setState({
         tokens: null,
@@ -127,7 +124,8 @@ export function UserProvider(
   // Update profile function
   const updateProfile = (profile: UserProfile): void => {
     try {
-      saveUserProfile(profile);
+      const state = getAuthenticationState();
+      saveAuthenticationState({ ...state, profile });
       setState((prev) => ({
         ...prev,
         profile,

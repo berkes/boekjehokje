@@ -7,6 +7,7 @@ import MenuItem from "@mui/material/MenuItem";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import { useUser } from "../context/index.ts";
+import { useNavigate } from "react-router-dom";
 
 /**
  * Main Google authentication button component
@@ -19,12 +20,17 @@ export function ProfileMenu(): React.JSX.Element {
     logout,
   } = useUser();
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(null);
+  const navigate = useNavigate();
 
   const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElUser(event.currentTarget);
   };
   const handleCloseUserMenu = () => {
     setAnchorElUser(null);
+  };
+  const handleNavigateToSettings = () => {
+    navigate('/settings');
+    handleCloseUserMenu();
   };
   const handleLogout = () => {
     logout();
@@ -38,12 +44,14 @@ export function ProfileMenu(): React.JSX.Element {
           <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }} color="inherit">
             <Typography sx={{ paddingRight: "0.5em" }}>Ingelogd als
             </Typography>
-            <Typography sx={{ paddingRight: "1em", fontWeight: "bold"}} color="palette.primary.contrastText">{profile.name}</Typography>
-            <Avatar alt={profile.name} src={profile.picture}  slotProps={{
+            <Typography sx={{ paddingRight: "1em", fontWeight: "bold"}} color="palette.primary.contrastText">{profile?.name || "Unknown"}</Typography>
+            <Avatar alt={profile?.name || "Unknown"} src={profile?.picture} slotProps={{
               img: {
                 crossOrigin: 'anonymous',
               },
-            }}/>
+            }}>
+              {profile?.name?.charAt(0).toUpperCase() || 'U'}
+            </Avatar>
           </IconButton>
         </Tooltip>
         <Menu
@@ -62,6 +70,9 @@ export function ProfileMenu(): React.JSX.Element {
           open={Boolean(anchorElUser)}
           onClose={handleCloseUserMenu}
         >
+          <MenuItem key="account" onClick={handleNavigateToSettings}>
+            <Typography sx={{ textAlign: 'center' }}>Mijn Account</Typography>
+          </MenuItem>
           <MenuItem key="logout" onClick={handleLogout}>
             <Typography sx={{ textAlign: 'center' }}>Uitloggen</Typography>
           </MenuItem>

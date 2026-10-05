@@ -2,6 +2,6 @@ export { GoogleAuthButton, GoogleAuthWrapper } from "./GoogleAuth.tsx";
 export { useGoogleAuth } from "./useGoogleAuth.ts";
 export type {
   CredentialResponse,
+  TokenResponse,
   GoogleAuthWrapperProps,
-  GoogleProfile,
 } from "./GoogleAuth.tsx";
