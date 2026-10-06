@@ -4,5 +4,14 @@
       "public/**/*.svg",
       "src/assets/**/*.svg"
     ]
+  },
+  "imports": {
+    "@std/assert": "jsr:@std/assert@^1.0.19",
+    "@std/testing": "jsr:@std/testing@^1.0.21"
+  },
+  "nodeModulesDir": "auto",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM", "deno.ns"],
+    "jsx": "react-jsx"
   }
 }

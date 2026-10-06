@@ -5,18 +5,18 @@ import Container from "@mui/material/Container";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import CardActions from "@mui/material/CardActions";
-import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
-import { GoogleAuthButton, GoogleAuthWrapper } from "./components/index.ts";
+import {
+  GoogleAuthButton,
+  GoogleAuthWrapper,
+  RoomList,
+} from "./components/index.ts";
 import { UserProvider } from "./context/UserContext.tsx";
 import { useUser } from "./context/useUser.ts";
 import { ProfileMenu } from "./components/ProfileMenu.tsx";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Link, Route, Routes } from "react-router-dom";
 import { Settings } from "./pages/index.ts";
 import { ProtectedRoute } from "./components/ProtectedRoute.tsx";
 
@@ -59,7 +59,14 @@ function App(): React.JSX.Element {
             <Container maxWidth="lg">
               <Routes>
                 <Route path="/" element={<AppContent />} />
-                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoute>
+                      <Settings />
+                    </ProtectedRoute>
+                  }
+                />
               </Routes>
             </Container>
           </GoogleAuthWrapper>
@@ -140,47 +147,9 @@ function MainContent(): React.JSX.Element {
   return (
     <Box>
       <Box component="section" sx={{ mb: 4 }}>
-        <Typography variant="h3">
-          Beschikbare ruimtes
-        </Typography>
-        <Typography color="text.secondary">
-          Selecteer een ruimte om te boeken.
-        </Typography>
-        {/* Room list will be added in future tasks */}
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          spacing={2}
-          sx={{ mt: 2 }}
-        >
-          <RoomCard name="Makersruimte 1" capacity={10} />
-          <RoomCard name="Makersruimte 2" capacity={8} />
-          <RoomCard name="Vergaderruimte" capacity={6} />
-        </Stack>
+        <RoomList />
       </Box>
     </Box>
-  );
-}
-
-/**
- * Room card component - placeholder for future development
- */
-function RoomCard(
-  { name, capacity }: { name: string; capacity: number },
-): React.JSX.Element {
-  return (
-    <Card>
-      <CardContent>
-        <Typography variant="h5" component="div">
-          {name}
-        </Typography>
-        <Typography color="text.secondary">
-          Capaciteit: {capacity} personen
-        </Typography>
-      </CardContent>
-      <CardActions>
-        <Button size="small">Bekijken</Button>
-      </CardActions>
-    </Card>
   );
 }
 

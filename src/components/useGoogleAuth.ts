@@ -30,7 +30,9 @@ export function useGoogleAuth() {
         // Fallback: assume 1 hour expiration
         expiresAt = Date.now() + 3600000;
       } else {
-        console.error("Invalid authentication response: no access token or credential");
+        console.error(
+          "Invalid authentication response: no access token or credential",
+        );
         return;
       }
 

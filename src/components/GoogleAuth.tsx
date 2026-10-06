@@ -6,10 +6,11 @@ import { useGoogleAuth } from "./useGoogleAuth.ts";
 // Re-export CredentialResponse and TokenResponse for use in index.ts
 export type { CredentialResponse, TokenResponse } from "@react-oauth/google";
 
-// Google OAuth scopes for People API
+// Google OAuth scopes for People API and Calendar API
 const GOOGLE_OAUTH_SCOPES = [
   "https://www.googleapis.com/auth/userinfo.profile",
   "https://www.googleapis.com/auth/userinfo.email",
+  "https://www.googleapis.com/auth/calendar.readonly",
 ].join(" ");
 
 /**

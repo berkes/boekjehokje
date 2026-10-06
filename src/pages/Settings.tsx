@@ -15,7 +15,7 @@ export function Settings(): React.JSX.Element {
 
   return (
     <Box sx={{ py: 4 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 4 }}>
         <Typography variant="h2" component="h1">
           Ingelogd als {profile!.name}
         </Typography>
@@ -24,29 +24,34 @@ export function Settings(): React.JSX.Element {
         </Button>
       </Box>
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, maxWidth: 600 }}>
+      <Box
+        sx={{ display: "flex", flexDirection: "column", gap: 2, maxWidth: 600 }}
+      >
         <Avatar
           alt={profile!.name}
           src={profile!.picture}
           sx={{ width: 64, height: 64 }}
           slotProps={{
             img: {
-              crossOrigin: 'anonymous',
+              crossOrigin: "anonymous",
             },
           }}
         >
           {profile!.name.charAt(0).toUpperCase()}
         </Avatar>
 
-        <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 1 }}>
-          <Typography component="dt" sx={{ fontWeight: 'bold' }}>
+        <Box
+          component="dl"
+          sx={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: 1 }}
+        >
+          <Typography component="dt" sx={{ fontWeight: "bold" }}>
             name
           </Typography>
           <Typography component="dd">
             {profile!.name}
           </Typography>
 
-          <Typography component="dt" sx={{ fontWeight: 'bold' }}>
+          <Typography component="dt" sx={{ fontWeight: "bold" }}>
             email
           </Typography>
           <Typography component="dd">

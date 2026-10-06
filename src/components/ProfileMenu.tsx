@@ -19,7 +19,9 @@ export function ProfileMenu(): React.JSX.Element {
     profile,
     logout,
   } = useUser();
-  const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(null);
+  const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(
+    null,
+  );
   const navigate = useNavigate();
 
   const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
@@ -29,7 +31,7 @@ export function ProfileMenu(): React.JSX.Element {
     setAnchorElUser(null);
   };
   const handleNavigateToSettings = () => {
-    navigate('/settings');
+    navigate("/settings");
     handleCloseUserMenu();
   };
   const handleLogout = () => {
@@ -41,40 +43,54 @@ export function ProfileMenu(): React.JSX.Element {
     return (
       <Box sx={{ flexGrow: 0 }}>
         <Tooltip title="Open settings">
-          <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }} color="inherit">
-            <Typography sx={{ paddingRight: "0.5em" }}>Ingelogd als
+          <IconButton
+            onClick={handleOpenUserMenu}
+            sx={{ p: 0 }}
+            color="inherit"
+          >
+            <Typography sx={{ paddingRight: "0.5em" }}>
+              Ingelogd als
             </Typography>
-            <Typography sx={{ paddingRight: "1em", fontWeight: "bold"}} color="palette.primary.contrastText">{profile?.name || "Unknown"}</Typography>
-            <Avatar alt={profile?.name || "Unknown"} src={profile?.picture} slotProps={{
-              img: {
-                crossOrigin: 'anonymous',
-              },
-            }}>
-              {profile?.name?.charAt(0).toUpperCase() || 'U'}
+            <Typography
+              sx={{ paddingRight: "1em", fontWeight: "bold" }}
+              color="palette.primary.contrastText"
+            >
+              {profile?.name || "Unknown"}
+            </Typography>
+            <Avatar
+              alt={profile?.name || "Unknown"}
+              src={profile?.picture}
+              slotProps={{
+                img: {
+                  crossOrigin: "anonymous",
+                },
+              }}
+            >
+              {profile?.name?.charAt(0).toUpperCase() || "U"}
             </Avatar>
           </IconButton>
         </Tooltip>
         <Menu
-          sx={{ mt: '45px' }}
+          sx={{ mt: "45px" }}
           id="menu-appbar"
           anchorEl={anchorElUser}
           anchorOrigin={{
-            vertical: 'top',
-            horizontal: 'right',
+            vertical: "top",
+            horizontal: "right",
           }}
           keepMounted
           transformOrigin={{
-            vertical: 'top',
-            horizontal: 'right',
+            vertical: "top",
+            horizontal: "right",
           }}
           open={Boolean(anchorElUser)}
           onClose={handleCloseUserMenu}
         >
           <MenuItem key="account" onClick={handleNavigateToSettings}>
-            <Typography sx={{ textAlign: 'center' }}>Mijn Account</Typography>
+            <Typography sx={{ textAlign: "center" }}>Mijn Account</Typography>
           </MenuItem>
           <MenuItem key="logout" onClick={handleLogout}>
-            <Typography sx={{ textAlign: 'center' }}>Uitloggen</Typography>
+            <Typography sx={{ textAlign: "center" }}>Uitloggen</Typography>
           </MenuItem>
         </Menu>
       </Box>
@@ -82,7 +98,7 @@ export function ProfileMenu(): React.JSX.Element {
   } else {
     return (
       <Box sx={{ flexGrow: 0 }}>
-        <Typography sx={{ textAlign: 'center' }}>Niet ingelogd</Typography>
+        <Typography sx={{ textAlign: "center" }}>Niet ingelogd</Typography>
       </Box>
     );
   }

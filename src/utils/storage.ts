@@ -116,7 +116,10 @@ export function getAuthenticationState(): AuthenticationState {
     const state = JSON.parse(serialized) as AuthenticationState;
 
     // Check if token is expired
-    if (state.tokens && state.tokens.expiresAt && state.tokens.expiresAt < Date.now()) {
+    if (
+      state.tokens && state.tokens.expiresAt &&
+      state.tokens.expiresAt < Date.now()
+    ) {
       clearAuthenticationState();
       return { tokens: null, profile: null };
     }

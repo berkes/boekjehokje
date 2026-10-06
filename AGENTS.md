@@ -102,6 +102,21 @@
 - Tests: Type-safe, alongside implementation files
 - Commits: Follow conventional commits (feat, fix, docs, etc.)
 
+### Module Design
+
+- Limit public interfaces: only export what must be used outside the module
+- Group logically related functionality into bounded domain modules (either in
+  subdirs with index.ts or in single files)
+- Use dependency injection with interfaces for testability
+
+## Testing
+
+- Write unit tests for the public interface of modules
+- Keep tests simple, clean, and focused on behavior
+- Use dependency injection to mock external dependencies
+- Test domain logic, not implementation details
+- No e2e or integration tests needed for now
+
 ## Getting Started
 
 ```bash
@@ -110,11 +125,15 @@ deno task build
 deno task lint
 ```
 
-If the user is already running `deno task dev`, don't just willy-nilly kill that. Instead, rely on that process to auto-refresh and show the user the changes. 
+If the user is already running `deno task dev`, don't just willy-nilly kill
+that. Instead, rely on that process to auto-refresh and show the user the
+changes.
 
 You can preview the changes on http://localhost:5173/
 
-If, for some reason, restarting or stopping that service is required, ensure to re-start it after finishing your task or at least notify the user that it was stopped and why it was stopped.
+If, for some reason, restarting or stopping that service is required, ensure to
+re-start it after finishing your task or at least notify the user that it was
+stopped and why it was stopped.
 
 ## Releasing
 

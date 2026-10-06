@@ -46,7 +46,8 @@ export async function fetchGooglePeopleProfile(
   accessToken: string,
 ): Promise<UserProfile> {
   const personFields = "names,emailAddresses,photos";
-  const url = `https://people.googleapis.com/v1/people/me?personFields=${personFields}`;
+  const url =
+    `https://people.googleapis.com/v1/people/me?personFields=${personFields}`;
 
   const response = await fetch(url, {
     method: "GET",

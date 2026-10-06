@@ -6,7 +6,9 @@ import { useUser } from "../context/useUser.ts";
 /**
  * Protected route component that redirects to home if not authenticated
  */
-export function ProtectedRoute({ children }: { children: React.JSX.Element }): React.JSX.Element {
+export function ProtectedRoute(
+  { children }: { children: React.JSX.Element },
+): React.JSX.Element {
   const { isLoggedIn, isLoading } = useUser();
 
   if (isLoading) {
