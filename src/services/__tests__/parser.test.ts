@@ -8,13 +8,13 @@
 
 // Import internal functions for testing
 import {
+  CANONICAL_ROOMS,
   extractBooker,
   extractRoom,
   isPersonName,
   normalizeRoomName,
   parseEvent,
   ROOMS,
-  CANONICAL_ROOMS,
   UNKNOWN_ROOM,
 } from "../parser.ts";
 import { Room } from "../rooms.ts";
@@ -65,11 +65,11 @@ Deno.test.each(
     },
     {
       input: "02 stilte ruimte",
-      expected: "Stilteruimte"
+      expected: "Stilteruimte",
     },
     {
       input: "tuin kamer",
-      expected: "Tuinkamer"
+      expected: "Tuinkamer",
     },
     {
       input: "Klets Hok 03",
@@ -130,7 +130,7 @@ Deno.test.each(
     },
     {
       input: "02 stilte ruimte| studio s",
-      expected: "Stilteruimte"
+      expected: "Stilteruimte",
     },
     {
       input: "Team Meeting",
@@ -552,15 +552,15 @@ Deno.test("Room objects have correct structure", () => {
   for (const room of ROOMS) {
     assert(
       "canonicalName" in room && typeof room.canonicalName === "string",
-      "Room should have canonicalName string"
+      "Room should have canonicalName string",
     );
     assert(
       "shortName" in room && typeof room.shortName === "string",
-      "Room should have shortName string"
+      "Room should have shortName string",
     );
     assert(
       "aliases" in room && Array.isArray(room.aliases),
-      "Room should have aliases array"
+      "Room should have aliases array",
     );
 
     // All aliases should be strings
@@ -578,7 +578,7 @@ Deno.test("CANONICAL_ROOMS contains all canonical names", () => {
   assertEquals(
     Array.from(CANONICAL_ROOMS),
     expectedCanonicalNames,
-    "CANONICAL_ROOMS should match all room canonical names (excluding Unknown)"
+    "CANONICAL_ROOMS should match all room canonical names (excluding Unknown)",
   );
 });
 

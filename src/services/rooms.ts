@@ -156,7 +156,9 @@ export class Room {
     }
 
     // Check aliases
-    return this.aliases.some((alias) => alias.toLowerCase().trim() === normalized);
+    return this.aliases.some((alias) =>
+      alias.toLowerCase().trim() === normalized
+    );
   }
 }
 
@@ -182,7 +184,11 @@ export const UNKNOWN_ROOM_INSTANCE = new Room(
 /**
  * All defined rooms with their canonical names, short names, and aliases
  */
-export const ROOM_CONFIGS: { canonicalName: string; shortName: string; aliases: string[] }[] = [
+export const ROOM_CONFIGS: {
+  canonicalName: string;
+  shortName: string;
+  aliases: string[];
+}[] = [
   {
     canonicalName: "Kletshok 03",
     shortName: "KH 03",
@@ -197,7 +203,7 @@ export const ROOM_CONFIGS: { canonicalName: string; shortName: string; aliases: 
       "kletskubus 03",
       "kletskubus 3",
       "klets hok 03",
-      "klets hok 3"
+      "klets hok 3",
     ],
   },
   {
@@ -231,7 +237,7 @@ export const ROOM_CONFIGS: { canonicalName: string; shortName: string; aliases: 
       "kletskubus 05",
       "kletskubus 5",
       "klets hok 05",
-      "klets hok 5"
+      "klets hok 5",
     ],
   },
   {
@@ -282,9 +288,13 @@ export const ROOM_CONFIGS: { canonicalName: string; shortName: string; aliases: 
  * Create Room instances from configuration
  */
 export function createRooms(): Room[] {
-  return [...ROOM_CONFIGS.map(
-    (config) => new Room(config.canonicalName, config.shortName, config.aliases),
-  ), UNKNOWN_ROOM_INSTANCE];
+  return [
+    ...ROOM_CONFIGS.map(
+      (config) =>
+        new Room(config.canonicalName, config.shortName, config.aliases),
+    ),
+    UNKNOWN_ROOM_INSTANCE,
+  ];
 }
 
 /**
@@ -295,7 +305,9 @@ export const ROOMS: Room[] = createRooms();
 /**
  * Get all canonical room names (excluding Unknown)
  */
-export const CANONICAL_ROOMS = ROOM_CONFIGS.map((config) => config.canonicalName) as readonly string[];
+export const CANONICAL_ROOMS = ROOM_CONFIGS.map((config) =>
+  config.canonicalName
+) as readonly string[];
 
 /**
  * Create a mapping from lowercase alias to Room instance
