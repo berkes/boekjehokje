@@ -22,7 +22,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute.tsx";
 
 // Dutch text constants per project plan (Keep UI in Dutch)
 const DUTCH_TEXT = {
-  title: "boekjehokje",
+  title: "Boek je Hokje",
   subtitle: "Ruimte boeken voor de NYMA Makersplaats",
   loading: "Laden...",
   welcome: "Welkom",
