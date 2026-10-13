@@ -6,13 +6,14 @@
  */
 
 export {
+  type Booking,
   CalendarApiError,
   CalendarService,
   createCalendarService,
   getNextWeek,
   getThisWeek,
-  type Booking,
-  type WeekRange,
   type Room,
   ROOMS,
+  UNKNOWN_ROOM,
+  type WeekRange,
 } from "./CalendarService.ts";

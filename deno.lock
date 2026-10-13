@@ -12,6 +12,7 @@
     "jsr:@std/testing@*": "1.0.20",
     "jsr:@std/testing@^1.0.19": "1.0.20",
     "jsr:@std/testing@^1.0.21": "1.0.21",
+    "npm:@daypilot/daypilot-lite-react@^6.1.0": "6.1.0_react@19.3.0_react-dom@19.3.0",
     "npm:@emotion/react@^11.14.0": "11.14.0_react@19.3.0",
     "npm:@emotion/styled@^11.14.1": "11.14.1_@emotion+react@11.14.0_react@19.3.0",
     "npm:@eslint/js@^10.0.1": "10.0.1_eslint@10.12.0",
@@ -32,6 +33,7 @@
     "npm:sass-embedded@^1.105.1": "1.105.1",
     "npm:typescript-eslint@^8.71.0": "8.71.0_eslint@10.12.0_typescript@6.0.3",
     "npm:typescript@~6.0.3": "6.0.3",
+    "npm:vite@*": "8.3.2_@types+node@24.19.1_sass-embedded@1.105.1",
     "npm:vite@^8.3.2": "8.3.2_@types+node@24.19.1_sass-embedded@1.105.1"
   },
   "jsr": {
@@ -221,6 +223,18 @@
       "dependencies": [
         "hashery",
         "keyv"
+      ]
+    },
+    "@daypilot/daypilot-lite-javascript@6.1.0": {
+      "integrity": "sha512-gh2JihELPYeBhZX8JQ/maHIiLoirRGGRXDw0bL5tr6exf2+wxMgpXZD6xH5yuujFAIChuSIjWgGFVkmtAjtyfA=="
+    },
+    "@daypilot/daypilot-lite-react@6.1.0_react@19.3.0_react-dom@19.3.0": {
+      "integrity": "sha512-v6ps3np3y7Bq4yD0LCiPl1j5kGaHU5NskxWRI7Aj+KOieggai30Mqgd5+3CZN3pp8w2I+kGHNkbeJFz5IEfojA==",
+      "dependencies": [
+        "@daypilot/daypilot-lite-javascript",
+        "create-react-class",
+        "react",
+        "react-dom"
       ]
     },
     "@emotion/babel-plugin@11.13.5": {
@@ -962,6 +976,13 @@
         "parse-json",
         "path-type",
         "yaml"
+      ]
+    },
+    "create-react-class@15.7.0": {
+      "integrity": "sha512-QZv4sFWG9S5RUvkTYWbflxeZX+JG7Cz0Tn33rQBJ+WFQTqTfUTjMjiv9tnfXazjsO5r0KhPs+AqCjyrQX6h2ng==",
+      "dependencies": [
+        "loose-envify",
+        "object-assign"
       ]
     },
     "cross-spawn@7.0.6": {
@@ -1882,6 +1903,7 @@
     ],
     "packageJson": {
       "dependencies": [
+        "npm:@daypilot/daypilot-lite-react@^6.1.0",
         "npm:@emotion/react@^11.14.0",
         "npm:@emotion/styled@^11.14.1",
         "npm:@eslint/js@^10.0.1",

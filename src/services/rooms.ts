@@ -61,7 +61,7 @@ export class Room {
     return this._bookings.filter((booking) => {
       const bookingDate = new Date(booking.start);
       bookingDate.setHours(0, 0, 0, 0);
-      
+
       return bookingDate.getTime() === today.getTime();
     });
   }
@@ -76,7 +76,7 @@ export class Room {
     return this._bookings.filter((booking) => {
       const bookingDate = new Date(booking.start);
       bookingDate.setHours(0, 0, 0, 0);
-      
+
       return bookingDate.getTime() < today.getTime();
     });
   }
@@ -91,7 +91,7 @@ export class Room {
     return this._bookings.filter((booking) => {
       const bookingDate = new Date(booking.start);
       bookingDate.setHours(0, 0, 0, 0);
-      
+
       return bookingDate.getTime() > today.getTime();
     });
   }
@@ -144,7 +144,7 @@ export class Room {
    */
   matchesIdentifier(identifier: string): boolean {
     const normalized = identifier.toLowerCase().trim();
-    
+
     // Check canonical name
     if (this.canonicalName.toLowerCase() === normalized) {
       return true;
@@ -196,6 +196,8 @@ export const ROOM_CONFIGS: { canonicalName: string; shortName: string; aliases: 
       "kh3",
       "kletskubus 03",
       "kletskubus 3",
+      "klets hok 03",
+      "klets hok 3"
     ],
   },
   {
@@ -211,6 +213,8 @@ export const ROOM_CONFIGS: { canonicalName: string; shortName: string; aliases: 
       "kh4",
       "kletskubus 04",
       "kletskubus 4",
+      "klets hok 04",
+      "klets hok 4",
     ],
   },
   {
@@ -226,6 +230,8 @@ export const ROOM_CONFIGS: { canonicalName: string; shortName: string; aliases: 
       "kh5",
       "kletskubus 05",
       "kletskubus 5",
+      "klets hok 05",
+      "klets hok 5"
     ],
   },
   {
@@ -235,16 +241,20 @@ export const ROOM_CONFIGS: { canonicalName: string; shortName: string; aliases: 
       "stilteruimte",
       "stilteruimte 02",
       "stilteruimte 2",
+      "02 stilte ruimte",
+      "stilte ruimte 02",
+      "02 stilte ruimte",
     ],
   },
   {
-    canonicalName: "Tuinkamer 06",
-    shortName: "TK 06",
+    canonicalName: "Tuinkamer",
+    shortName: "TK",
     aliases: [
       "tuinkamer 06",
       "06 tuinkamer",
       "tuinkamer6",
       "tuinkamer",
+      "tuin kamer",
     ],
   },
   {
@@ -334,6 +344,8 @@ export const BOOKER_EXCLUSIONS = [
   "kletshok",
   "kletskubus",
   "stilteruimte",
+  "stilte",
+  "ruimte",
   "tuinkamer",
   "c3",
   "kh",

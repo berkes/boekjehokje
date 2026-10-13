@@ -12,13 +12,14 @@ import type { CalendarApiClient } from "../utils/calendar/CalendarApiClient.ts";
 import { CALENDAR_ID } from "../utils/calendar/GoogleCalendarApiClient.ts";
 import { CalendarApiError } from "../utils/googleCalendarApi.ts";
 import {
+  type Booking,
+  createRooms,
   parseAndGroupEvents,
   populateRoomsWithBookings,
   type Room,
   ROOMS,
-  createRooms,
+  UNKNOWN_ROOM,
   UNKNOWN_ROOM_INSTANCE,
-  type Booking,
 } from "./parser.ts";
 import type { CalendarEvent } from "../utils/types.ts";
 
@@ -118,9 +119,11 @@ export class CalendarService {
    * @returns Promise resolving to array of RoomBookings (legacy format)
    * @throws CalendarApiError on API errors
    */
-  async getBookings(week: WeekRange = getThisWeek()): Promise<{ room: string; bookings: Booking[] }[]> {
+  async getBookings(
+    week: WeekRange = getThisWeek(),
+  ): Promise<{ room: string; bookings: Booking[] }[]> {
     const rooms = await this.getRoomsWithBookings(week);
-    
+
     return rooms.map((room) => ({
       room: room.canonicalName,
       bookings: room.bookings,
@@ -149,4 +152,4 @@ export async function createCalendarService(
 
 // Export Room type and helper functions
 export type { Room };
-export { ROOMS, createRooms, UNKNOWN_ROOM_INSTANCE };
+export { createRooms, ROOMS, UNKNOWN_ROOM, UNKNOWN_ROOM_INSTANCE };

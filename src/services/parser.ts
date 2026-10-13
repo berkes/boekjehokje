@@ -11,7 +11,6 @@ import {
   ROOM_ALIAS_MAP,
   ROOMS,
   UNKNOWN_ROOM,
-  UNKNOWN_ROOM_INSTANCE,
   type Room,
   type RoomName,
   Room as RoomClass,
@@ -303,7 +302,7 @@ export function parseAndGroupEvents(
 
   // Convert to array of Room with Bookings
   const result: { room: Room; bookings: Booking[] }[] = [];
-  for (const [roomName, { room, parsedEvents }] of roomMap) {
+  for (const [_roomName, { room, parsedEvents }] of roomMap) {
     // Only include rooms that have bookings
     if (parsedEvents.length > 0) {
       const bookings = parsedEvents.map(toBooking);

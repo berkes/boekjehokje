@@ -45,13 +45,9 @@ export interface UseCalendarReturn {
  *   if (isLoading) return <div>Loading...</div>;
  *   if (error) return <div>Error: {error.message}</div>;
  *
- *   return (
- *     <div>
- *       {rooms.map(room => (
- *         <RoomCard key={room.canonicalName} room={room} />
- *       ))}
- *     </div>
- *   );
+ *   return rooms.map(room => (
+ *     <CalendarColumn key={room.canonicalName} room={room} />
+ *   ));
  * }
  * ```
  */

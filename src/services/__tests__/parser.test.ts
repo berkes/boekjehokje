@@ -64,6 +64,18 @@ Deno.test.each(
       expected: "Stilteruimte",
     },
     {
+      input: "02 stilte ruimte",
+      expected: "Stilteruimte"
+    },
+    {
+      input: "tuin kamer",
+      expected: "Tuinkamer"
+    },
+    {
+      input: "Klets Hok 03",
+      expected: "Kletshok 03",
+    },
+    {
       input: "c3",
       expected: "Vergaderruimte C3",
     },
@@ -106,11 +118,19 @@ Deno.test.each(
     },
     {
       input: "06 Tuinkamer",
-      expected: "Tuinkamer 06",
+      expected: "Tuinkamer",
     },
     {
       input: "Kletskubus 4",
       expected: "Kletshok 04",
+    },
+    {
+      input: "04 kletshok| klets kevin",
+      expected: "Kletshok 04",
+    },
+    {
+      input: "02 stilte ruimte| studio s",
+      expected: "Stilteruimte"
     },
     {
       input: "Team Meeting",
@@ -234,7 +254,7 @@ Deno.test.each(
 // Test Room class
 Deno.test("Room class has correct structure", () => {
   const room = new Room("Test Room", "TR", ["test", "room"]);
-  
+
   assertEquals(room.canonicalName, "Test Room");
   assertEquals(room.shortName, "TR");
   assertEquals(room.aliases, ["test", "room"]);
@@ -243,7 +263,7 @@ Deno.test("Room class has correct structure", () => {
 
 Deno.test("Room class can have bookings set", () => {
   const room = new Room("Test Room", "TR", ["test", "room"]);
-  
+
   const booking: Booking = {
     id: "booking-1",
     uid: "booking-uid-1",
@@ -253,16 +273,16 @@ Deno.test("Room class can have bookings set", () => {
     start: new Date("2026-10-13T10:00:00Z"),
     end: new Date("2026-10-13T11:00:00Z"),
   };
-  
+
   room.bookings = [booking];
-  
+
   assertEquals(room.bookings.length, 1);
   assertEquals(room.bookings[0].id, "booking-1");
 });
 
 Deno.test("Room class addBooking method works", () => {
   const room = new Room("Test Room", "TR", ["test", "room"]);
-  
+
   const booking: Booking = {
     id: "booking-1",
     uid: "booking-uid-1",
@@ -272,19 +292,19 @@ Deno.test("Room class addBooking method works", () => {
     start: new Date("2026-10-13T10:00:00Z"),
     end: new Date("2026-10-13T11:00:00Z"),
   };
-  
+
   room.addBooking(booking);
-  
+
   assertEquals(room.bookings.length, 1);
   assertEquals(room.bookings[0].id, "booking-1");
 });
 
 Deno.test("Room class todayBookings filters correctly", () => {
   const room = new Room("Test Room", "TR", ["test", "room"]);
-  
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
   // Booking for today
   const todayBooking: Booking = {
     id: "booking-today",
@@ -295,7 +315,7 @@ Deno.test("Room class todayBookings filters correctly", () => {
     start: new Date(today),
     end: new Date(today.getTime() + 3600000), // 1 hour later
   };
-  
+
   // Booking for tomorrow
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -308,18 +328,18 @@ Deno.test("Room class todayBookings filters correctly", () => {
     start: new Date(tomorrow),
     end: new Date(tomorrow.getTime() + 3600000),
   };
-  
+
   room.bookings = [todayBooking, tomorrowBooking];
-  
+
   const todayBookings = room.todayBookings();
-  
+
   assertEquals(todayBookings.length, 1);
   assertEquals(todayBookings[0].id, "booking-today");
 });
 
 Deno.test("Room class matchesIdentifier works", () => {
   const room = new Room("Kletshok 03", "KH 03", ["kletshok 03", "03", "kh3"]);
-  
+
   assert(room.matchesIdentifier("Kletshok 03"));
   assert(room.matchesIdentifier("kletshok 03"));
   assert(room.matchesIdentifier("KH 03"));
@@ -331,10 +351,10 @@ Deno.test("Room class matchesIdentifier works", () => {
 // Test new Room class filtering methods
 Deno.test("Room class previousBookings filters correctly", () => {
   const room = new Room("Test Room", "TR", ["test", "room"]);
-  
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
   // Booking for yesterday
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
@@ -347,7 +367,7 @@ Deno.test("Room class previousBookings filters correctly", () => {
     start: new Date(yesterday),
     end: new Date(yesterday.getTime() + 3600000),
   };
-  
+
   // Booking for today
   const todayBooking: Booking = {
     id: "booking-today",
@@ -358,7 +378,7 @@ Deno.test("Room class previousBookings filters correctly", () => {
     start: new Date(today),
     end: new Date(today.getTime() + 3600000),
   };
-  
+
   // Booking for tomorrow
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -371,21 +391,21 @@ Deno.test("Room class previousBookings filters correctly", () => {
     start: new Date(tomorrow),
     end: new Date(tomorrow.getTime() + 3600000),
   };
-  
+
   room.bookings = [yesterdayBooking, todayBooking, tomorrowBooking];
-  
+
   const previousBookings = room.previousBookings();
-  
+
   assertEquals(previousBookings.length, 1);
   assertEquals(previousBookings[0].id, "booking-yesterday");
 });
 
 Deno.test("Room class futureBookings filters correctly", () => {
   const room = new Room("Test Room", "TR", ["test", "room"]);
-  
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
   // Booking for yesterday
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
@@ -398,7 +418,7 @@ Deno.test("Room class futureBookings filters correctly", () => {
     start: new Date(yesterday),
     end: new Date(yesterday.getTime() + 3600000),
   };
-  
+
   // Booking for today
   const todayBooking: Booking = {
     id: "booking-today",
@@ -409,7 +429,7 @@ Deno.test("Room class futureBookings filters correctly", () => {
     start: new Date(today),
     end: new Date(today.getTime() + 3600000),
   };
-  
+
   // Booking for tomorrow
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -422,21 +442,21 @@ Deno.test("Room class futureBookings filters correctly", () => {
     start: new Date(tomorrow),
     end: new Date(tomorrow.getTime() + 3600000),
   };
-  
+
   room.bookings = [yesterdayBooking, todayBooking, tomorrowBooking];
-  
+
   const futureBookings = room.futureBookings();
-  
+
   assertEquals(futureBookings.length, 1);
   assertEquals(futureBookings[0].id, "booking-tomorrow");
 });
 
 Deno.test("Room class nextDaysBookings returns future bookings", () => {
   const room = new Room("Test Room", "TR", ["test", "room"]);
-  
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
   // Booking for today
   const todayBooking: Booking = {
     id: "booking-today",
@@ -447,7 +467,7 @@ Deno.test("Room class nextDaysBookings returns future bookings", () => {
     start: new Date(today),
     end: new Date(today.getTime() + 3600000),
   };
-  
+
   // Booking for tomorrow
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -460,7 +480,7 @@ Deno.test("Room class nextDaysBookings returns future bookings", () => {
     start: new Date(tomorrow),
     end: new Date(tomorrow.getTime() + 3600000),
   };
-  
+
   // Booking for day after tomorrow
   const dayAfterTomorrow = new Date(today);
   dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
@@ -473,11 +493,11 @@ Deno.test("Room class nextDaysBookings returns future bookings", () => {
     start: new Date(dayAfterTomorrow),
     end: new Date(dayAfterTomorrow.getTime() + 3600000),
   };
-  
+
   room.bookings = [todayBooking, tomorrowBooking, dayAfterBooking];
-  
+
   const nextDaysBookings = room.nextDaysBookings();
-  
+
   assertEquals(nextDaysBookings.length, 2);
   assertEquals(nextDaysBookings[0].id, "booking-tomorrow");
   assertEquals(nextDaysBookings[1].id, "booking-day-after");
@@ -485,14 +505,14 @@ Deno.test("Room class nextDaysBookings returns future bookings", () => {
 
 Deno.test("Room class helper methods work correctly", () => {
   const room = new Room("Test Room", "TR", ["test", "room"]);
-  
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
   // Booking for yesterday
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-  
+
   // Booking for today
   const todayBooking: Booking = {
     id: "booking-today",
@@ -503,7 +523,7 @@ Deno.test("Room class helper methods work correctly", () => {
     start: new Date(today),
     end: new Date(today.getTime() + 3600000),
   };
-  
+
   // Booking for tomorrow
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -516,9 +536,9 @@ Deno.test("Room class helper methods work correctly", () => {
     start: new Date(tomorrow),
     end: new Date(tomorrow.getTime() + 3600000),
   };
-  
+
   room.bookings = [todayBooking, tomorrowBooking];
-  
+
   assert(room.hasTodayBookings());
   assert(!room.hasPreviousBookings());
   assert(room.hasFutureBookings());
@@ -528,7 +548,7 @@ Deno.test("Room class helper methods work correctly", () => {
 // Test Room objects structure
 Deno.test("Room objects have correct structure", () => {
   assert(ROOMS.length > 0, "Should have at least one room");
-  
+
   for (const room of ROOMS) {
     assert(
       "canonicalName" in room && typeof room.canonicalName === "string",
@@ -542,7 +562,7 @@ Deno.test("Room objects have correct structure", () => {
       "aliases" in room && Array.isArray(room.aliases),
       "Room should have aliases array"
     );
-    
+
     // All aliases should be strings
     for (const alias of room.aliases) {
       assert(typeof alias === "string", "All aliases should be strings");

@@ -5,7 +5,7 @@
 - **Runtime**: Deno with Vite
 - **Frontend**: React 19+ with TypeScript
 - **UI**: Material-UI (MUI) v9 with TypeScript
-- **Calendar**: FullCalendar with TypeScript
+- **Calendar**: DayPilot Lite (`@daypilot/daypilot-lite-react`) with TypeScript
 - **State**: React Context API with typed hooks
 - **Auth**: Google OAuth 2.0
 - **API**: Google Calendar API

@@ -22,10 +22,11 @@ maintainable codebase.
 
 ## Calendar Component
 
-- **FullCalendar with TypeScript**:
-  - **Why**: FullCalendar is a widely used open-source library for displaying
-    and managing calendar events. It has TypeScript support and provides a range
-    of customization options for displaying events and availability.
+- **DayPilot Lite (`@daypilot/daypilot-lite-react`) with TypeScript**:
+  - **Why**: DayPilot Lite is a free open-source library that provides a
+    resource calendar (rooms as columns, time as rows). It has TypeScript
+    support and provides a range of customization options for displaying
+    events and availability.
 
 ## State Management
 
@@ -72,8 +73,8 @@ maintainable codebase.
   easier to understand, especially as the project grows.
 - **Community Support**: TypeScript has a large and active community, ensuring
   that you can find support and resources easily.
-- **Leverage Open-Source Libraries**: Using libraries like FullCalendar or
-  react-big-calendar for the calendar component and MUI for styling will save
+- **Leverage Open-Source Libraries**: Using libraries like DayPilot Lite
+  for the calendar component and MUI for styling will save
   development time and provide a polished UI out of the box.
 
 ## Next Steps
