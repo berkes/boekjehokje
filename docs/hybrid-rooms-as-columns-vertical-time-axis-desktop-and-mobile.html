@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hybrid — rooms as columns, vertical time axis</title>
+<style>
+  :root { font-family: Inter, system-ui, sans-serif; color: #111827; background: #eef1f5; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: #6b7280; font-size: 13px; margin: 0 0 20px; max-width: 920px; }
+  .daybar {
+    display: flex; align-items: center; gap: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 16px; box-shadow: 0 1px 3px rgba(0,0,0,.08); margin-bottom: 20px; flex-wrap: wrap;
+  }
+  .daybar .nav { font-size: 18px; color: #4b5563; cursor: pointer; user-select: none; }
+  .daybar .date { font-weight: 600; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+  .chip { border: 1px solid #d1d5db; border-radius: 999px; padding: 4px 12px; font-size: 12px; color: #374151; background: #fff; cursor: pointer; }
+  .chip.active { background: #111827; color: #fff; border-color: #111827; }
+  .boards { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; }
+  .board-label { font-size: 12px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .05em; margin: 0 0 10px; }
+  .desktop { width: 920px; max-width: 100%; }
+  .mobile { width: 370px; border: 10px solid #111827; border-radius: 36px; background: #fff; overflow: hidden; flex-shrink: 0; }
+
+  /* The grid: time column + one column per room */
+  .grid { display: grid; gap: 0; }
+  .grid .head {
+    position: sticky; top: 0; background: #fff; z-index: 2;
+    border-bottom: 2px solid #d1d5db; padding: 6px 4px 8px; text-align: center;
+  }
+  .grid .head .short { font-weight: 700; font-size: 14px; display: block; }
+  .grid .head .long { font-size: 10px; color: #6b7280; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .grid .head.time { text-align: right; font-size: 10px; color: #9ca3af; padding-right: 6px; border-bottom: none; }
+
+  .col { display: flex; flex-direction: column; padding: 0 2px; }
+  .seg { border-radius: 6px; margin: 1.5px 0; overflow: hidden; }
+  .free {
+    background: #ecfdf5; border: 1px dashed #34d399; color: #065f46;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  }
+  .free:hover { background: #d1fae5; }
+  .booked {
+    background: #e5e7eb; color: #374151;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 10px; white-space: nowrap;
+  }
+  .booked .who { font-weight: 700; }
+  .booked.unconfirmed .who { color: #b45309; }
+  .past { background: #f3f4f6; opacity: .55; }
+  .nowline { position: absolute; left: 0; right: 0; height: 0; border-top: 2px solid #ef4444; z-index: 3; }
+  .nowline span { background: #ef4444; color: #fff; font-size: 9px; padding: 0 4px; border-radius: 3px; position: absolute; left: 2px; top: -14px; }
+
+  .mobile .mhead { display: flex; align-items: center; gap: 8px; padding: 14px 16px; border-bottom: 1px solid #e5e7eb; }
+  .mobile .mhead .date { font-weight: 600; font-size: 14px; }
+  .mobile .mchips { display: flex; gap: 6px; overflow-x: auto; padding: 10px 12px; border-bottom: 1px solid #e5e7eb; }
+  .mobile .viewport { overflow-x: auto; overflow-y: hidden; }
+  .hint { font-size: 10px; color: #9ca3af; text-align: center; padding: 6px 0 10px; }
+
+  .legend { margin-top: 22px; font-size: 12px; color: #6b7280; max-width: 920px; }
+  .key { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin: 0 3px 0 10px; }
+</style>
+</head>
+<body>
+  <h1>Hybrid — rooms as columns, time vertical</h1>
+  <p class="sub">One vertical track per room. Free windows are green, dashed, tappable blocks with their time range inside. Booked windows are grey blocks labelled with booker and time, so users can judge whether a meeting will actually happen. Amber booker names are tentative bookings. Past hours sit above the red now-line, dimmed. Desktop shows all 7 rooms; mobile shows the identical columns, 2–3 visible, swipe horizontally or use the filter chips.</p>
+
+  <div class="boards">
+    <div class="desktop">
+      <p class="board-label">Desktop — all rooms, vertical tracks, full working day</p>
+      <div class="daybar">
+        <span class="nav">&lsaquo;</span>
+        <span class="date">Today, Tue 13 Oct</span>
+        <span class="nav">&rsaquo;</span>
+        <span class="chips">
+          <span class="chip active">All rooms</span>
+          <span class="chip">KH3</span><span class="chip">KH4</span><span class="chip">TK</span>
+          <span class="chip">VC3</span><span class="chip">BR1</span><span class="chip">BR2</span><span class="chip">Others</span>
+        </span>
+      </div>
+      <div class="board" id="desktopGrid"></div>
+    </div>
+
+    <div class="mobile">
+      <p class="board-label">Mobile — same columns, horizontally swipeable</p>
+      <div class="mhead">
+        <span class="nav">&lsaquo;</span><span class="date">Today, Tue 13 Oct</span><span class="nav">&rsaquo;</span>
+      </div>
+      <div class="mchips">
+        <span class="chip active">All</span><span class="chip">KH3</span><span class="chip">KH4</span>
+        <span class="chip">TK</span><span class="chip">VC3</span><span class="chip">BR1</span>
+        <span class="chip">BR2</span><span class="chip">Oth</span>
+      </div>
+      <div class="viewport">
+        <div style="position:relative; width: 660px;" id="mobileGrid"></div>
+      </div>
+      <p class="hint">swipe &rarr; for more rooms · filter chips pin one room</p>
+    </div>
+  </div>
+
+  <p class="legend">
+    Legend:<span class="key" style="background:#ecfdf5;border:1px dashed #34d399"></span>free, tappable
+    <span class="key" style="background:#e5e7eb"></span>booked (booker + time)
+    <span class="key" style="background:#f3f4f6;opacity:.6"></span>past hours
+    <span style="color:#ef4444">—</span> now line.
+    Blocks too narrow for a full name show initials; tap reveals booker, title and time.
+  </p>
+
+<script>
+  // [type, start, end, who, title, unconfirmed]  time in hours
+  const rooms = [
+    { short: 'KH3', long: 'Kletshok 03', segs: [
+      ['past', 9, 10.5], ['free', 10.5, 11], ['booked', 11, 12.5, 'A. Jansen', 'Sprint review'],
+      ['free', 12.5, 13.5], ['booked', 13.5, 15, 'B. Kessels', 'Arch board', true],
+      ['free', 15, 16.5], ['booked', 16.5, 17.25, 'M. de Vries', '1:1'] ] },
+    { short: 'KH4', long: 'Kletshok 04', segs: [
+      ['past', 9, 10], ['booked', 10, 11, 'S. Patel', 'Design sync'],
+      ['free', 11, 12], ['free', 12.5, 14], ['booked', 14, 15.5, 'Team Groenlanden', 'Bewonerscomité'],
+      ['free', 15.5, 17] ] },
+    { short: 'TK', long: 'Tuinkamer', segs: [
+      ['past', 9, 9.5], ['free', 9.5, 11], ['booked', 11, 12, 'L. Vermeulen', 'Client call'],
+      ['booked', 12.25, 13.25, 'R. Smit', 'Budget', true], ['free', 13.25, 17] ] },
+    { short: 'VC3', long: 'Vergaderruimte C3', segs: [
+      ['booked', 9, 10.5, 'HR', 'Onboarding'], ['booked', 10.75, 12, 'A. Jansen', 'Vendor demo'],
+      ['free', 12, 13.5], ['booked', 14, 15.5, 'S. Patel', 'Workshop'], ['free', 15.5, 17] ] },
+    { short: 'BR1', long: 'Brainstorm 1', segs: [
+      ['past', 9, 9.25], ['free', 9.25, 17] ] },
+    { short: 'BR2', long: 'Brainstorm 2', segs: [
+      ['past', 9, 10], ['booked', 10, 11, 'M. de Vries', 'Roadmap', true],
+      ['free', 11, 13], ['booked', 13, 14, 'L. Vermeulen', 'Interview'], ['free', 14, 17] ] },
+    { short: 'Oth', long: 'Others', segs: [
+      ['past', 9, 10], ['free', 10, 12], ['booked', 12.5, 14, 'P. Bakker', 'Training'],
+      ['free', 14, 17] ] },
+  ];
+
+  const DAY_START = 9, DAY_END = 17.25, PX_PER_H = 44, NOW = 13.75;
+
+  function fmt(h) {
+    const hh = Math.floor(h), mm = Math.round((h - hh) * 60);
+    return String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+  }
+  function segHtml(seg) {
+    const h = Math.max(14, (seg[2] - seg[1]) * PX_PER_H);
+    if (seg[0] === 'free') {
+      const label = (seg[2] - seg[1] >= 1) ? fmt(seg[1]) + '–' + fmt(seg[2]) : fmt(seg[1]);
+      return '<div class="seg free" style="height:' + h + 'px" title="Book ' + fmt(seg[1]) + '–' + fmt(seg[2]) + '">' + label + '</div>';
+    }
+    if (seg[0] === 'booked') {
+      const unc = seg[5] ? ' unconfirmed' : '';
+      const who = (seg[2] - seg[1] >= 1) ? seg[3] : seg[3].split(' ').map(w => w[0]).join('');
+      return '<div class="seg booked' + unc + '" style="height:' + h + 'px" title="' + seg[3] + ' — ' + seg[4] + ' (' + fmt(seg[1]) + '–' + fmt(seg[2]) + ')">' +
+        '<span class="who">' + who + '</span><span>' + fmt(seg[1]) + '–' + fmt(seg[2]) + '</span></div>';
+    }
+    return '<div class="seg booked past" style="height:' + h + 'px"></div>';
+  }
+  function colHtml(room) {
+    return '<div class="col">' + room.segs.map(segHtml).join('') + '</div>';
+  }
+  function gridHtml(list, colWidth) {
+    const totalH = (DAY_END - DAY_START) * PX_PER_H;
+    let hours = '';
+    for (let h = DAY_START; h <= DAY_END - 0.25; h += 1) {
+      const top = (h - DAY_START) * PX_PER_H;
+      hours += '<div style="position:absolute; top:' + top + 'px; font-size:9px; color:#c3c8cf;">' + fmt(h) + '</div>';
+    }
+    let head = '<div class="head time" style="grid-column:1">time</div>';
+    for (const r of list) {
+      head += '<div class="head"><span class="short">' + r.short + '</span><span class="long">' + r.long + '</span></div>';
+    }
+    const nowTop = (NOW - DAY_START) * PX_PER_H;
+    const nowline = '<div class="nowline" style="top:' + nowTop + 'px"><span>now</span></div>';
+    return '<div style="position:relative">' +
+      '<div style="position:relative; padding-top:30px;">' + hours + nowline + '</div>' +
+      '<div class="grid" style="grid-template-columns:38px repeat(' + list.length + ', ' + colWidth + 'fr); position:relative;">' +
+      head +
+      '<div class="col" style="padding-right:4px;"></div>' +
+      list.map(colHtml).join('') +
+      '</div></div>';
+  }
+  document.getElementById('desktopGrid').innerHTML = gridHtml(rooms, 1);
+  document.getElementById('mobileGrid').innerHTML = gridHtml(rooms, 1.1);
+</script>
+</body>
+</html>
