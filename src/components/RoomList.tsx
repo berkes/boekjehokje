@@ -29,9 +29,10 @@ const DUTCH_TEXT = {
 /**
  * Room list component
  * Displays all rooms with their bookings for the current week
+ * Uses Room class instances from useCalendar
  */
 export function RoomList(): React.JSX.Element {
-  const { roomBookings, isLoading, error, refresh } = useCalendar();
+  const { rooms, isLoading, error, refresh } = useCalendar();
 
   if (isLoading) {
     return (
@@ -74,7 +75,7 @@ export function RoomList(): React.JSX.Element {
     );
   }
 
-  if (roomBookings.length === 0) {
+  if (rooms.length === 0) {
     return (
       <Box sx={{ textAlign: "center", py: 4 }}>
         <Typography>{DUTCH_TEXT.noRooms}</Typography>
@@ -93,16 +94,13 @@ export function RoomList(): React.JSX.Element {
         </Typography>
       </Box>
       <Grid container spacing={2}>
-        {roomBookings.map((room, index) => {
-          return (
-            <Grid key={index}>
+        {rooms.map((room) => (
+          <Grid key={room.canonicalName}>
             <Item>
-              <RoomCard key={room.room} room={room} />
+              <RoomCard key={room.canonicalName} room={room} />
             </Item>
-            </Grid>
-          )
-        }
-        )}
+          </Grid>
+        ))}
       </Grid>
     </Box>
   );

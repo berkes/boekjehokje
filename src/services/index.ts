@@ -11,6 +11,8 @@ export {
   createCalendarService,
   getNextWeek,
   getThisWeek,
+  type Booking,
+  type WeekRange,
+  type Room,
+  ROOMS,
 } from "./CalendarService.ts";
-
-export type { Booking, RoomBookings, WeekRange } from "./CalendarService.ts";

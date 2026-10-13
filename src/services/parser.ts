@@ -1,21 +1,32 @@
 /**
- * Room parser - internal module
+ * Room parser for CalendarService
  *
  * Parses event summaries to extract room and booker information.
- * Uses room configuration from config.ts.
+ * Uses room configuration from rooms.ts.
+ * Populates Room instances with their bookings.
  */
 
 import {
   BOOKER_EXCLUSIONS,
-  CANONICAL_ROOMS,
-  ROOM_ALIASES,
-  type RoomName,
+  ROOM_ALIAS_MAP,
+  ROOMS,
   UNKNOWN_ROOM,
-} from "./config.ts";
+  UNKNOWN_ROOM_INSTANCE,
+  type Room,
+  type RoomName,
+  Room as RoomClass,
+  type Booking,
+} from "./rooms.ts";
+
+/**
+ * Google Calendar API event type
+ */
+import type { CalendarEvent } from "../utils/types.ts";
+
+export type { CalendarEvent, Room, RoomName, Booking };
 
 /**
  * Parsed event with extracted room and booker information
- * Internal type used during parsing
  */
 export interface ParsedEvent {
   id: string;
@@ -29,23 +40,6 @@ export interface ParsedEvent {
   status: string;
   sequence: number;
 }
-
-/**
- * Room events - events grouped by room
- * Internal type, not exported
- */
-export interface RoomEventsInternal {
-  room: RoomName;
-  events: ParsedEvent[];
-}
-
-/**
- * Google Calendar API event type
- * Imported from shared types to avoid duplication
- */
-import type { CalendarEvent } from "../types.ts";
-
-export type { CalendarEvent };
 
 /**
  * Check if a string looks like a person's name
@@ -83,19 +77,40 @@ export function normalizeRoomName(roomName: string): RoomName {
   const lowerName = roomName.toLowerCase().trim();
 
   // Check if it's already a canonical room name (exact match)
-  const canonicalRoomsLower = CANONICAL_ROOMS.map((r) => r.toLowerCase());
-  const index = canonicalRoomsLower.indexOf(lowerName);
-  if (index !== -1) {
-    // Return the canonical name (not the original input)
-    return CANONICAL_ROOMS[index];
+  const room = ROOM_ALIAS_MAP.get(lowerName);
+  if (room) {
+    return room.canonicalName;
   }
 
-  const canonicalName = ROOM_ALIASES[lowerName];
-  if (canonicalName) {
-    return canonicalName;
+  // Check for exact canonical name match (case-sensitive)
+  const normalizedInput = roomName.trim();
+  for (const r of ROOMS) {
+    if (r.canonicalName === normalizedInput) {
+      return r.canonicalName;
+    }
   }
 
   return UNKNOWN_ROOM;
+}
+
+/**
+ * Get the Room instance for a given identifier
+ */
+export function getRoom(roomName: string): Room | null {
+  const lowerName = roomName.toLowerCase().trim();
+  return ROOM_ALIAS_MAP.get(lowerName) || null;
+}
+
+/**
+ * Get the Room instance by its canonical name
+ */
+export function getRoomByCanonicalName(canonicalName: string): Room | null {
+  for (const room of ROOMS) {
+    if (room.canonicalName === canonicalName) {
+      return room;
+    }
+  }
+  return null;
 }
 
 /**
@@ -234,27 +249,96 @@ export function parseEvent(event: CalendarEvent): ParsedEvent {
 }
 
 /**
+ * Convert ParsedEvent to Booking
+ */
+export function toBooking(parsedEvent: ParsedEvent): Booking {
+  return {
+    id: parsedEvent.id,
+    uid: parsedEvent.uid,
+    summary: parsedEvent.summary,
+    room: parsedEvent.room,
+    booker: parsedEvent.booker,
+    start: parsedEvent.start,
+    end: parsedEvent.end,
+  };
+}
+
+/**
  * Parse and group events by room
  */
 export function parseAndGroupEvents(
   events: CalendarEvent[],
-): RoomEventsInternal[] {
+): { room: Room; bookings: Booking[] }[] {
   const parsedEvents = events.map(parseEvent);
-  const roomMap = new Map<RoomName, ParsedEvent[]>();
+  const roomMap = new Map<string, { room: Room; parsedEvents: ParsedEvent[] }>();
+
+  // Initialize all known rooms
+  for (const room of ROOMS) {
+    roomMap.set(room.canonicalName, { room, parsedEvents: [] });
+  }
 
   for (const event of parsedEvents) {
-    if (!roomMap.has(event.room)) {
-      roomMap.set(event.room, []);
+    const roomName = event.room;
+    
+    // Find the matching room
+    let roomEntry = roomMap.get(roomName);
+    
+    if (!roomEntry) {
+      // Try to find a room by identifier
+      const matchingRoom = getRoomByCanonicalName(roomName);
+      if (matchingRoom) {
+        roomEntry = roomMap.get(matchingRoom.canonicalName);
+      }
     }
-    roomMap.get(event.room)!.push(event);
+
+    if (!roomEntry) {
+      // Route to Unknown room for unmatched events
+      roomEntry = roomMap.get(UNKNOWN_ROOM);
+    }
+
+    if (roomEntry) {
+      roomEntry.parsedEvents.push(event);
+    }
   }
 
-  const result: RoomEventsInternal[] = [];
-  for (const [room, roomEvents] of roomMap) {
-    result.push({ room, events: roomEvents });
+  // Convert to array of Room with Bookings
+  const result: { room: Room; bookings: Booking[] }[] = [];
+  for (const [roomName, { room, parsedEvents }] of roomMap) {
+    // Only include rooms that have bookings
+    if (parsedEvents.length > 0) {
+      const bookings = parsedEvents.map(toBooking);
+      result.push({ room, bookings });
+    }
   }
 
-  result.sort((a, b) => a.room.localeCompare(b.room));
+  result.sort((a, b) => a.room.canonicalName.localeCompare(b.room.canonicalName));
 
   return result;
 }
+
+/**
+ * Populate Room instances with their bookings from parsed events
+ * Creates new Room instances to avoid modifying the original static instances
+ */
+export function populateRoomsWithBookings(
+  roomWithBookings: { room: Room; bookings: Booking[] }[],
+): Room[] {
+  const roomsWithData: Room[] = [];
+
+  for (const { room, bookings } of roomWithBookings) {
+    // Create a new Room instance with the same config
+    const newRoom = new RoomClass(
+      room.canonicalName,
+      room.shortName,
+      [...room.aliases],
+    );
+    
+    // Set the bookings on the new Room instance
+    newRoom.bookings = bookings;
+    roomsWithData.push(newRoom);
+  }
+
+  return roomsWithData;
+}
+
+export { ROOMS, CANONICAL_ROOMS, UNKNOWN_ROOM, UNKNOWN_ROOM_INSTANCE, createRooms } from "./rooms.ts";

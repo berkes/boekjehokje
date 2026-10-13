@@ -13,21 +13,17 @@ import { CALENDAR_ID } from "../utils/calendar/GoogleCalendarApiClient.ts";
 import { CalendarApiError } from "../utils/googleCalendarApi.ts";
 import {
   parseAndGroupEvents,
-  type ParsedEvent,
-  type RoomName,
-} from "../utils/rooms/index.ts";
+  populateRoomsWithBookings,
+  type Room,
+  ROOMS,
+  createRooms,
+  UNKNOWN_ROOM_INSTANCE,
+  type Booking,
+} from "./parser.ts";
 import type { CalendarEvent } from "../utils/types.ts";
 
 // Re-export CalendarApiError for use by other modules
 export { CalendarApiError };
-
-/**
- * Room events internal type from parser
- */
-type RoomEventsInternal = {
-  room: RoomName;
-  events: ParsedEvent[];
-};
 
 /**
  * A week range for querying events
@@ -37,27 +33,8 @@ export interface WeekRange {
   end: Date;
 }
 
-/**
- * A booking represents a room reservation
- */
-export interface Booking {
-  id: string;
-  uid: string;
-  summary: string;
-  room: RoomName;
-  booker: string | null;
-  start: Date;
-  end: Date;
-}
-
-/**
- * Room bookings - a room with all its bookings
- * This is the primary data structure returned by the service
- */
-export interface RoomBookings {
-  room: RoomName;
-  bookings: Booking[];
-}
+// Re-export Booking type for backward compatibility
+export type { Booking };
 
 /**
  * Get the current week range (Monday to Sunday)
@@ -95,39 +72,11 @@ export function getNextWeek(): WeekRange {
 }
 
 /**
- * Convert ParsedEvent to Booking (domain type)
- */
-function parsedEventToBooking(event: ParsedEvent): Booking {
-  return {
-    id: event.id,
-    uid: event.uid,
-    summary: event.summary,
-    room: event.room,
-    booker: event.booker,
-    start: event.start,
-    end: event.end,
-  };
-}
-
-/**
- * Convert RoomEventsInternal to RoomBookings
- */
-function roomEventsToRoomBookings(
-  roomEvents: RoomEventsInternal[],
-): RoomBookings[] {
-  return roomEvents.map(({ room, events }) => ({
-    room,
-    bookings: events.map(parsedEventToBooking),
-  }));
-}
-
-/**
  * Calendar Service
  *
  * Provides domain language API for fetching room bookings.
  * Uses dependency injection for CalendarApiClient to enable testing.
- * TODO: Make the Parser dependeny injected as well so we can test the public
- * api and its output without re-testing the parser entirely
+ * Returns Room instances populated with their bookings.
  */
 export class CalendarService {
   private apiClient: CalendarApiClient;
@@ -137,7 +86,7 @@ export class CalendarService {
    * Create a new Calendar Service
    *
    * @param apiClient - The calendar API client to use (injected dependency)
-   * @param config - Optional configuration
+   * @param calendarId - The calendar ID to fetch events from
    */
   constructor(apiClient: CalendarApiClient, calendarId: string) {
     this.apiClient = apiClient;
@@ -145,21 +94,37 @@ export class CalendarService {
   }
 
   /**
-   * Get all bookings for a specific week
+   * Get all rooms with their bookings for a specific week
    *
    * @param week - The week range to query (default: current week)
-   * @returns Promise resolving to array of RoomBookings
+   * @returns Promise resolving to array of Room instances with their bookings
    * @throws CalendarApiError on API errors
    */
-  async getBookings(week: WeekRange = getThisWeek()): Promise<RoomBookings[]> {
+  async getRoomsWithBookings(week: WeekRange = getThisWeek()): Promise<Room[]> {
     const events = await this.apiClient.fetchEvents(
       this.calendarId,
       week.start,
       week.end,
     );
 
-    const roomEvents = parseAndGroupEvents(events as CalendarEvent[]);
-    return roomEventsToRoomBookings(roomEvents);
+    const roomWithBookings = parseAndGroupEvents(events as CalendarEvent[]);
+    return populateRoomsWithBookings(roomWithBookings);
+  }
+
+  /**
+   * Get all bookings for a specific week (legacy method for backward compatibility)
+   *
+   * @param week - The week range to query (default: current week)
+   * @returns Promise resolving to array of RoomBookings (legacy format)
+   * @throws CalendarApiError on API errors
+   */
+  async getBookings(week: WeekRange = getThisWeek()): Promise<{ room: string; bookings: Booking[] }[]> {
+    const rooms = await this.getRoomsWithBookings(week);
+    
+    return rooms.map((room) => ({
+      room: room.canonicalName,
+      bookings: room.bookings,
+    }));
   }
 }
 
@@ -169,7 +134,6 @@ export class CalendarService {
  * Convenience factory function for creating a service with the real API client.
  *
  * @param accessToken - OAuth 2.0 access token
- * @param config - Optional configuration
  * @returns A new CalendarService instance
  */
 export async function createCalendarService(
@@ -182,3 +146,7 @@ export async function createCalendarService(
   const apiClient = new GoogleCalendarApiClient(accessToken);
   return new CalendarService(apiClient, CALENDAR_ID);
 }
+
+// Export Room type and helper functions
+export type { Room };
+export { ROOMS, createRooms, UNKNOWN_ROOM_INSTANCE };

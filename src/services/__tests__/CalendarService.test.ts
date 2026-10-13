@@ -11,6 +11,7 @@ import {
   getThisWeek,
 } from "../CalendarService.ts";
 import type { CalendarEvent } from "../../utils/types.ts";
+import { ROOMS } from "../rooms.ts";
 
 import { assert, assertEquals } from "@std/assert";
 import { assertSpyCallArg, assertSpyCalls, spy } from "@std/testing/mock";

@@ -11,15 +11,15 @@ import {
   type Booking,
   CalendarApiError,
   createCalendarService,
-  type RoomBookings,
+  type Room,
 } from "../services/index.ts";
 
 /**
  * Return type for useCalendar hook
  */
 export interface UseCalendarReturn {
-  /** All room bookings for the current week */
-  roomBookings: RoomBookings[];
+  /** All rooms with their bookings for the current week */
+  rooms: Room[];
   /** Whether data is currently loading */
   isLoading: boolean;
   /** Any error that occurred, or null */
@@ -28,25 +28,27 @@ export interface UseCalendarReturn {
   refresh: () => Promise<void>;
   /** Get bookings for a specific room */
   getBookingsForRoom: (roomName: string) => Booking[];
+  /** Get a specific room by name */
+  getRoomByName: (roomName: string) => Room | null;
 }
 
 /**
  * Custom hook for accessing calendar room booking data
  *
- * @returns Object with roomBookings, loading state, error, and refresh function
+ * @returns Object with rooms, loading state, error, and refresh function
  *
  * @example
  * ```typescript
  * function RoomList() {
- *   const { roomBookings, isLoading, error, refresh } = useCalendar();
+ *   const { rooms, isLoading, error, refresh } = useCalendar();
  *
  *   if (isLoading) return <div>Loading...</div>;
  *   if (error) return <div>Error: {error.message}</div>;
  *
  *   return (
  *     <div>
- *       {roomBookings.map(room => (
- *         <RoomCard key={room.room} room={room} />
+ *       {rooms.map(room => (
+ *         <RoomCard key={room.canonicalName} room={room} />
  *       ))}
  *     </div>
  *   );
@@ -55,7 +57,7 @@ export interface UseCalendarReturn {
  */
 export function useCalendar(): UseCalendarReturn {
   const { tokens } = useUser();
-  const [roomBookings, setRoomBookings] = useState<RoomBookings[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -68,7 +70,7 @@ export function useCalendar(): UseCalendarReturn {
 
     // Check if user has access token
     if (!tokens?.accessToken) {
-      setRoomBookings([]);
+      setRooms([]);
       setIsLoading(false);
       return;
     }
@@ -79,8 +81,8 @@ export function useCalendar(): UseCalendarReturn {
       // Create service with dependency injection
       const calendarService = await createCalendarService(tokens.accessToken);
 
-      const bookings = await calendarService.getBookings();
-      setRoomBookings(bookings);
+      const roomsWithBookings = await calendarService.getRoomsWithBookings();
+      setRooms(roomsWithBookings);
     } catch (err: unknown) {
       // Handle CalendarApiError and other errors
       if (err instanceof CalendarApiError) {
@@ -93,7 +95,7 @@ export function useCalendar(): UseCalendarReturn {
         console.error("Unknown calendar error:", err);
         setError(new Error(String(err)));
       }
-      setRoomBookings([]);
+      setRooms([]);
     } finally {
       setIsLoading(false);
     }
@@ -118,17 +120,28 @@ export function useCalendar(): UseCalendarReturn {
    */
   const getBookingsForRoom = useCallback(
     (roomName: string): Booking[] => {
-      const room = roomBookings.find((r) => r.room === roomName);
+      const room = rooms.find((r) => r.canonicalName === roomName);
       return room?.bookings || [];
     },
-    [roomBookings],
+    [rooms],
+  );
+
+  /**
+   * Get a specific room by name
+   */
+  const getRoomByName = useCallback(
+    (roomName: string): Room | null => {
+      return rooms.find((r) => r.canonicalName === roomName) || null;
+    },
+    [rooms],
   );
 
   return {
-    roomBookings,
+    rooms,
     isLoading,
     error,
     refresh,
     getBookingsForRoom,
+    getRoomByName,
   };
 }

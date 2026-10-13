@@ -2,7 +2,11 @@
  * Room card component
  *
  * Displays a room with its bookings for the current week.
- * Shows room name, number of bookings, and preview of events.
+ * Shows:
+ * - Previous bookings (greyed out)
+ * - Today's bookings (normal)
+ * - Future bookings (black)
+ * - "+N rest of week" for bookings from tomorrow onwards
  */
 
 import React from "react";
@@ -12,15 +16,15 @@ import CardHeader from "@mui/material/CardHeader";
 import Typography from "@mui/material/Typography";
 import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
-import { type RoomBookings } from "../services/CalendarService.ts";
+import Box from "@mui/material/Box";
+import type { Room } from "../services/index.ts";
 
 /**
  * Dutch text constants
  */
 const DUTCH_TEXT = {
-  bookings: "afspraken",
   today: "vandaag",
-  more: "meer",
+  restOfWeek: "rest van de week",
   unknown: "Onbekend",
   noBookings: "Geen afspraken deze week",
 } as const;
@@ -29,67 +33,137 @@ const DUTCH_TEXT = {
  * Props for RoomCard component
  */
 export interface RoomCardProps {
-  room: RoomBookings;
+  room: Room;
 }
 
 /**
  * Room card component
- * Displays room information and a preview of its bookings
+ * Displays room information with categorized bookings:
+ * - Previous bookings (greyed out)
+ * - Today's bookings (normal)
+ * - Future bookings (from tomorrow, as "+N rest of week")
  */
 export function RoomCard({ room }: RoomCardProps): React.JSX.Element {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Get today's bookings
-  const todayBookings = room.bookings.filter((booking) => {
-    const bookingDate = new Date(booking.start);
-    bookingDate.setHours(0, 0, 0, 0);
-    return bookingDate.getTime() === today.getTime();
-  });
+  // Get categorized bookings
+  const previousBookings = room.previousBookings();
+  const todayBookings = room.todayBookings();
+  const futureBookings = room.futureBookings();
 
-  // Sort bookings by start time
-  const sortedBookings = [...room.bookings].sort(
+  // Sort all bookings by start time for display
+  const allBookings = [...room.bookings].sort(
     (a, b) => a.start.getTime() - b.start.getTime(),
   );
+
+  // Check if there are any bookings
+  const hasBookings = room.bookings.length > 0;
 
   return (
     <Card>
       <CardHeader
-        title={room.room}
+        title={room.canonicalName}
         subheader={
-          <Stack direction="row" spacing={1}>
+          room.hasTodayBookings() && (
             <Chip
-              label={`${room.bookings.length} ${DUTCH_TEXT.bookings}`}
+              label={`${todayBookings.length} ${DUTCH_TEXT.today}`}
               size="small"
+              color="primary"
             />
-            {todayBookings.length > 0 && (
-              <Chip
-                label={`${todayBookings.length} ${DUTCH_TEXT.today}`}
-                size="small"
-                color="primary"
-              />
-            )}
-          </Stack>
+          )
         }
       />
       <CardContent>
-        {room.bookings.length > 0
+        {hasBookings
           ? (
             <Stack spacing={0.5}>
-              {sortedBookings.slice(0, 5).map((booking) => (
-                <Typography
-                  key={booking.id}
-                  variant="body2"
-                  color="text.secondary"
-                >
-                  {formatTime(booking.start)} -{" "}
-                  {booking.booker || DUTCH_TEXT.unknown}
-                </Typography>
-              ))}
-              {room.bookings.length > 5 && (
-                <Typography variant="body2" color="text.secondary">
-                  + {room.bookings.length - 5} {DUTCH_TEXT.more}
-                </Typography>
+              {/* Previous bookings (greyed out) */}
+              {previousBookings.length > 0 && (
+                <Stack spacing={0.5}>
+                  {previousBookings.slice(0, 3).map((booking) => (
+                    <Typography
+                      key={booking.id}
+                      variant="body2"
+                      color="text.disabled"
+                    >
+                      {formatTime(booking.start)} -{" "}
+                      {booking.booker || DUTCH_TEXT.unknown}
+                    </Typography>
+                  ))}
+                </Stack>
+              )}
+
+              {/* Today's bookings */}
+              {todayBookings.length > 0 && (
+                <Stack spacing={0.5}>
+                  {todayBookings.slice(0, 3).map((booking) => (
+                    <Typography
+                      key={booking.id}
+                      variant="body2"
+                      color="text.primary"
+                    >
+                      {formatTime(booking.start)} -{" "}
+                      {booking.booker || DUTCH_TEXT.unknown}
+                    </Typography>
+                  ))}
+                </Stack>
+              )}
+
+              {/* Future bookings - show first 2, then +N rest of week */}
+              {futureBookings.length > 0 && (
+                <Stack spacing={0.5}>
+                  {futureBookings.slice(0, 2).map((booking) => (
+                    <Typography
+                      key={booking.id}
+                      variant="body2"
+                      color="text.primary"
+                      sx={{ fontWeight: "bold" }}
+                    >
+                      {formatTime(booking.start)} -{" "}
+                      {booking.booker || DUTCH_TEXT.unknown}
+                    </Typography>
+                  ))}
+                  {futureBookings.length > 2 && (
+                    <Typography
+                      variant="body2"
+                      color="text.primary"
+                      sx={{ fontWeight: "bold" }}
+                    >
+                      +{futureBookings.length} {DUTCH_TEXT.restOfWeek}
+                    </Typography>
+                  )}
+                  {futureBookings.length === 2 && futureBookings.length > 0 && (
+                    <Typography
+                      variant="body2"
+                      color="text.primary"
+                      sx={{ fontWeight: "bold" }}
+                    >
+                      +{futureBookings.length} {DUTCH_TEXT.restOfWeek}
+                    </Typography>
+                  )}
+                </Stack>
+              )}
+
+              {/* If no previous, today, or future but has bookings, show all */}
+              {previousBookings.length === 0 && todayBookings.length === 0 && futureBookings.length === 0 && hasBookings && (
+                <Stack spacing={0.5}>
+                  {allBookings.slice(0, 3).map((booking) => (
+                    <Typography
+                      key={booking.id}
+                      variant="body2"
+                      color="text.primary"
+                    >
+                      {formatTime(booking.start)} -{" "}
+                      {booking.booker || DUTCH_TEXT.unknown}
+                    </Typography>
+                  ))}
+                  {allBookings.length > 3 && (
+                    <Typography variant="body2" color="text.secondary">
+                      +{allBookings.length - 3} {DUTCH_TEXT.restOfWeek}
+                    </Typography>
+                  )}
+                </Stack>
               )}
             </Stack>
           )
