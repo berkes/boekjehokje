@@ -76,7 +76,7 @@ export function RoomCard({ room }: RoomCardProps): React.JSX.Element {
         {room.bookings.length > 0
           ? (
             <Stack spacing={0.5}>
-              {sortedBookings.slice(0, 3).map((booking) => (
+              {sortedBookings.slice(0, 5).map((booking) => (
                 <Typography
                   key={booking.id}
                   variant="body2"
@@ -86,9 +86,9 @@ export function RoomCard({ room }: RoomCardProps): React.JSX.Element {
                   {booking.booker || DUTCH_TEXT.unknown}
                 </Typography>
               ))}
-              {room.bookings.length > 3 && (
+              {room.bookings.length > 5 && (
                 <Typography variant="body2" color="text.secondary">
-                  + {room.bookings.length - 3} {DUTCH_TEXT.more}
+                  + {room.bookings.length - 5} {DUTCH_TEXT.more}
                 </Typography>
               )}
             </Stack>

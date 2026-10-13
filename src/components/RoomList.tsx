@@ -5,12 +5,12 @@
  * Shows loading state, error state, and empty state.
  */
 
-import React from "react";
 import Box from "@mui/material/Box";
-import CircularProgress from "@mui/material/CircularProgress";
-import Stack from "@mui/material/Stack";
-import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
+import CircularProgress from "@mui/material/CircularProgress";
+import { default as Grid, default as Item } from "@mui/material/Grid";
+import Typography from "@mui/material/Typography";
+import React from "react";
 import { useCalendar } from "../hooks/useCalendar.ts";
 import { RoomCard } from "./RoomCard.tsx";
 
@@ -92,9 +92,18 @@ export function RoomList(): React.JSX.Element {
           {DUTCH_TEXT.subtitle}
         </Typography>
       </Box>
-      <Stack spacing={2}>
-        {roomBookings.map((room) => <RoomCard key={room.room} room={room} />)}
-      </Stack>
+      <Grid container spacing={2}>
+        {roomBookings.map((room, index) => {
+          return (
+            <Grid key={index}>
+            <Item>
+              <RoomCard key={room.room} room={room} />
+            </Item>
+            </Grid>
+          )
+        }
+        )}
+      </Grid>
     </Box>
   );
 }
