@@ -8,13 +8,13 @@
 
 import {
   BOOKER_EXCLUSIONS,
+  type Booking,
+  type Room,
+  Room as RoomClass,
   ROOM_ALIAS_MAP,
+  type RoomName,
   ROOMS,
   UNKNOWN_ROOM,
-  type Room,
-  type RoomName,
-  Room as RoomClass,
-  type Booking,
 } from "./rooms.ts";
 
 /**
@@ -22,7 +22,7 @@ import {
  */
 import type { CalendarEvent } from "../utils/types.ts";
 
-export type { CalendarEvent, Room, RoomName, Booking };
+export type { Booking, CalendarEvent, Room, RoomName };
 
 /**
  * Parsed event with extracted room and booker information
@@ -116,28 +116,42 @@ export function getRoomByCanonicalName(canonicalName: string): Room | null {
  * Extract room name from event summary
  */
 export function extractRoom(summary: string): RoomName {
-  const parts = summary.split(/[-\| ]/);
+  // Split on structural separators (- and |) first. A room name can span
+  // multiple words within one chunk (e.g. "02 stilte ruimte"), so try the
+  // whole chunk before falling back to individual words.
+  const chunks = summary.split(/[-|]/);
 
-  for (const part of parts) {
-    const trimmedPart = part.trim();
-    const normalized = normalizeRoomName(trimmedPart);
+  for (const chunk of chunks) {
+    const trimmedChunk = chunk.trim();
 
-    if (normalized !== UNKNOWN_ROOM) {
-      return normalized;
+    const chunkRoom = normalizeRoomName(trimmedChunk);
+    if (chunkRoom !== UNKNOWN_ROOM) {
+      return chunkRoom;
     }
 
-    const lowerPart = trimmedPart.toLowerCase();
-    const roomKeywords = [
-      "kletshok",
-      "stilteruimte",
-      "tuinkamer",
-      "vergader",
-      "workshop",
-      "c3",
-    ];
+    const parts = trimmedChunk.split(/\s+/);
 
-    if (roomKeywords.some((keyword) => lowerPart.includes(keyword))) {
-      return normalizeRoomName(trimmedPart);
+    for (const part of parts) {
+      const trimmedPart = part.trim();
+      const normalized = normalizeRoomName(trimmedPart);
+
+      if (normalized !== UNKNOWN_ROOM) {
+        return normalized;
+      }
+
+      const lowerPart = trimmedPart.toLowerCase();
+      const roomKeywords = [
+        "kletshok",
+        "stilteruimte",
+        "tuinkamer",
+        "vergader",
+        "workshop",
+        "c3",
+      ];
+
+      if (roomKeywords.some((keyword) => lowerPart.includes(keyword))) {
+        return normalizeRoomName(trimmedPart);
+      }
     }
   }
 
@@ -269,7 +283,10 @@ export function parseAndGroupEvents(
   events: CalendarEvent[],
 ): { room: Room; bookings: Booking[] }[] {
   const parsedEvents = events.map(parseEvent);
-  const roomMap = new Map<string, { room: Room; parsedEvents: ParsedEvent[] }>();
+  const roomMap = new Map<
+    string,
+    { room: Room; parsedEvents: ParsedEvent[] }
+  >();
 
   // Initialize all known rooms
   for (const room of ROOMS) {
@@ -278,10 +295,10 @@ export function parseAndGroupEvents(
 
   for (const event of parsedEvents) {
     const roomName = event.room;
-    
+
     // Find the matching room
     let roomEntry = roomMap.get(roomName);
-    
+
     if (!roomEntry) {
       // Try to find a room by identifier
       const matchingRoom = getRoomByCanonicalName(roomName);
@@ -310,7 +327,9 @@ export function parseAndGroupEvents(
     }
   }
 
-  result.sort((a, b) => a.room.canonicalName.localeCompare(b.room.canonicalName));
+  result.sort((a, b) =>
+    a.room.canonicalName.localeCompare(b.room.canonicalName)
+  );
 
   return result;
 }
@@ -331,7 +350,7 @@ export function populateRoomsWithBookings(
       room.shortName,
       [...room.aliases],
     );
-    
+
     // Set the bookings on the new Room instance
     newRoom.bookings = bookings;
     roomsWithData.push(newRoom);
@@ -340,4 +359,10 @@ export function populateRoomsWithBookings(
   return roomsWithData;
 }
 
-export { ROOMS, CANONICAL_ROOMS, UNKNOWN_ROOM, UNKNOWN_ROOM_INSTANCE, createRooms } from "./rooms.ts";
+export {
+  CANONICAL_ROOMS,
+  createRooms,
+  ROOMS,
+  UNKNOWN_ROOM,
+  UNKNOWN_ROOM_INSTANCE,
+} from "./rooms.ts";
