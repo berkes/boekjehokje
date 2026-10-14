@@ -40,7 +40,7 @@ function App(): React.JSX.Element {
   return (
     <React.Fragment>
       <CssBaseline enableColorScheme />
-      <Router>
+      <Router basename={import.meta.env.BASE_URL}>
         <UserProvider>
           <GoogleAuthWrapper clientId={clientId}>
             <AppBar position="static" color="primary" enableColorOnDark>

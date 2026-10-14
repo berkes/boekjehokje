@@ -51,6 +51,7 @@ jobs:
       - name: Run build
         run: deno task build
         env:
+          VITE_BASE: /boekjehokje/
           VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
 
       - name: Setup Pages
