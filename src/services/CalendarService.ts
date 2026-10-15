@@ -19,6 +19,7 @@ import {
   type Room,
   ROOMS,
   UNKNOWN_ROOM,
+  UNKNOWN_ROOM_DESCRIPTION,
   UNKNOWN_ROOM_INSTANCE,
 } from "./parser.ts";
 import type { CalendarEvent } from "../utils/types.ts";
@@ -152,4 +153,10 @@ export async function createCalendarService(
 
 // Export Room type and helper functions
 export type { Room };
-export { createRooms, ROOMS, UNKNOWN_ROOM, UNKNOWN_ROOM_INSTANCE };
+export {
+  createRooms,
+  ROOMS,
+  UNKNOWN_ROOM,
+  UNKNOWN_ROOM_DESCRIPTION,
+  UNKNOWN_ROOM_INSTANCE,
+};

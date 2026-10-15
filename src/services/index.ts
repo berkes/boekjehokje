@@ -15,5 +15,6 @@ export {
   type Room,
   ROOMS,
   UNKNOWN_ROOM,
+  UNKNOWN_ROOM_DESCRIPTION,
   type WeekRange,
 } from "./CalendarService.ts";

@@ -42,7 +42,7 @@ export function ProfileMenu(): React.JSX.Element {
   if (isLoggedIn) {
     return (
       <Box sx={{ flexGrow: 0 }}>
-        <Tooltip title="Open settings">
+        <Tooltip title="Instellingen openen">
           <IconButton
             onClick={handleOpenUserMenu}
             sx={{ p: 0 }}
@@ -55,10 +55,10 @@ export function ProfileMenu(): React.JSX.Element {
               sx={{ paddingRight: "1em", fontWeight: "bold" }}
               color="palette.primary.contrastText"
             >
-              {profile?.name || "Unknown"}
+              {profile?.name || "Onbekend"}
             </Typography>
             <Avatar
-              alt={profile?.name || "Unknown"}
+              alt={profile?.name || "Onbekend"}
               src={profile?.picture}
               slotProps={{
                 img: {
@@ -87,7 +87,7 @@ export function ProfileMenu(): React.JSX.Element {
           onClose={handleCloseUserMenu}
         >
           <MenuItem key="account" onClick={handleNavigateToSettings}>
-            <Typography sx={{ textAlign: "center" }}>Mijn Account</Typography>
+            <Typography sx={{ textAlign: "center" }}>Mijn account</Typography>
           </MenuItem>
           <MenuItem key="logout" onClick={handleLogout}>
             <Typography sx={{ textAlign: "center" }}>Uitloggen</Typography>

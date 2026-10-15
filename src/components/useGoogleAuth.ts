@@ -53,7 +53,7 @@ export function useGoogleAuth() {
         console.error("Failed to fetch Google People profile:", err);
         // Fallback to minimal profile
         const userProfile = {
-          name: "Unknown",
+          name: "Onbekend",
           email: "unknown@example.com",
         };
         const tokens: StorageAuthenticationTokens = {

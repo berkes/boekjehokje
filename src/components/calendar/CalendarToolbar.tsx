@@ -20,15 +20,6 @@ import {
 } from "../../utils/clock.ts";
 
 /**
- * Dutch text constants
- */
-const DUTCH_TEXT = {
-  previous: "Vorige",
-  next: "Volgende",
-  today: "Vandaag",
-} as const;
-
-/**
  * Minimum touch target for the quick navigation buttons
  */
 const DAY_BUTTON_MIN_WIDTH = 44;
@@ -65,7 +56,7 @@ export function CalendarToolbar(
     >
       <IconButton
         size="small"
-        aria-label={DUTCH_TEXT.previous}
+        aria-label="Vorige"
         onClick={() => onSelectDate(addDays(selectedDate, -1))}
       >
         <ChevronLeft />
@@ -75,11 +66,11 @@ export function CalendarToolbar(
         size="small"
         onClick={() => onSelectDate(startOfDay(now))}
       >
-        {DUTCH_TEXT.today}
+        Vandaag
       </Button>
       <IconButton
         size="small"
-        aria-label={DUTCH_TEXT.next}
+        aria-label="Volgende"
         onClick={() => onSelectDate(addDays(selectedDate, 1))}
       >
         <ChevronRight />

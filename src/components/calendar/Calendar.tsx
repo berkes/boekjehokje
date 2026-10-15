@@ -26,18 +26,6 @@ import {
 } from "./utils.tsx";
 
 /**
- * Dutch text constants
- */
-const DUTCH_TEXT = {
-  loading: "Laden...",
-  errorPrefix: "Fout: ",
-  retry: "Opnieuw proberen",
-  title: "Ruimtes",
-  subtitle: "Afspraken voor deze week",
-  noRooms: "Geen ruimtes gevonden.",
-} as const;
-
-/**
  * Static calendar configuration
  * Resources view: one column per room, time slots as rows
  */
@@ -122,7 +110,7 @@ export function CalendarView(): React.JSX.Element {
         }}
       >
         <CircularProgress />
-        <Typography>{DUTCH_TEXT.loading}</Typography>
+        <Typography>Laden...</Typography>
       </Box>
     );
   }
@@ -139,12 +127,9 @@ export function CalendarView(): React.JSX.Element {
           gap: 2,
         }}
       >
-        <Typography color="error">
-          {DUTCH_TEXT.errorPrefix}
-          {error.message}
-        </Typography>
+        <Typography color="error">Fout: {error.message}</Typography>
         <Button variant="contained" onClick={refresh}>
-          {DUTCH_TEXT.retry}
+          Opnieuw proberen
         </Button>
       </Box>
     );
@@ -153,7 +138,7 @@ export function CalendarView(): React.JSX.Element {
   if (rooms.length === 0) {
     return (
       <Box sx={{ textAlign: "center", py: 4 }}>
-        <Typography>{DUTCH_TEXT.noRooms}</Typography>
+        <Typography>Geen ruimtes gevonden.</Typography>
       </Box>
     );
   }
@@ -162,10 +147,10 @@ export function CalendarView(): React.JSX.Element {
     <Box>
       <Box sx={{ mb: 2 }}>
         <Typography variant="h4" gutterBottom>
-          {DUTCH_TEXT.title}
+          Ruimtes
         </Typography>
         <Typography variant="subtitle1" color="text.secondary">
-          {DUTCH_TEXT.subtitle}
+          Afspraken voor deze week
         </Typography>
       </Box>
       <Calendar rooms={rooms} />

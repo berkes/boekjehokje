@@ -168,6 +168,12 @@ export class Room {
 export const UNKNOWN_ROOM = "Unknown" as const;
 
 /**
+ * Description shown for bookings that could not be matched to a room
+ */
+export const UNKNOWN_ROOM_DESCRIPTION =
+  "Boekingen die we niet konden koppelen, bijvoorbeeld door een typefout";
+
+/**
  * Type for all possible room names (canonical names + unknown)
  */
 export type RoomName = string;

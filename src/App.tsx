@@ -20,16 +20,6 @@ import { BrowserRouter as Router, Link, Route, Routes } from "react-router-dom";
 import { Settings } from "./pages/index.ts";
 import { ProtectedRoute } from "./components/ProtectedRoute.tsx";
 
-// Dutch text constants per project plan (Keep UI in Dutch)
-const DUTCH_TEXT = {
-  title: "Boek je Hokje",
-  subtitle: "Ruimte boeken voor de NYMA Makersplaats",
-  loading: "Laden...",
-  welcome: "Welkom",
-  loginPrompt: "Meld je aan om ruimtes te boeken",
-  bookedBy: "Geboekt door",
-} as const;
-
 /**
  * Main application component
  * Wrapped with UserProvider and GoogleAuthWrapper
@@ -51,7 +41,7 @@ function App(): React.JSX.Element {
                   to="/"
                   sx={{ flexGrow: 1, textDecoration: "none", color: "inherit" }}
                 >
-                  {DUTCH_TEXT.title}
+                  Boek je Hokje
                 </Typography>
                 <ProfileMenu />
               </Toolbar>
@@ -96,7 +86,7 @@ function AppContent(): React.JSX.Element {
         }}
       >
         <CircularProgress />
-        <Typography>{DUTCH_TEXT.loading}</Typography>
+        <Typography>Laden...</Typography>
       </Box>
     );
   }
@@ -114,7 +104,7 @@ function AppContent(): React.JSX.Element {
       >
         <Stack>
           <Typography variant="subtitle1">
-            {DUTCH_TEXT.subtitle}
+            Ruimte boeken voor de NYMA Makersplaats
           </Typography>
         </Stack>
       </Box>
@@ -133,7 +123,7 @@ function LandingPage(): React.JSX.Element {
   return (
     <Box sx={{ textAlign: "center", py: 8 }}>
       <Typography variant="body1" sx={{ mt: 2, mb: 4 }}>
-        {DUTCH_TEXT.loginPrompt}
+        Log in om ruimtes te boeken
       </Typography>
       <GoogleAuthButton />
     </Box>

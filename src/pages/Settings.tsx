@@ -45,14 +45,14 @@ export function Settings(): React.JSX.Element {
           sx={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: 1 }}
         >
           <Typography component="dt" sx={{ fontWeight: "bold" }}>
-            name
+            Naam
           </Typography>
           <Typography component="dd">
             {profile!.name}
           </Typography>
 
           <Typography component="dt" sx={{ fontWeight: "bold" }}>
-            email
+            E-mail
           </Typography>
           <Typography component="dd">
             {profile!.email}

@@ -68,7 +68,7 @@ export async function fetchGooglePeopleProfile(
   const data: GooglePeopleProfile = await response.json();
 
   // Extract profile information
-  const name = data.names?.[0]?.displayName || "Unknown";
+  const name = data.names?.[0]?.displayName || "Onbekend";
   const email = data.emailAddresses?.[0]?.value || "";
   const picture = data.photos?.[0]?.url;
 

@@ -364,5 +364,6 @@ export {
   createRooms,
   ROOMS,
   UNKNOWN_ROOM,
+  UNKNOWN_ROOM_DESCRIPTION,
   UNKNOWN_ROOM_INSTANCE,
 } from "./rooms.ts";

@@ -9,7 +9,11 @@
  * Pure functions only, so they are unit-testable without rendering the
  * third-party component.
  */
-import { type Booking, UNKNOWN_ROOM } from "../../services/index.ts";
+import {
+  type Booking,
+  UNKNOWN_ROOM,
+  UNKNOWN_ROOM_DESCRIPTION,
+} from "../../services/index.ts";
 
 /**
  * DayPilot resource column shape
@@ -62,7 +66,7 @@ export function toDayPilotString(date: Date): string {
  */
 export function roomDescription(room: { canonicalName: string }): string {
   return room.canonicalName === UNKNOWN_ROOM
-    ? "Boekingen die we niet konden koppelen, bijvoorbeeld door een typfout"
+    ? UNKNOWN_ROOM_DESCRIPTION
     : room.canonicalName;
 }
 
