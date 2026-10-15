@@ -83,7 +83,7 @@
 
 - Follow the pure frontend architecture (Google Calendar = source of truth)
 - Keep UI in Dutch as specified in project plan
-- Keep UI text inline in the component JSX. 
+- Keep UI text inline in the component JSX.
 - Write Dutch UI text consistently: instructive form for actions and buttons,
   present/past tense for states, and one term per concept (e.g. `inloggen` for
   authentication)

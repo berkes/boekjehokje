@@ -33,7 +33,7 @@ export interface ParsedEvent {
   summary: string;
   room: RoomName;
   booker: string | null;
-  creatorEmail: string,
+  creatorEmail: string;
   start: Date;
   end: Date;
   created: Date;
