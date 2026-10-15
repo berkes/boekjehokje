@@ -7,9 +7,9 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
 import {
+  CalendarView,
   GoogleAuthButton,
   GoogleAuthWrapper,
-  RoomList,
 } from "./components/index.ts";
 import { UserProvider } from "./context/UserContext.tsx";
 import { useUser } from "./context/useUser.ts";
@@ -147,7 +147,7 @@ function MainContent(): React.JSX.Element {
   return (
     <Box>
       <Box component="section" sx={{ mb: 4 }}>
-        <RoomList />
+        <CalendarView />
       </Box>
     </Box>
   );

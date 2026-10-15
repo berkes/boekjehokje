@@ -11,3 +11,76 @@
  * More info on customizing MUI:
  * https://mui.com/material-ui/customization/
  */
+
+/*
+ * DayPilot theme bridge (explicit exception)
+ *
+ * DayPilot Lite renders with its own built-in "calendar_default" CSS theme,
+ * which does not follow the MUI theme. Below, the DayPilot classes used by
+ * the resources calendar are re-styled with the palette from src/theme.ts:
+ *   primary   #5d78ac
+ *   secondary #be1574
+ * and MUI's neutral greys, so the calendar matches the rest of the app.
+ */
+$primary: #5d78ac;
+$primary-dark: #3f5688;
+$secondary: #be1574;
+$border: #e0e0e0; // MUI grey.300, divider tone
+$header-bg: #f5f5f5; // MUI grey.100
+$text-secondary: rgba(0, 0, 0, 0.6); // MUI text.secondary
+
+.calendar_default_main {
+  border: 1px solid $border;
+  border-radius: 4px;
+  color: $text-secondary;
+  font-family: inherit;
+}
+
+.calendar_default_colheader,
+.calendar_default_corner_inner,
+.calendar_default_cornerright_inner {
+  background-color: $header-bg;
+  color: $text-secondary;
+}
+
+.calendar_default_colheader_inner {
+  padding: 8px 4px;
+  text-align: center;
+}
+
+.calendar_default_cell,
+.calendar_default_cell_business,
+.calendar_default_cell_inner {
+  border-color: $border;
+}
+
+.calendar_default_rowheader_inner,
+.calendar_default_rowheader_minutes {
+  color: $text-secondary;
+}
+
+/* Events: primary blue bar, with the bar (left edge) in secondary pink */
+.calendar_default_event {
+  background-color: rgba($primary, 0.15);
+  border-color: rgba($primary-dark, 0.4);
+  border-radius: 4px;
+}
+
+.calendar_default_event_inner {
+  background: none;
+  color: rgba(0, 0, 0, 0.87); // MUI text.primary
+  padding: 4px 6px;
+}
+
+.calendar_default_event_bar {
+  background-color: $secondary;
+}
+
+.calendar_default_event_bar_inner {
+  background: none;
+}
+
+/* The "now" indicator line */
+.calendar_default_now {
+  background-color: $secondary;
+}
