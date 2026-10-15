@@ -21,6 +21,10 @@ function booking(overrides: Partial<Booking>): Booking {
     summary: "Summary",
     room: "Kletshok 05",
     booker: null,
+    details: {
+      originalName: "Kletshok 05",
+      author: "booker@example.com",
+    },
     start: new Date(2026, 1, 19, 10, 0, 0),
     end: new Date(2026, 1, 19, 11, 0, 0),
     ...overrides,

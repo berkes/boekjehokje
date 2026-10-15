@@ -22,7 +22,7 @@ import {
 /**
  * Minimum touch target for the quick navigation buttons
  */
-const DAY_BUTTON_MIN_WIDTH = 44;
+const DAY_BUTTON_MIN_WIDTH = 34;
 
 /**
  * Props for CalendarToolbar component

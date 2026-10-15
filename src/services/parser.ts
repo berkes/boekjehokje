@@ -33,6 +33,7 @@ export interface ParsedEvent {
   summary: string;
   room: RoomName;
   booker: string | null;
+  creatorEmail: string,
   start: Date;
   end: Date;
   created: Date;
@@ -253,6 +254,7 @@ export function parseEvent(event: CalendarEvent): ParsedEvent {
     summary: event.summary,
     room,
     booker,
+    creatorEmail: event.creator.email || "onbekend",
     start: startDate,
     end: endDate,
     created: createdDate,
@@ -269,6 +271,10 @@ export function toBooking(parsedEvent: ParsedEvent): Booking {
     id: parsedEvent.id,
     uid: parsedEvent.uid,
     summary: parsedEvent.summary,
+    details: {
+      originalName: parsedEvent.summary,
+      author: parsedEvent.creatorEmail,
+    },
     room: parsedEvent.room,
     booker: parsedEvent.booker,
     start: parsedEvent.start,

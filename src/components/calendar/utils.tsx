@@ -101,6 +101,14 @@ export function toEvents(rooms: CalendarRoom[]): DayPilotEvent[] {
       end: toDayPilotString(booking.end),
       resource: room.canonicalName,
       toolTip: booking.summary,
+      bubbleHTML: `<dl>
+        <dt>Booker</dt><dd>${booking.booker} ${booking.details.author}</dd>
+        <dt>Summary</dt><dd>${booking.summary}</dd>
+        <dt>Original</dt><dd>${booking.details.originalName}</dd>
+        <dt>Room</dt><dd>${room.canonicalName}</dd>
+        <dt>Start</dt><dd>${booking.start.toLocaleString()}</dd>
+        <dt>End</dt><dd>${booking.end.toLocaleString()}</dd>
+      </dl>`
     }))
   );
 }

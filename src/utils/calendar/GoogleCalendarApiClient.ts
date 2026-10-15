@@ -50,6 +50,7 @@ function parseCalendarEvents(apiResponse: unknown): CalendarEvent[] {
       id?: string;
       uid?: string;
       summary?: string;
+      creator?: { email?: string };
       start?: { dateTime?: string; date?: string };
       end?: { dateTime?: string; date?: string };
       created?: string;
@@ -64,6 +65,7 @@ function parseCalendarEvents(apiResponse: unknown): CalendarEvent[] {
       id: event.id,
       uid: event.uid || "",
       summary: event.summary,
+      creator: event.creator || {},
       start: event.start || {},
       end: event.end || {},
       created: event.created || "",

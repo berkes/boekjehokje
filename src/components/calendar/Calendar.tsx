@@ -10,7 +10,6 @@ import { DayPilotCalendar } from "@daypilot/daypilot-lite-react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
-import Snackbar from "@mui/material/Snackbar";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import React, { useMemo, useState } from "react";
@@ -19,7 +18,6 @@ import { systemClock } from "../../utils/clock.ts";
 import { CalendarToolbar } from "./CalendarToolbar.tsx";
 import {
   type CalendarRoom,
-  roomDescription,
   toColumns,
   toDayPilotString,
   toEvents,
@@ -32,13 +30,13 @@ import {
 const CALENDAR_CONFIG = {
   viewType: "Resources",
   timeFormat: "Clock24Hours",
-  headerClickHandling: "Enabled",
+  headerClickHandling: "Disabled",
+  eventClickHandling: "Disabled",
+  eventRightClickHandling: "Enabled",
+  eventMoveHandling: "Disabled",
+  durationBarVisible: false,
+  hourWidth: 50,
 } as const;
-
-/**
- * How long the room info snackbar is shown, in milliseconds
- */
-const SNACKBAR_AUTO_HIDE_MS = 4000;
 
 /**
  * Props for Calendar component
@@ -54,7 +52,6 @@ export interface CalendarProps {
  */
 export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
   const [selectedDate, setSelectedDate] = useState(() => systemClock.now());
-  const [headerInfo, setHeaderInfo] = useState<string | null>(null);
 
   const columns = useMemo(() => toColumns(rooms), [rooms]);
   const events = useMemo(() => toEvents(rooms), [rooms]);
@@ -72,18 +69,6 @@ export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
         startDate={startDate}
         columns={columns}
         events={events}
-        onHeaderClicked={(args) => {
-          const room: CalendarRoom | undefined = rooms.find((r) =>
-            r.canonicalName === String(args.column.id)
-          );
-          setHeaderInfo(room ? roomDescription(room) : null);
-        }}
-      />
-      <Snackbar
-        open={headerInfo !== null}
-        message={headerInfo}
-        autoHideDuration={SNACKBAR_AUTO_HIDE_MS}
-        onClose={() => setHeaderInfo(null)}
       />
     </Stack>
   );

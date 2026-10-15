@@ -10,6 +10,9 @@ export interface CalendarEvent {
   id: string;
   uid: string;
   summary: string;
+  creator: {
+    email?: string,
+  }
   start: { dateTime?: string; date?: string };
   end: { dateTime?: string; date?: string };
   created: string;

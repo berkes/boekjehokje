@@ -59,6 +59,10 @@ $text-secondary: rgba(0, 0, 0, 0.6); // MUI text.secondary
   color: $text-secondary;
 }
 
+.calendar_default_rowheader_inner {
+    font-size: 12px;
+}
+
 /* Events: primary blue bar, with the bar (left edge) in secondary pink */
 .calendar_default_event {
   background-color: rgba($primary, 0.15);

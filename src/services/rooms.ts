@@ -14,6 +14,10 @@ export interface Booking {
   summary: string;
   room: string;
   booker: string | null;
+  details: {
+    originalName: string,
+    author: string,
+  },
   start: Date;
   end: Date;
 }

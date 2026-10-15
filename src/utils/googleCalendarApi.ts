@@ -101,6 +101,7 @@ function parseCalendarEvents(apiResponse: unknown): CalendarEvent[] {
       id?: string;
       uid?: string;
       summary?: string;
+      creator?: { email: string };
       start?: { dateTime?: string; date?: string };
       end?: { dateTime?: string; date?: string };
       created?: string;
@@ -119,6 +120,7 @@ function parseCalendarEvents(apiResponse: unknown): CalendarEvent[] {
       start: event.start || {},
       end: event.end || {},
       created: event.created || "",
+      creator: event.creator || { email: "" },
       updated: event.updated || "",
       status: event.status || "confirmed",
       sequence: event.sequence || 0,

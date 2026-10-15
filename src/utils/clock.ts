@@ -56,7 +56,7 @@ export function weekdayOptions(monday: Date): WeekdayOption[] {
     const date = new Date(monday);
     date.setDate(monday.getDate() + index);
     return {
-      label: date.toLocaleDateString("nl-NL", { weekday: "short" }),
+      label: date.toLocaleDateString("nl-NL", { weekday: "narrow" }),
       date,
     };
   });
