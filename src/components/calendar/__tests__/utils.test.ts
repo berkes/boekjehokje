@@ -8,6 +8,7 @@ import { assert, assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
 import type { Booking } from "../../../services/index.ts";
 import {
+  findBooking,
   roomDescription,
   toColumns,
   toDayPilotString,
@@ -91,6 +92,31 @@ describe("toEvents", () => {
       },
     ]);
     assertEquals(events[0].text, "Overleg");
+  });
+});
+
+describe("findBooking", () => {
+  it("finds a booking by id across rooms", () => {
+    const alice = booking({ id: "id-1", booker: "Alice" });
+    const bob = booking({ id: "id-2", booker: "Bob" });
+    const found = findBooking(
+      [
+        { canonicalName: "Kletshok 05", shortName: "KH05", bookings: [alice] },
+        { canonicalName: "Kletshok 04", shortName: "KH04", bookings: [bob] },
+      ],
+      "id-2",
+    );
+    assertEquals(found, bob);
+  });
+
+  it("returns null for an unknown id", () => {
+    assertEquals(
+      findBooking(
+        [{ canonicalName: "Kletshok 05", shortName: "KH05", bookings: [] }],
+        "missing",
+      ),
+      null,
+    );
   });
 });
 

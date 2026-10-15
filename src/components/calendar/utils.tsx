@@ -101,14 +101,20 @@ export function toEvents(rooms: CalendarRoom[]): DayPilotEvent[] {
       end: toDayPilotString(booking.end),
       resource: room.canonicalName,
       toolTip: booking.summary,
-      bubbleHTML: `<dl>
-        <dt>Booker</dt><dd>${booking.booker} ${booking.details.author}</dd>
-        <dt>Summary</dt><dd>${booking.summary}</dd>
-        <dt>Original</dt><dd>${booking.details.originalName}</dd>
-        <dt>Room</dt><dd>${room.canonicalName}</dd>
-        <dt>Start</dt><dd>${booking.start.toLocaleString()}</dd>
-        <dt>End</dt><dd>${booking.end.toLocaleString()}</dd>
-      </dl>`
     }))
   );
+}
+
+/**
+ * Find a booking by id across all rooms
+ */
+export function findBooking(
+  rooms: CalendarRoom[],
+  id: string,
+): Booking | null {
+  for (const room of rooms) {
+    const booking = room.bookings.find((b) => b.id === id);
+    if (booking) return booking;
+  }
+  return null;
 }

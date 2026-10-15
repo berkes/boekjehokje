@@ -10,14 +10,20 @@ import { DayPilotCalendar } from "@daypilot/daypilot-lite-react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
+import Drawer from "@mui/material/Drawer";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
 import React, { useMemo, useState } from "react";
 import { useCalendar } from "../../hooks/useCalendar.ts";
+import type { Booking } from "../../services/index.ts";
 import { systemClock } from "../../utils/clock.ts";
+import { BookingSidebar, SIDEBAR_WIDTH } from "./BookingSidebar.tsx";
 import { CalendarToolbar } from "./CalendarToolbar.tsx";
 import {
   type CalendarRoom,
+  findBooking,
   toColumns,
   toDayPilotString,
   toEvents,
@@ -31,7 +37,7 @@ const CALENDAR_CONFIG = {
   viewType: "Resources",
   timeFormat: "Clock24Hours",
   headerClickHandling: "Disabled",
-  eventClickHandling: "Disabled",
+  eventClickHandling: "Enabled",
   eventRightClickHandling: "Enabled",
   eventMoveHandling: "Disabled",
   durationBarVisible: false,
@@ -48,17 +54,47 @@ export interface CalendarProps {
 
 /**
  * Calendar component
- * Maps rooms to DayPilot columns and bookings to DayPilot events
+ * Maps rooms to DayPilot columns and bookings to DayPilot events.
+ * Clicking an event opens the booking sidebar.
  */
 export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
   const [selectedDate, setSelectedDate] = useState(() => systemClock.now());
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
 
   const columns = useMemo(() => toColumns(rooms), [rooms]);
   const events = useMemo(() => toEvents(rooms), [rooms]);
   const startDate = toDayPilotString(selectedDate);
 
-  return (
-    <Stack spacing={1}>
+  /**
+   * Open the sidebar with the booking belonging to the clicked event
+   */
+  const openSidebar = (id: string): void => {
+    setSelectedBooking(findBooking(rooms, id));
+  };
+
+  const closeSidebar = (): void => {
+    setSelectedBooking(null);
+  };
+
+  const selectedRoom = selectedBooking
+    ? rooms.find((room) => room.canonicalName === selectedBooking.room)
+    : undefined;
+
+  const sidebar = selectedBooking
+    ? (
+      <BookingSidebar
+        booking={selectedBooking}
+        room={selectedRoom}
+        onClose={closeSidebar}
+      />
+    )
+    : null;
+
+  const calendar = (
+    <React.Fragment>
       <CalendarToolbar
         selectedDate={selectedDate}
         onSelectDate={setSelectedDate}
@@ -69,7 +105,52 @@ export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
         startDate={startDate}
         columns={columns}
         events={events}
+        onEventClicked={(args) => openSidebar(String(args.e.id()))}
       />
+    </React.Fragment>
+  );
+
+  if (isDesktop) {
+    return (
+      <Stack direction="row" spacing={2}>
+        <Stack spacing={1} sx={{ flex: 1, minWidth: 0 }}>
+          {calendar}
+        </Stack>
+        {sidebar && (
+          <Box
+            sx={{
+              width: SIDEBAR_WIDTH,
+              flexShrink: 0,
+              p: 2,
+              borderTop: 1,
+              borderLeft: 1,
+              borderBottom: 1,
+              borderColor: "divider",
+              borderRadius: (theme) =>
+                `${theme.shape.borderRadius}px 0 0 ${theme.shape.borderRadius}px`,
+            }}
+          >
+            {sidebar}
+          </Box>
+        )}
+      </Stack>
+    );
+  }
+
+  return (
+    <Stack spacing={1}>
+      {calendar}
+      <Drawer
+        anchor="right"
+        open={selectedBooking !== null}
+        onClose={closeSidebar}
+      >
+        {sidebar && (
+          <Box sx={{ p: 2, width: SIDEBAR_WIDTH, maxWidth: "100vw" }}>
+            {sidebar}
+          </Box>
+        )}
+      </Drawer>
     </Stack>
   );
 }
