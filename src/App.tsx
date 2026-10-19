@@ -101,7 +101,6 @@ function AppContent(): React.JSX.Element {
           py: 2,
         }}
       >
-
       </Box>
 
       <Box component="main">
