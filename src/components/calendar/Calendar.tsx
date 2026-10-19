@@ -230,14 +230,6 @@ export function CalendarView(): React.JSX.Element {
 
   return (
     <Box>
-      <Box sx={{ mb: 2 }}>
-        <Typography variant="h4" gutterBottom>
-          Ruimtes
-        </Typography>
-        <Typography variant="subtitle1" color="text.secondary">
-          Afspraken voor deze week
-        </Typography>
-      </Box>
       <Calendar rooms={rooms} />
     </Box>
   );

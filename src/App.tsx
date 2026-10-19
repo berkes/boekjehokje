@@ -3,7 +3,6 @@ import "./App.scss";
 import CssBaseline from "@mui/material/CssBaseline";
 import Container from "@mui/material/Container";
 import Box from "@mui/material/Box";
-import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
 import {
@@ -102,11 +101,7 @@ function AppContent(): React.JSX.Element {
           py: 2,
         }}
       >
-        <Stack>
-          <Typography variant="subtitle1">
-            Ruimte boeken voor de NYMA Makersplaats
-          </Typography>
-        </Stack>
+
       </Box>
 
       <Box component="main">
@@ -122,6 +117,9 @@ function AppContent(): React.JSX.Element {
 function LandingPage(): React.JSX.Element {
   return (
     <Box sx={{ textAlign: "center", py: 8 }}>
+      <Typography variant="subtitle1">
+        Ruimte boeken voor de NYMA Makersplaats
+      </Typography>
       <Typography variant="body1" sx={{ mt: 2, mb: 4 }}>
         Log in om ruimtes te boeken
       </Typography>
