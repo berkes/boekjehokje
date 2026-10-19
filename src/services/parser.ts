@@ -146,8 +146,6 @@ export function extractRoom(summary: string): RoomName {
         "stilteruimte",
         "tuinkamer",
         "vergader",
-        "workshop",
-        "c3",
       ];
 
       if (roomKeywords.some((keyword) => lowerPart.includes(keyword))) {
@@ -283,12 +281,31 @@ export function toBooking(parsedEvent: ParsedEvent): Booking {
 }
 
 /**
+ * Names of calendar events that must be ignored entirely, for example
+ * placeholder bookings the source calendar uses to block a room from being
+ * booked. Matched against the event summary (trimmed, exact).
+ */
+const IGNORED_EVENT_SUMMARIES = [
+  "C3 workshopruimte Team NYMA makersplaats",
+] as const;
+
+/**
+ * Check if an event summary is on the ignore list
+ */
+export function isIgnoredEvent(summary: string): boolean {
+  const trimmed = summary.trim();
+  return IGNORED_EVENT_SUMMARIES.some((name) => name === trimmed);
+}
+
+/**
  * Parse and group events by room
  */
 export function parseAndGroupEvents(
   events: CalendarEvent[],
 ): { room: Room; bookings: Booking[] }[] {
-  const parsedEvents = events.map(parseEvent);
+  const parsedEvents = events
+    .filter((event) => !isIgnoredEvent(event.summary))
+    .map(parseEvent);
   const roomMap = new Map<
     string,
     { room: Room; parsedEvents: ParsedEvent[] }

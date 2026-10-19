@@ -13,6 +13,7 @@ import {
   extractRoom,
   isPersonName,
   normalizeRoomName,
+  parseAndGroupEvents,
   parseEvent,
   ROOMS,
   UNKNOWN_ROOM,
@@ -175,6 +176,7 @@ Deno.test("parseEvent", () => {
     id: "test-id",
     uid: "test-uid",
     summary: "05 kletshok - Peter",
+    creator: { email: "peter@example.com" },
     start: { dateTime: "2026-10-06T10:00:00Z" },
     end: { dateTime: "2026-10-06T11:00:00Z" },
     created: "2026-10-05T09:00:00Z",
@@ -272,6 +274,7 @@ Deno.test("Room class can have bookings set", () => {
     booker: "Peter",
     start: new Date("2026-10-13T10:00:00Z"),
     end: new Date("2026-10-13T11:00:00Z"),
+    details: { originalName: "Testboeking", author: "test@example.com" },
   };
 
   room.bookings = [booking];
@@ -291,6 +294,7 @@ Deno.test("Room class addBooking method works", () => {
     booker: "Peter",
     start: new Date("2026-10-13T10:00:00Z"),
     end: new Date("2026-10-13T11:00:00Z"),
+    details: { originalName: "Testboeking", author: "test@example.com" },
   };
 
   room.addBooking(booking);
@@ -314,6 +318,7 @@ Deno.test("Room class todayBookings filters correctly", () => {
     booker: "Peter",
     start: new Date(today),
     end: new Date(today.getTime() + 3600000), // 1 hour later
+    details: { originalName: "Testboeking", author: "test@example.com" },
   };
 
   // Booking for tomorrow
@@ -327,6 +332,7 @@ Deno.test("Room class todayBookings filters correctly", () => {
     booker: "Paul",
     start: new Date(tomorrow),
     end: new Date(tomorrow.getTime() + 3600000),
+    details: { originalName: "Testboeking", author: "test@example.com" },
   };
 
   room.bookings = [todayBooking, tomorrowBooking];
@@ -366,6 +372,7 @@ Deno.test("Room class previousBookings filters correctly", () => {
     booker: "Peter",
     start: new Date(yesterday),
     end: new Date(yesterday.getTime() + 3600000),
+    details: { originalName: "Testboeking", author: "test@example.com" },
   };
 
   // Booking for today
@@ -377,6 +384,7 @@ Deno.test("Room class previousBookings filters correctly", () => {
     booker: "Peter",
     start: new Date(today),
     end: new Date(today.getTime() + 3600000),
+    details: { originalName: "Testboeking", author: "test@example.com" },
   };
 
   // Booking for tomorrow
@@ -390,6 +398,7 @@ Deno.test("Room class previousBookings filters correctly", () => {
     booker: "Paul",
     start: new Date(tomorrow),
     end: new Date(tomorrow.getTime() + 3600000),
+    details: { originalName: "Testboeking", author: "test@example.com" },
   };
 
   room.bookings = [yesterdayBooking, todayBooking, tomorrowBooking];
@@ -417,6 +426,7 @@ Deno.test("Room class futureBookings filters correctly", () => {
     booker: "Peter",
     start: new Date(yesterday),
     end: new Date(yesterday.getTime() + 3600000),
+    details: { originalName: "Testboeking", author: "test@example.com" },
   };
 
   // Booking for today
@@ -428,6 +438,7 @@ Deno.test("Room class futureBookings filters correctly", () => {
     booker: "Peter",
     start: new Date(today),
     end: new Date(today.getTime() + 3600000),
+    details: { originalName: "Testboeking", author: "test@example.com" },
   };
 
   // Booking for tomorrow
@@ -441,6 +452,7 @@ Deno.test("Room class futureBookings filters correctly", () => {
     booker: "Paul",
     start: new Date(tomorrow),
     end: new Date(tomorrow.getTime() + 3600000),
+    details: { originalName: "Testboeking", author: "test@example.com" },
   };
 
   room.bookings = [yesterdayBooking, todayBooking, tomorrowBooking];
@@ -466,6 +478,7 @@ Deno.test("Room class nextDaysBookings returns future bookings", () => {
     booker: "Peter",
     start: new Date(today),
     end: new Date(today.getTime() + 3600000),
+    details: { originalName: "Testboeking", author: "test@example.com" },
   };
 
   // Booking for tomorrow
@@ -479,6 +492,7 @@ Deno.test("Room class nextDaysBookings returns future bookings", () => {
     booker: "Paul",
     start: new Date(tomorrow),
     end: new Date(tomorrow.getTime() + 3600000),
+    details: { originalName: "Testboeking", author: "test@example.com" },
   };
 
   // Booking for day after tomorrow
@@ -492,6 +506,7 @@ Deno.test("Room class nextDaysBookings returns future bookings", () => {
     booker: "Mary",
     start: new Date(dayAfterTomorrow),
     end: new Date(dayAfterTomorrow.getTime() + 3600000),
+    details: { originalName: "Testboeking", author: "test@example.com" },
   };
 
   room.bookings = [todayBooking, tomorrowBooking, dayAfterBooking];
@@ -522,6 +537,7 @@ Deno.test("Room class helper methods work correctly", () => {
     booker: "Peter",
     start: new Date(today),
     end: new Date(today.getTime() + 3600000),
+    details: { originalName: "Testboeking", author: "test@example.com" },
   };
 
   // Booking for tomorrow
@@ -535,6 +551,7 @@ Deno.test("Room class helper methods work correctly", () => {
     booker: "Paul",
     start: new Date(tomorrow),
     end: new Date(tomorrow.getTime() + 3600000),
+    details: { originalName: "Testboeking", author: "test@example.com" },
   };
 
   room.bookings = [todayBooking, tomorrowBooking];
@@ -546,6 +563,54 @@ Deno.test("Room class helper methods work correctly", () => {
 });
 
 // Test Room objects structure
+Deno.test("Workshopruimte is no longer a known room", () => {
+  assert(
+    !Array.from(CANONICAL_ROOMS).includes("Workshopruimte C3"),
+    "Workshopruimte C3 should not be a canonical room",
+  );
+  assert(
+    !ROOMS.some((room) => room.matchesIdentifier("workshop c3")),
+    "No room should match the workshop identifiers",
+  );
+  assertEquals(normalizeRoomName("workshop c3"), UNKNOWN_ROOM);
+  assertEquals(normalizeRoomName("workshopruimte c3"), UNKNOWN_ROOM);
+});
+
+Deno.test("parseAndGroupEvents ignores events on the ignore list", () => {
+  const blockingEvent: CalendarEvent = {
+    id: "blocking-1",
+    uid: "blocking-uid-1",
+    summary: "C3 workshopruimte Team NYMA makersplaats",
+    creator: { email: "team@example.com" },
+    start: { dateTime: "2026-10-06T09:00:00Z" },
+    end: { dateTime: "2026-10-06T17:00:00Z" },
+    created: "2026-10-01T09:00:00Z",
+    updated: "2026-10-01T09:00:00Z",
+    status: "confirmed",
+    sequence: 0,
+  };
+
+  const normalEvent: CalendarEvent = {
+    id: "event-1",
+    uid: "uid-1",
+    summary: "05 kletshok - Peter",
+    creator: { email: "peter@example.com" },
+    start: { dateTime: "2026-10-06T10:00:00Z" },
+    end: { dateTime: "2026-10-06T11:00:00Z" },
+    created: "2026-10-05T09:00:00Z",
+    updated: "2026-10-05T09:00:00Z",
+    status: "confirmed",
+    sequence: 0,
+  };
+
+  const result = parseAndGroupEvents([blockingEvent, normalEvent]);
+
+  assertEquals(result.length, 1, "Only the normal event should remain");
+  assertEquals(result[0].room.canonicalName, "Kletshok 05");
+  assertEquals(result[0].bookings.length, 1);
+  assertEquals(result[0].bookings[0].id, "event-1");
+});
+
 Deno.test("Room objects have correct structure", () => {
   assert(ROOMS.length > 0, "Should have at least one room");
 

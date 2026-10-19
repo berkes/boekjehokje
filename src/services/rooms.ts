@@ -280,16 +280,6 @@ export const ROOM_CONFIGS: {
       "vergaderruimte c3",
       "c3 vergaderruimte",
       "vergader c3",
-      "c3",
-    ],
-  },
-  {
-    canonicalName: "Workshopruimte C3",
-    shortName: "WS C3",
-    aliases: [
-      "workshopruimte c3",
-      "c3 workshopruimte",
-      "workshop c3",
     ],
   },
 ] as const;

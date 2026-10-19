@@ -28,6 +28,7 @@ function createMockEvent(
     id,
     uid,
     summary,
+    creator: { email: "boeker@example.com" },
     start: { dateTime: startDate },
     end: { dateTime: endDate },
     created: "2026-10-05T09:00:00Z",
