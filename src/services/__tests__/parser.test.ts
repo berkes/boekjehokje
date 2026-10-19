@@ -11,6 +11,7 @@ import {
   CANONICAL_ROOMS,
   extractBooker,
   extractRoom,
+  isIgnoredEvent,
   isPersonName,
   normalizeRoomName,
   parseAndGroupEvents,
@@ -77,7 +78,91 @@ Deno.test.each(
       expected: "Kletshok 03",
     },
     {
+      input: "kletshok 3",
+      expected: "Kletshok 03",
+    },
+    {
+      input: "Kletshok 4",
+      expected: "Kletshok 04",
+    },
+    {
+      input: "kletshok 5",
+      expected: "Kletshok 05",
+    },
+    {
+      input: "3 kletshok",
+      expected: "Kletshok 03",
+    },
+    {
+      input: "4 kletshok",
+      expected: "Kletshok 04",
+    },
+    {
+      input: "5 kletshok",
+      expected: "Kletshok 05",
+    },
+    {
+      input: "kh 3",
+      expected: "Kletshok 03",
+    },
+    {
+      input: "KH 4",
+      expected: "Kletshok 04",
+    },
+    {
+      input: "KH 5",
+      expected: "Kletshok 05",
+    },
+    {
+      input: "kletshok03",
+      expected: "Kletshok 03",
+    },
+    {
+      input: "kletshok4",
+      expected: "Kletshok 04",
+    },
+    {
+      input: "2 stilteruimte",
+      expected: "Stilteruimte",
+    },
+    {
+      input: "02 stilteruimte",
+      expected: "Stilteruimte",
+    },
+    {
+      input: "stilte ruimte 2",
+      expected: "Stilteruimte",
+    },
+    {
+      input: "2 stilte ruimte",
+      expected: "Stilteruimte",
+    },
+    {
+      input: "tuinkamer 6",
+      expected: "Tuinkamer",
+    },
+    {
+      input: "6 tuinkamer",
+      expected: "Tuinkamer",
+    },
+    {
+      input: "tuin kamer 6",
+      expected: "Tuinkamer",
+    },
+    {
+      input: "tuin kamer 06",
+      expected: "Tuinkamer",
+    },
+    {
       input: "vergaderruimte c3",
+      expected: "Vergaderruimte C3",
+    },
+    {
+      input: "c3 vergaderruimte",
+      expected: "Vergaderruimte C3",
+    },
+    {
+      input: "c3 vergader",
       expected: "Vergaderruimte C3",
     },
     // Unknown: "c3" alone does not name the Vergaderruimte
@@ -115,8 +200,24 @@ Deno.test.each(
       expected: "Kletshok 05",
     },
     {
+      input: "Kletskubus 4",
+      expected: "Kletshok 04",
+    },
+    {
+      input: "Kletshok 3 - Anna",
+      expected: "Kletshok 03",
+    },
+    {
       input: "Vergaderruimte C3 TABULA RASA",
-      expected: UNKNOWN_ROOM, // TODO: Handle this case - needs separator or better extraction
+      expected: "Vergaderruimte C3",
+    },
+    {
+      input: "C3 vergaderruimte TABULA",
+      expected: "Vergaderruimte C3",
+    },
+    {
+      input: "C3 Vergaderruimte / Club Goud",
+      expected: "Vergaderruimte C3",
     },
     {
       input: "06 Tuinkamer",
@@ -166,9 +267,59 @@ Deno.test.each(
       input: "04 Kletshok | Vincent unit 59",
       expected: "Vincent",
     },
+    {
+      name: "Room prefix without separator: C3 vergaderruimte TABULA",
+      input: "C3 vergaderruimte TABULA",
+      expected: "TABULA",
+    },
+    {
+      name: "Slash separator: C3 Vergaderruimte / Club Goud",
+      input: "C3 Vergaderruimte / Club Goud",
+      expected: "Club Goud",
+    },
   ],
 )("extractBooker($input) -> $expected", ({ input, expected }) => {
   const result = extractBooker(input);
+  assertEquals(result, expected);
+});
+
+Deno.test.each(
+  [
+    {
+      input: "C3 workshopruimte Team NYMA makersplaats",
+      expected: true,
+    },
+    {
+      input: "Inloopuurtje huurders",
+      expected: true,
+    },
+    {
+      input: "  Inloopuurtje huurders  ",
+      expected: true,
+    },
+    {
+      input: "bakwagen",
+      expected: true,
+    },
+    {
+      input: "De Bakwagen",
+      expected: true,
+    },
+    {
+      input: "BAKWAGEN bezet",
+      expected: true,
+    },
+    {
+      input: "05 kletshok - Peter",
+      expected: false,
+    },
+    {
+      input: "Inloopuurtje",
+      expected: false,
+    },
+  ],
+)("isIgnoredEvent($input) -> $expected", ({ input, expected }) => {
+  const result = isIgnoredEvent(input);
   assertEquals(result, expected);
 });
 
@@ -610,6 +761,54 @@ Deno.test("parseAndGroupEvents ignores events on the ignore list", () => {
   assertEquals(result[0].room.canonicalName, "Kletshok 05");
   assertEquals(result[0].bookings.length, 1);
   assertEquals(result[0].bookings[0].id, "event-1");
+});
+
+Deno.test("parseAndGroupEvents ignores the new ignore list entries", () => {
+  const ignoredEvents: CalendarEvent[] = [
+    {
+      id: "inloop-1",
+      uid: "inloop-uid-1",
+      summary: "Inloopuurtje huurders",
+      creator: { email: "team@example.com" },
+      start: { dateTime: "2026-10-06T09:00:00Z" },
+      end: { dateTime: "2026-10-06T17:00:00Z" },
+      created: "2026-10-01T09:00:00Z",
+      updated: "2026-10-01T09:00:00Z",
+      status: "confirmed",
+      sequence: 0,
+    },
+    {
+      id: "bakwagen-1",
+      uid: "bakwagen-uid-1",
+      summary: "Bakwagen C3 bezet",
+      creator: { email: "team@example.com" },
+      start: { dateTime: "2026-10-06T09:00:00Z" },
+      end: { dateTime: "2026-10-06T17:00:00Z" },
+      created: "2026-10-01T09:00:00Z",
+      updated: "2026-10-01T09:00:00Z",
+      status: "confirmed",
+      sequence: 0,
+    },
+  ];
+
+  const normalEvent: CalendarEvent = {
+    id: "event-1",
+    uid: "uid-1",
+    summary: "05 kletshok - Peter",
+    creator: { email: "peter@example.com" },
+    start: { dateTime: "2026-10-06T10:00:00Z" },
+    end: { dateTime: "2026-10-06T11:00:00Z" },
+    created: "2026-10-05T09:00:00Z",
+    updated: "2026-10-05T09:00:00Z",
+    status: "confirmed",
+    sequence: 0,
+  };
+
+  const result = parseAndGroupEvents([...ignoredEvents, normalEvent]);
+
+  assertEquals(result.length, 1, "Only the normal event should remain");
+  assertEquals(result[0].room.canonicalName, "Kletshok 05");
+  assertEquals(result[0].bookings.length, 1);
 });
 
 Deno.test("Room objects have correct structure", () => {

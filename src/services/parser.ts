@@ -67,6 +67,7 @@ export function isPersonName(str: string): boolean {
 const SEPARATORS = [
   /\s*-\s*/,
   /\s*\|\s*/,
+  /\s*\/\s*/,
   /\s+/,
 ] as const;
 
@@ -117,10 +118,10 @@ export function getRoomByCanonicalName(canonicalName: string): Room | null {
  * Extract room name from event summary
  */
 export function extractRoom(summary: string): RoomName {
-  // Split on structural separators (- and |) first. A room name can span
+  // Split on structural separators (-, | and /) first. A room name can span
   // multiple words within one chunk (e.g. "02 stilte ruimte"), so try the
-  // whole chunk before falling back to individual words.
-  const chunks = summary.split(/[-|]/);
+  // whole chunk before falling back to smaller pieces.
+  const chunks = summary.split(/[-|/]/);
 
   for (const chunk of chunks) {
     const trimmedChunk = chunk.trim();
@@ -131,6 +132,20 @@ export function extractRoom(summary: string): RoomName {
     }
 
     const parts = trimmedChunk.split(/\s+/);
+
+    // Try windows of consecutive words, so a room name is still found when
+    // the booker is appended without a separator (e.g. "C3 vergaderruimte
+    // TABULA" contains the alias "c3 vergaderruimte").
+    for (let start = 0; start < parts.length; start++) {
+      for (let end = parts.length; end > start + 1; end--) {
+        const windowText = parts.slice(start, end).join(" ");
+        const windowRoom = normalizeRoomName(windowText);
+
+        if (windowRoom !== UNKNOWN_ROOM) {
+          return windowRoom;
+        }
+      }
+    }
 
     for (const part of parts) {
       const trimmedPart = part.trim();
@@ -287,6 +302,16 @@ export function toBooking(parsedEvent: ParsedEvent): Booking {
  */
 const IGNORED_EVENT_SUMMARIES = [
   "C3 workshopruimte Team NYMA makersplaats",
+  "Inloopuurtje huurders",
+] as const;
+
+/**
+ * Substrings that hide an event entirely, regardless of the rest of the
+ * summary (e.g. anything with "bakwagen" in the name). Matched against the
+ * event summary (trimmed, case-insensitive).
+ */
+const IGNORED_EVENT_SUMMARY_SUBSTRINGS = [
+  "bakwagen",
 ] as const;
 
 /**
@@ -294,7 +319,15 @@ const IGNORED_EVENT_SUMMARIES = [
  */
 export function isIgnoredEvent(summary: string): boolean {
   const trimmed = summary.trim();
-  return IGNORED_EVENT_SUMMARIES.some((name) => name === trimmed);
+
+  if (IGNORED_EVENT_SUMMARIES.some((name) => name === trimmed)) {
+    return true;
+  }
+
+  const lowered = trimmed.toLowerCase();
+  return IGNORED_EVENT_SUMMARY_SUBSTRINGS.some((fragment) =>
+    lowered.includes(fragment)
+  );
 }
 
 /**
