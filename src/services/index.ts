@@ -18,3 +18,4 @@ export {
   UNKNOWN_ROOM_DESCRIPTION,
   type WeekRange,
 } from "./CalendarService.ts";
+export { isEditable, type UserProfileLike } from "./editability.ts";

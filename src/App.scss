@@ -96,3 +96,17 @@ $text-secondary: rgba(0, 0, 0, 0.6); // MUI text.secondary
 .calendar_default_now {
   background-color: $secondary;
 }
+/* Events the current user may not edit: greyed out (issue #13) */
+.calendar_default_event.event_read-only {
+  background-color: rgba(0, 0, 0, 0.08); // MUI grey.300-ish, low emphasis
+  border-color: rgba(0, 0, 0, 0.2);
+
+  .calendar_default_event_inner {
+    color: $text-secondary;
+  }
+
+  .calendar_default_event_bar,
+  .calendar_default_event_bar_inner {
+    background-color: rgba(0, 0, 0, 0.26); // MUI grey.400, neutral bar
+  }
+}
