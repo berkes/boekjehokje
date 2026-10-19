@@ -12,6 +12,7 @@ link to its replacement.
 | [0001](0001-playwright-e2e-and-agent-browser-testing.md) | Use Playwright for E2E testing, with containerized Google API mocks and agent-driven browser tooling              | accepted |
 | [0002](0002-hybrid-booking-workflow.md)                  | Support both room-first and time-first booking through a hybrid overview dashboard                                | accepted |
 | [0003](0003-pure-frontend-tech-stack.md)                 | Adopt a pure-frontend React 19 + TypeScript stack with MUI, DayPilot Lite, and Google Calendar as source of truth | accepted |
+| [0004](0004-editability-ownership.md)                    | Determine editability by creator-email ownership, evaluated in the frontend only                                  | proposed |
 
 ## Format
 

@@ -8,6 +8,7 @@ import { assert, assertEquals } from "@std/assert";
 import type { Booking } from "../../../services/index.ts";
 import {
   findBooking,
+  READ_ONLY_EVENT_CSS_CLASS,
   roomDescription,
   roomLabel,
   toColumns,
@@ -94,15 +95,18 @@ Deno.test("withUnknownLast does not change the input rooms", () => {
 });
 
 Deno.test("toEvents maps bookings to events on the room's resource", () => {
-  const events = toEvents([
-    {
-      canonicalName: "Kletshok 05",
-      shortName: "KH05",
-      bookings: [
-        booking({ booker: "Alice", summary: "Overleg" }),
-      ],
-    },
-  ]);
+  const events = toEvents(
+    [
+      {
+        canonicalName: "Kletshok 05",
+        shortName: "KH05",
+        bookings: [
+          booking({ booker: "Alice", summary: "Overleg" }),
+        ],
+      },
+    ],
+    { email: "booker@example.com" },
+  );
   assertEquals(events, [{
     id: "id-1",
     text: "Alice",
@@ -111,6 +115,31 @@ Deno.test("toEvents maps bookings to events on the room's resource", () => {
     resource: "Kletshok 05",
     toolTip: "Overleg",
   }]);
+});
+
+Deno.test("toEvents marks bookings of other users as read-only", () => {
+  const events = toEvents(
+    [
+      {
+        canonicalName: "Kletshok 05",
+        shortName: "KH05",
+        bookings: [booking({ booker: "Alice" })],
+      },
+    ],
+    { email: "someone.else@example.com" },
+  );
+  assertEquals(events[0].cssClass, READ_ONLY_EVENT_CSS_CLASS);
+});
+
+Deno.test("toEvents marks all bookings read-only without a profile", () => {
+  const events = toEvents([
+    {
+      canonicalName: "Kletshok 05",
+      shortName: "KH05",
+      bookings: [booking({})],
+    },
+  ]);
+  assertEquals(events[0].cssClass, READ_ONLY_EVENT_CSS_CLASS);
 });
 
 Deno.test("toEvents falls back to the summary when there is no booker", () => {

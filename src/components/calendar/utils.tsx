@@ -11,6 +11,7 @@
  */
 import {
   type Booking,
+  isEditable,
   UNKNOWN_ROOM,
   UNKNOWN_ROOM_DESCRIPTION,
 } from "../../services/index.ts";
@@ -34,6 +35,7 @@ export interface DayPilotEvent {
   end: string;
   resource: string;
   toolTip: string;
+  cssClass?: string;
 }
 
 /**
@@ -106,18 +108,34 @@ export function toColumns(rooms: CalendarRoom[]): DayPilotColumn[] {
 }
 
 /**
- * Map room bookings to calendar events
+ * CSS class applied to events the current user may not edit, so they are
+ * visually distinct from the user's own bookings (issue #13)
  */
-export function toEvents(rooms: CalendarRoom[]): DayPilotEvent[] {
+export const READ_ONLY_EVENT_CSS_CLASS = "event_read-only";
+
+/**
+ * Map room bookings to calendar events. Bookings that are not editable by
+ * the given user get the read-only CSS class so they look distinct.
+ */
+export function toEvents(
+  rooms: CalendarRoom[],
+  profile?: { email: string } | null,
+): DayPilotEvent[] {
   return rooms.flatMap((room) =>
-    room.bookings.map((booking) => ({
-      id: booking.id,
-      text: booking.booker || booking.summary,
-      start: toDayPilotString(booking.start),
-      end: toDayPilotString(booking.end),
-      resource: room.canonicalName,
-      toolTip: booking.summary,
-    }))
+    room.bookings.map((booking) => {
+      const event: DayPilotEvent = {
+        id: booking.id,
+        text: booking.booker || booking.summary,
+        start: toDayPilotString(booking.start),
+        end: toDayPilotString(booking.end),
+        resource: room.canonicalName,
+        toolTip: booking.summary,
+      };
+      if (!isEditable(booking, profile)) {
+        event.cssClass = READ_ONLY_EVENT_CSS_CLASS;
+      }
+      return event;
+    })
   );
 }
 
