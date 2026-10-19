@@ -22,9 +22,8 @@
 ```
 .
 ├── docs/              # Project documentation
-│   ├── tech_stack.md   # Stack rationale
-│   ├── project_plan.md # Features, scope, timeline
-│   └── workflow.md     # Booking workflow details
+│   ├── adr/            # Architecture Decision Records
+│   └── project_plan.md # Features, scope, timeline
 ├── src/               # Source code
 │   ├── App.tsx         # Main application
 │   ├── main.tsx        # Entry point
