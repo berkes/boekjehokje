@@ -64,6 +64,11 @@ describe("isEditable", () => {
     assertFalse(isEditable(booking({}), { email: "" }));
   });
 
+  it("is not editable when authenticated in Google but no email came back", () => {
+    const profileWithoutEmail = JSON.parse('{"email": null}');
+    assertFalse(isEditable(booking({}), profileWithoutEmail));
+  });
+
   it("is not editable when the booking has no creator email", () => {
     const unknownAuthor = booking({
       details: { originalName: "x", author: "onbekend" },
