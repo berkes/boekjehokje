@@ -1,5 +1,11 @@
 # Project Plan for "boekjehokje"
 
+> **Note**: This plan has been brought up to date with the current state of
+> the project. Items are marked as **Implemented** or refer to the GitHub
+> issue that tracks the remaining work. Architecture decisions now live in
+> `docs/adr/`; this document is scheduled for removal once the issues below
+> are confirmed.
+
 ## Overview
 
 The goal of this project is to create a web app called "boekjehokje" that
@@ -9,6 +15,9 @@ user-friendly interface for managing room bookings while allowing users to
 continue using Google Calendar directly if they prefer.
 
 ## Key Adjustments Based on Feedback
+
+**Status**: Implemented — these adjustments are settled scope, recorded in
+AGENTS.md and the ADRs.
 
 1. **No Strict Rule Enforcement**:
    - The tool should guide users but not enforce rules strictly.
@@ -33,138 +42,127 @@ continue using Google Calendar directly if they prefer.
 
 The "boekjehokje" web app will:
 
-1. **Integrate with Google Calendar**:
+1. **Integrate with Google Calendar** — **Implemented** (read path):
    - Use OAuth for authentication.
    - Fetch and display events from the shared Google Calendar.
 
-2. **Provide a Structured UI**:
+2. **Provide a Structured UI** — **Implemented**:
    - Offer a clean and intuitive interface for booking rooms.
    - Use Dutch language for the UI.
 
-3. **Guide Users**:
-   - Suggest available time slots.
-   - Provide visual cues for conflicts or double bookings.
+3. **Guide Users** — **Open**:
+   - Suggest available time slots — #17.
+   - Provide visual cues for conflicts or double bookings — #16.
 
-4. **Optional Usage**:
-   - Allow users to continue using Google Calendar directly if they prefer.
+4. **Optional Usage** — **Implemented**: direct Google Calendar usage is
+   unaffected by the design (Google Calendar remains the source of truth).
 
 ## Key Features
 
 1. **User Authentication**:
-   - Google OAuth for secure login.
-   - Allow users to set or change their name and contact information.
+   - Google OAuth for secure login — **Implemented**.
+   - Allow users to set or change their name and contact information —
+     **Open**, #18.
 
-2. **Room Management**:
+2. **Room Management** — **Implemented**:
    - List available rooms and their schedules.
    - Fetch room data from Google Calendar.
 
 3. **Booking System**:
-   - View available time slots for each room.
-   - Book a room by selecting a time slot.
-   - Visual cues for conflicts or double bookings.
+   - View available time slots for each room — **Implemented**.
+   - Book a room by selecting a time slot — **Open**: needs the write API
+     (#14) and the booking form (#15).
+   - Visual cues for conflicts or double bookings — **Open**, #16.
 
-4. **Local Storage**:
+4. **Local Storage** — **Implemented**:
    - Store user preferences and settings in localStorage.
 
 ## Technical Stack
 
-- **Frontend**: React.js with TypeScript for a responsive and dynamic UI.
-- **Authentication**: Google OAuth for user login.
-- **Google Calendar API**: For fetching and managing events.
-- **Local Storage**: For storing user-related data.
+**Status**: Implemented — decided in
+[ADR-0003](adr/0003-pure-frontend-tech-stack.md): React 19 with TypeScript,
+MUI, DayPilot Lite, Google OAuth, Google Calendar API, localStorage; Deno +
+Vite as the toolchain.
 
 ## Testing Strategy
 
-1. **Unit Testing**:
+1. **Unit Testing** — **Implemented** (services, parser, calendar utils;
+   Deno test runner):
    - Test individual frontend components.
-   - Use tools like Jest or React Testing Library.
+   - ~~Use tools like Jest or React Testing Library~~ — Deno's built-in test
+     runner is used instead.
 
-2. **Integration Testing**:
-   - Test interactions with the Google Calendar API.
-   - Use tools like Cypress or Playwright.
+2. **Integration Testing** — **Superseded**: covered by the E2E suite with
+   mocked Google APIs (ADR-0001), no separate integration layer.
 
-3. **End-to-End Testing**:
-   - Test user flows (e.g., booking a room).
-   - Use tools like Cypress or Playwright.
+3. **End-to-End Testing** — **Open**, #19: decided in
+   [ADR-0001](adr/0001-playwright-e2e-and-agent-browser-testing.md)
+   (Playwright); implementation pending.
 
-4. **Automated Testing Pipeline**:
-   - Set up continuous integration with GitHub Actions.
-   - Run tests on every push to the main branch.
+4. **Automated Testing Pipeline** — **Partially implemented**: GitHub
+   Actions runs fmt, lint and build on every push/PR; running the unit
+   tests in CI is missing — #20.
 
 ## Hosting and Deployment Strategy
 
-1. **Frontend Hosting**:
-   - Use a service like Vercel, Netlify, or GitHub Pages for fast and easy
-     deployment.
-
-2. **Continuous Deployment**:
-   - Automate deployments from the main branch to the hosting service.
-   - Use GitHub Actions for continuous deployment.
+**Status**: Implemented — GitHub Pages, deployed by GitHub Actions on tags
+(releases are cut as `vX.Y.Z` tags; see AGENTS.md "Releasing").
 
 ## Additional Questions for Discussion
 
-1. **Rooms and Resources**:
-   - What are the specific rooms or resources that need to be managed?
-   - What are the names and capacities of these rooms?
+**Status**: Resolved or superseded by the ADRs; no separate tracking needed.
 
-2. **Design Guidelines**:
-   - Are there any existing design guidelines or branding that the app should
-     follow?
-
-3. **Language Support**:
-   - Should the app support multiple languages in the future, or is Dutch
-     sufficient for now?
-
-4. **User Roles and Permissions**:
-   - Are there any specific user roles or permissions that need to be
-     considered?
-
-5. **Booking Workflow**:
-   - What is the preferred workflow for booking a room (e.g., selecting a room
-     first vs. selecting a time slot first)?
-
-6. **Analytics and Reporting**:
-   - Should the app include any analytics or reporting features (e.g., room
-     usage statistics)?
-
-7. **Accessibility Requirements**:
-   - Are there any specific accessibility requirements for the app?
-
-8. **Timeline**:
-   - What is the preferred timeline for the initial release and subsequent
-     updates?
+1. **Rooms and Resources** — resolved: rooms are configured in
+   `src/services/rooms.ts` (specific rooms plus interchangeable
+   "Kletshokken").
+2. **Design Guidelines** — resolved: MUI defaults (AGENTS.md).
+3. **Language Support** — resolved: Dutch for now (ADR-0002).
+4. **User Roles and Permissions** — resolved: none for the MVP; any
+   authenticated user may book.
+5. **Booking Workflow** — decided in
+   [ADR-0002](adr/0002-hybrid-booking-workflow.md): hybrid room-first and
+   time-first booking.
+6. **Analytics and Reporting** — out of scope for the MVP (see "Key
+   Adjustments").
+7. **Accessibility Requirements** — no specific requirements recorded;
+   MUI defaults apply.
+8. **Timeline** — superseded: continuous releases from `main` via tags.
 
 ## Tasks
 
-1. **Setup and Authentication**:
+1. **Setup and Authentication** — **Implemented**:
    - Initialize the project with React.js and TypeScript.
    - Set up Google OAuth for user authentication.
    - Implement localStorage for storing user preferences.
 
-2. **Integrate Google Calendar API**:
+2. **Integrate Google Calendar API** — **Implemented** (read-only):
    - Fetch events from the shared Google Calendar.
-   - Display events in the app’s UI.
+   - Display events in the app's UI.
 
-3. **Design and Implement UI**:
-   - Create a Dutch-language interface.
-   - Implement a calendar view for booking rooms.
-   - Add forms for booking and managing rooms.
+3. **Design and Implement UI** — **Partially implemented**:
+   - Create a Dutch-language interface — done.
+   - Implement a calendar view for booking rooms — done.
+   - Add forms for booking and managing rooms — **Open**: booking form
+     #15, edit/delete UI for own events #13.
 
-4. **Add Booking Logic**:
-   - Validate bookings to prevent conflicts.
-   - Enforce booking rules (e.g., no overlapping events).
+4. **Add Booking Logic** — **Open**:
+   - Validate bookings to prevent conflicts — #16 (guide, do not enforce).
+   - Enforce booking rules (e.g., no overlapping events) — superseded:
+     per the feedback above, conflicts are signalled, never blocked.
 
-5. **Testing**:
-   - Write unit tests for frontend components.
-   - Write integration tests for Google Calendar API interactions.
-   - Write end-to-end tests for user flows.
+5. **Testing** — **Partially implemented**:
+   - Write unit tests for frontend components — done (domain-level).
+   - Write integration tests for Google Calendar API interactions —
+     superseded by the mocked E2E suite (#19).
+   - Write end-to-end tests for user flows — **Open**, #19.
+   - Run tests on every push to main — **Open**, #20.
 
-6. **Deployment**:
-   - Deploy the frontend to Vercel, Netlify, or GitHub Pages.
-   - Set up continuous deployment using GitHub Actions.
+6. **Deployment** — **Implemented**:
+   - Deploy the frontend to GitHub Pages.
+   - Set up continuous deployment using GitHub Actions (on tags).
 
 ## Next Steps
 
-1. Discuss the proposed plan and gather feedback.
-2. Refine the plan based on the discussion.
-3. Begin implementing the first phase (setup and authentication).
+Superseded: the plan is agreed and being executed. Remaining work is tracked
+in the GitHub issues referenced above; see also open issues #12
+(AuthenticationService refactor) and #13 (editable "my" events).
