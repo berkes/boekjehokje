@@ -1,4 +1,4 @@
-# Determine editability by creator-email ownership, evaluated in the frontend only
+# Determine editability by creator-email ownership
 
 |           |             |
 | --------- | ----------- |
@@ -16,8 +16,7 @@ opening Google Calendar
 ([issue #13](https://github.com/berkes/boekjehokje/issues/13)), while bookings
 made by others must stay read-only so nobody changes a reservation they are not
 supposed to change. We must therefore decide, per booking, whether the current
-user may edit ("editability"), and where that decision lives — without calling
-or updating the Google Calendar API (UI only; persistence is tracked in #14).
+user may edit ("editability"), and where that decision lives.
 
 ## Decision Drivers
 
@@ -29,7 +28,6 @@ or updating the Google Calendar API (UI only; persistence is tracked in #14).
 - The Google Calendar `creator` object exposes the creator's email, which the
   existing `GoogleCalendarApiClient` already maps onto the booking
   (`details.author`).
-- This issue is UI-only: no write-back to Google Calendar yet.
 
 ## Considered Options
 
@@ -52,8 +50,7 @@ A booking is editable if and only if `booking.details.author`
 authenticated user, and the user is authenticated. Not authenticated, or an
 unknown creator email, means not editable. The predicate lives in
 `src/services/editability.ts` (`isEditable(booking, profile)`); components never
-inline the comparison. Until persistence (#14) lands, an edit or move only
-changes the in-memory state — the Google Calendar API is never called.
+inline the comparison.
 
 ### Consequences
 
@@ -63,16 +60,14 @@ changes the in-memory state — the Google Calendar API is never called.
 - Bad, because events created with an alias email that differs from the profile
   email would be considered read-only even if made by the same person (not
   observed in practice for this Workspace).
-- Bad, because until #14 lands, changes are volatile: they disappear on refresh,
-  since Google Calendar remains the source of truth.
 
 ## Validation
 
 - Unit tests in `src/services/__tests__/editability.test.ts` cover: matching
   email, differing email, case-insensitivity, whitespace, unauthenticated user,
   empty profile email and unknown creator email.
-- `deno lint` and `deno check` pass; the calendar only enables
-  `eventMoveHandling` for events the predicate accepts.
+- `deno lint` and `deno check` pass; the calendar only enables event moving for
+  events the predicate accepts.
 
 ## Pros and Cons of the Options
 
@@ -97,17 +92,19 @@ compared to the authenticated user's `profile.email`.
 ### Make all events editable without an ownership check
 
 - Good, because it is the simplest implementation.
-- Bad, because anyone could move or delete anyone's booking, which is
-  unacceptable for a shared resource calendar.
+- Bad, because anyone could move or delete anyone's booking, which is defeating
+  the purpose of the app.
 - Bad, because it contradicts the user story that others' bookings must be
   clearly marked read-only.
 
 ### Ask the Google Calendar API at render time
 
-- Good, because the API is authoritative.
+- Good, because the API is authoritative about the raw event data.
 - Bad, because it needs extra API round-trips per booking, while the creator
   email is already available in the fetched event.
-- Bad, because this issue is UI-only: no calls to the Google Calendar API.
+- Bad, because the API carries no business logic about who may edit an event:
+  anyone with access can edit any item, so it cannot answer the editability
+  question for us.
 
 ## More Information
 
