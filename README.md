@@ -16,6 +16,5 @@ you prefer.
 
 ## For more information
 
-- Project plan and features: see [docs/project_plan.md](docs/project_plan.md)
 - Workflow details: see [ADR-0002](docs/adr/0002-hybrid-booking-workflow.md)
 - Technical stack: see [ADR-0003](docs/adr/0003-pure-frontend-tech-stack.md)

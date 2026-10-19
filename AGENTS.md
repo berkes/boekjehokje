@@ -22,8 +22,7 @@
 ```
 .
 ├── docs/              # Project documentation
-│   ├── adr/            # Architecture Decision Records
-│   └── project_plan.md # Features, scope, timeline
+│   └── adr/            # Architecture Decision Records
 ├── src/               # Source code
 │   ├── App.tsx         # Main application
 │   ├── main.tsx        # Entry point
@@ -81,7 +80,7 @@
 ### Do
 
 - Follow the pure frontend architecture (Google Calendar = source of truth)
-- Keep UI in Dutch as specified in project plan
+- Keep UI in Dutch as specified in ADR-0002
 - Keep UI text inline in the component JSX.
 - Write Dutch UI text consistently: instructive form for actions and buttons,
   present/past tense for states, and one term per concept (e.g. `inloggen` for
@@ -93,7 +92,7 @@
 ### Don't
 
 - Implement admin dashboards (out of scope for MVP)
-- Add email or in-app notifications (per project plan)
+- Add email or in-app notifications (out of scope, see ADR-0003)
 - Store event data anywhere but Google Calendar
 - Block direct Google Calendar usage by users
 - Add features without updating corresponding docs
