@@ -33,6 +33,7 @@ export interface AuthenticationState {
 export const STORAGE_KEYS = {
   USER_PREFERENCES: "boekjehokje_user_prefs",
   AUTHENTICATION: "boekjehokje_authentication",
+  HIDDEN_ROOMS: "boekjehokje_hidden_rooms",
 } as const;
 
 /**

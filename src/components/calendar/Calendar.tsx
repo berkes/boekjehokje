@@ -21,6 +21,8 @@ import type { Booking } from "../../services/index.ts";
 import { systemClock } from "../../utils/clock.ts";
 import { BookingSidebar, SIDEBAR_WIDTH } from "./BookingSidebar.tsx";
 import { CalendarToolbar } from "./CalendarToolbar.tsx";
+import { RoomVisibiltyControls } from "./RoomVisibiltyControls.tsx";
+import { useRoomVisibility } from "./useRoomVisibility.ts";
 import {
   type CalendarRoom,
   findBooking,
@@ -66,8 +68,10 @@ export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
 
-  const columns = useMemo(() => toColumns(rooms), [rooms]);
-  const events = useMemo(() => toEvents(rooms), [rooms]);
+  const { rooms: visibleRooms, hidden, toggle } = useRoomVisibility(rooms);
+
+  const columns = useMemo(() => toColumns(visibleRooms), [visibleRooms]);
+  const events = useMemo(() => toEvents(visibleRooms), [visibleRooms]);
   const startDate = toDayPilotString(selectedDate);
 
   /**
@@ -81,15 +85,15 @@ export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
     setSelectedBooking(null);
   };
 
-  const headerHtml = (header: {name: string, toolTip: string}): string => {
-    let description = '';
+  const headerHtml = (header: { name: string; toolTip: string }): string => {
+    let description = "";
     if (header.toolTip.length > 20) {
-      description = header.toolTip.substring(0, 20).concat('...');
+      description = header.toolTip.substring(0, 20).concat("...");
     } else {
       description = header.toolTip;
     }
     return `<div><strong>${header.name}</strong><br/><span class="subtitle">${description}</div>`;
-  }
+  };
 
   const selectedRoom = selectedBooking
     ? rooms.find((room) => room.canonicalName === selectedBooking.room)
@@ -112,13 +116,15 @@ export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
         onSelectDate={setSelectedDate}
         clock={systemClock}
       />
+      <RoomVisibiltyControls rooms={rooms} hidden={hidden} onToggle={toggle} />
       <DayPilotCalendar
         {...CALENDAR_CONFIG}
         startDate={startDate}
         columns={columns}
         events={events}
         onEventClicked={(args) => openSidebar(String(args.e.id()))}
-        onBeforeHeaderRender={(args) => args.header.html = headerHtml(args.header)}
+        onBeforeHeaderRender={(args) =>
+          args.header.html = headerHtml(args.header)}
       />
     </React.Fragment>
   );

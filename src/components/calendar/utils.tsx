@@ -62,31 +62,47 @@ export function toDayPilotString(date: Date): string {
 }
 
 /**
+ * Whether this is the special Unknown room
+ */
+export function isUnknownRoom(room: { canonicalName: string }): boolean {
+  return room.canonicalName === UNKNOWN_ROOM;
+}
+
+/**
  * Long description of a room, shown as tooltip
  */
 export function roomDescription(room: { canonicalName: string }): string {
-  return room.canonicalName === UNKNOWN_ROOM
-    ? UNKNOWN_ROOM_DESCRIPTION
-    : room.canonicalName;
+  return isUnknownRoom(room) ? UNKNOWN_ROOM_DESCRIPTION : room.canonicalName;
+}
+
+/**
+ * Label of a room column: the full canonical name, except for the
+ * Unknown room whose description is too long for a label
+ */
+export function roomLabel(
+  room: { canonicalName: string; shortName: string },
+): string {
+  return isUnknownRoom(room) ? room.shortName : room.canonicalName;
+}
+
+/**
+ * Rooms in display order: the Unknown room always last
+ */
+export function withUnknownLast(rooms: CalendarRoom[]): CalendarRoom[] {
+  return [...rooms].sort((a, b) =>
+    isUnknownRoom(a) ? 1 : isUnknownRoom(b) ? -1 : 0
+  );
 }
 
 /**
  * Map rooms to calendar columns (resources), with Unknown always last
  */
 export function toColumns(rooms: CalendarRoom[]): DayPilotColumn[] {
-  return [...rooms]
-    .sort((a, b) =>
-      a.canonicalName === UNKNOWN_ROOM
-        ? 1
-        : b.canonicalName === UNKNOWN_ROOM
-        ? -1
-        : 0
-    )
-    .map((room) => ({
-      id: room.canonicalName,
-      name: room.shortName,
-      toolTip: roomDescription(room),
-    }));
+  return withUnknownLast(rooms).map((room) => ({
+    id: room.canonicalName,
+    name: room.shortName,
+    toolTip: roomDescription(room),
+  }));
 }
 
 /**

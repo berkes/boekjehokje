@@ -77,12 +77,13 @@ Deno.test.each(
       expected: "Kletshok 03",
     },
     {
-      input: "c3",
-      expected: "Vergaderruimte C3",
-    },
-    {
       input: "vergaderruimte c3",
       expected: "Vergaderruimte C3",
+    },
+    // Unknown: "c3" alone does not name the Vergaderruimte
+    {
+      input: "c3",
+      expected: UNKNOWN_ROOM,
     },
     // Unknown
     {
