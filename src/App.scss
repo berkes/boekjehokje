@@ -46,6 +46,14 @@ $text-secondary: rgba(0, 0, 0, 0.6); // MUI text.secondary
 .calendar_default_colheader_inner {
   padding: 8px 4px;
   text-align: center;
+  .subtitle {
+    font-size: 12px;
+  }
+  @media (max-width: 600px) {
+    .subtitle {
+      display: none;
+    }
+  }
 }
 
 .calendar_default_cell,

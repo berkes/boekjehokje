@@ -41,6 +41,8 @@ const CALENDAR_CONFIG = {
   eventRightClickHandling: "Enabled",
   eventMoveHandling: "Disabled",
   durationBarVisible: false,
+  headerHeightAutoFit: false,
+  headerHeight: 50,
   hourWidth: 50,
 } as const;
 
@@ -79,6 +81,16 @@ export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
     setSelectedBooking(null);
   };
 
+  const headerHtml = (header: {name: string, toolTip: string}): string => {
+    let description = '';
+    if (header.toolTip.length > 20) {
+      description = header.toolTip.substring(0, 20).concat('...');
+    } else {
+      description = header.toolTip;
+    }
+    return `<div><strong>${header.name}</strong><br/><span class="subtitle">${description}</div>`;
+  }
+
   const selectedRoom = selectedBooking
     ? rooms.find((room) => room.canonicalName === selectedBooking.room)
     : undefined;
@@ -106,6 +118,7 @@ export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
         columns={columns}
         events={events}
         onEventClicked={(args) => openSidebar(String(args.e.id()))}
+        onBeforeHeaderRender={(args) => args.header.html = headerHtml(args.header)}
       />
     </React.Fragment>
   );
