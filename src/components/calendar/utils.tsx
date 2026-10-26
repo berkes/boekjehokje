@@ -35,7 +35,7 @@ export interface DayPilotEvent {
   end: string;
   resource: string;
   toolTip: string;
-  cssClass?: string;
+  editable: boolean;
 }
 
 /**
@@ -123,6 +123,8 @@ export function toEvents(
 ): DayPilotEvent[] {
   return rooms.flatMap((room) =>
     room.bookings.map((booking) => {
+      const editable = isEditable(booking, profile);
+
       const event: DayPilotEvent = {
         id: booking.id,
         text: booking.booker || booking.summary,
@@ -130,10 +132,9 @@ export function toEvents(
         end: toDayPilotString(booking.end),
         resource: room.canonicalName,
         toolTip: booking.summary,
+        editable: editable,
       };
-      if (!isEditable(booking, profile)) {
-        event.cssClass = READ_ONLY_EVENT_CSS_CLASS;
-      }
+
       return event;
     })
   );

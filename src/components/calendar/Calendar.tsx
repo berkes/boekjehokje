@@ -7,18 +7,20 @@
  * The rest of the app only sees the CalendarView container.
  */
 import { type DayPilot, DayPilotCalendar } from "@daypilot/daypilot-lite-react";
+import { Delete, Edit, Info } from "@mui/icons-material";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
 import Drawer from "@mui/material/Drawer";
+import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
+import { useTheme } from "@mui/material/styles";
 import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import { useTheme } from "@mui/material/styles";
 import React, { useMemo, useState } from "react";
-import { useCalendar } from "../../hooks/useCalendar.ts";
 import { useUser } from "../../context/useUser.ts";
-import { type Booking, isEditable } from "../../services/index.ts";
+import { useCalendar } from "../../hooks/useCalendar.ts";
+import { type Booking } from "../../services/index.ts";
 import { systemClock } from "../../utils/clock.ts";
 import { BookingSidebar, SIDEBAR_WIDTH } from "./BookingSidebar.tsx";
 import { CalendarToolbar } from "./CalendarToolbar.tsx";
@@ -40,9 +42,12 @@ const CALENDAR_CONFIG = {
   viewType: "Resources",
   timeFormat: "Clock24Hours",
   headerClickHandling: "Disabled",
-  eventClickHandling: "Enabled",
-  eventRightClickHandling: "Enabled",
-  eventMoveHandling: "Update",
+  timeRangeSelectedHandling: "Disabled",
+  eventMoveHandling: "Disabled",
+  eventResizeHandling: "Disabled",
+  eventDeleteHandling: "Disabled",
+  eventClickHandling: "Disabled",
+  eventRightClickHandling: "Disabled",
   durationBarVisible: false,
   headerHeightAutoFit: false,
   headerHeight: 50,
@@ -89,17 +94,58 @@ export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
   const closeSidebar = (): void => {
     setSelectedBooking(null);
   };
-  /**
-   * Drag-and-drop: only bookings created by the current user may be
-   * moved (issue #13). Moves are applied by DayPilot in memory only;
-   * the Google Calendar API is never called.
-   */
-  const onEventMove = (args: DayPilot.CalendarEventMoveArgs): void => {
-    const booking = findBooking(rooms, String(args.e.id()));
-    if (!booking || !isEditable(booking, profile)) {
-      args.preventDefault();
+
+  const onBeforeEventRender = (args: DayPilot.CalendarBeforeEventRenderArgs) => {
+    args.data.areas = [];
+
+    if (args.data.editable) {
+      args.data.moveDisabled = false;
+      args.data.resizeDisabled = false;
+      args.data.clickDisabled = false;
+      args.data.cssClass = "editable";
+    } else {
+      args.data.moveDisabled = true;
+      args.data.resizeDisabled = true;
+      args.data.clickDisabled = true;
     }
   };
+
+  const onBeforeEventDomAdd = (args: DayPilot.CalendarBeforeEventDomAddArgs) => {
+    args.element = (
+      <Typography variant="body2" component="div">
+        {args.e.data.text}
+        { args.e.data.editable && (
+            <IconButton
+              aria-label="delete"
+              size="small"
+              onClick={() => {
+                args.e.data.delete();
+              }}
+            >
+              <Delete fontSize="inherit" />
+            </IconButton>
+        )}
+        { args.e.data.editable && (
+            <IconButton
+              aria-label="edit"
+              size="small"
+              onClick={() => {
+                args.e.data.edit();
+              }}
+            >
+              <Edit fontSize="inherit" />
+            </IconButton>
+        )}
+        <IconButton
+          aria-label="info"
+          size="small"
+          onClick={() => openSidebar(String(args.e.id())) }
+        >
+          <Info fontSize="inherit" />
+        </IconButton>
+      </Typography>
+    )
+  }
 
   const headerHtml = (header: { name: string; toolTip: string }): string => {
     let description = "";
@@ -138,10 +184,10 @@ export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
         startDate={startDate}
         columns={columns}
         events={events}
-        onEventClicked={(args) => openSidebar(String(args.e.id()))}
-        onEventMove={onEventMove}
         onBeforeHeaderRender={(args) =>
           args.header.html = headerHtml(args.header)}
+        onBeforeEventDomAdd={onBeforeEventDomAdd}
+        onBeforeEventRender={onBeforeEventRender}
       />
     </React.Fragment>
   );

@@ -71,42 +71,38 @@ $text-secondary: rgba(0, 0, 0, 0.6); // MUI text.secondary
   font-size: 12px;
 }
 
-/* Events: primary blue bar, with the bar (left edge) in secondary pink */
-.calendar_default_event {
-  background-color: rgba($primary, 0.15);
-  border-color: rgba($primary-dark, 0.4);
-  border-radius: 4px;
-}
-
 .calendar_default_event_inner {
   background: none;
   color: rgba(0, 0, 0, 0.87); // MUI text.primary
   padding: 4px 6px;
 }
 
-.calendar_default_event_bar {
-  background-color: $secondary;
-}
-
 .calendar_default_event_bar_inner {
   background: none;
 }
 
-/* The "now" indicator line */
-.calendar_default_now {
-  background-color: $secondary;
-}
-/* Events the current user may not edit: greyed out (issue #13) */
-.calendar_default_event.event_read-only {
+/* Events the current user may not edit */
+.calendar_default_event {
+  background: "none";
   background-color: rgba(0, 0, 0, 0.08); // MUI grey.300-ish, low emphasis
   border-color: rgba(0, 0, 0, 0.2);
 
   .calendar_default_event_inner {
+    background: none;
     color: $text-secondary;
   }
 
   .calendar_default_event_bar,
   .calendar_default_event_bar_inner {
     background-color: rgba(0, 0, 0, 0.26); // MUI grey.400, neutral bar
+  }
+}
+/* Editable light green background and dotted green border */
+.calendar_default_event.editable {
+  background-color: rgba(76, 175, 80, 0.5);
+
+  .calendar_default_event_inner {
+    background-color: rgba(76, 175, 80, 0.5); // MUI green.400, neutral bar
+    border-color: rgba(76, 175, 80, 0.16);
   }
 }
