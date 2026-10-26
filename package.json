@@ -9,12 +9,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@daypilot/daypilot-lite-react": "^6.1.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@legendapp/list": "^3.6.0",
     "@mui/icons-material": "^9.4.0",
     "@mui/material": "^9.4.0",
     "@react-oauth/google": "^0.13.5",
+    "@super-calendar/dom": "^2.14.2",
+    "date-fns": "^4.4.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-router-dom": "^7.18.4"

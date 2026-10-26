@@ -13,6 +13,7 @@ link to its replacement.
 | [0002](0002-hybrid-booking-workflow.md)                  | Support both room-first and time-first booking through a hybrid overview dashboard                                | accepted |
 | [0003](0003-pure-frontend-tech-stack.md)                 | Adopt a pure-frontend React 19 + TypeScript stack with MUI, DayPilot Lite, and Google Calendar as source of truth | accepted |
 | [0004](0004-editability-ownership.md)                    | Determine editability by creator-email ownership                                                                  | proposed |
+| [0005](0005-super-calendar-migration.md)                 | Replace DayPilot Lite with super-calendar for the resource calendar view                                          | proposed |
 
 ## Format
 

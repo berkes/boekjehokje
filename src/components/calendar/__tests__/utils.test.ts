@@ -1,19 +1,25 @@
 /**
- * Unit tests for the calendar DayPilot translation utilities
+ * Unit tests for the calendar super-calendar translation utilities
  *
  * Verifies the mapping from the domain model (rooms, bookings, plain
- * Dates) to the shapes DayPilot expects.
+ * Dates) to the shapes @super-calendar/dom expects: resource lanes,
+ * board events and dom theme tokens.
  */
 import { assert, assertEquals } from "@std/assert";
 import type { Booking } from "../../../services/index.ts";
 import {
+  applyMovedEvents,
+  type BoardEvent,
+  type CalendarResource,
+  EDITABLE_EVENT_BACKGROUND,
   findBooking,
-  READ_ONLY_EVENT_CSS_CLASS,
+  isCalendarResource,
+  READ_ONLY_EVENT_BACKGROUND,
   roomDescription,
   roomLabel,
-  toColumns,
-  toDayPilotString,
+  toDomTheme,
   toEvents,
+  toResources,
   withUnknownLast,
 } from "../utils.tsx";
 
@@ -34,30 +40,23 @@ function booking(overrides: Partial<Booking>): Booking {
   };
 }
 
-Deno.test("toDayPilotString formats a Date as local time without timezone suffix", () => {
-  assertEquals(
-    toDayPilotString(new Date(2026, 1, 19, 9, 5, 7)),
-    "2026-02-19T09:05:07",
-  );
-});
-
-Deno.test("toColumns maps rooms to columns by canonical and short name", () => {
-  const columns = toColumns([
+Deno.test("toResources maps rooms to lanes with short name and description", () => {
+  const resources = toResources([
     { canonicalName: "Kletshok 05", shortName: "KH05", bookings: [] },
   ]);
-  assertEquals(columns, [{
+  assertEquals(resources, [{
     id: "Kletshok 05",
-    name: "KH05",
-    toolTip: "Kletshok 05",
+    title: "KH05",
+    description: "Kletshok 05",
   }]);
 });
 
-Deno.test("toColumns sorts the unknown room last", () => {
-  const columns = toColumns([
+Deno.test("toResources sorts the unknown room last", () => {
+  const resources = toResources([
     { canonicalName: "Unknown", shortName: "?", bookings: [] },
     { canonicalName: "Kletshok 05", shortName: "KH05", bookings: [] },
   ]);
-  assertEquals(columns.map((c) => c.id), ["Kletshok 05", "Unknown"]);
+  assertEquals(resources.map((r) => r.id), ["Kletshok 05", "Unknown"]);
 });
 
 Deno.test("withUnknownLast moves the unknown room to the end", () => {
@@ -107,14 +106,27 @@ Deno.test("toEvents maps bookings to events on the room's resource", () => {
     ],
     { email: "booker@example.com" },
   );
-  assertEquals(events, [{
-    id: "id-1",
-    text: "Alice",
-    start: "2026-02-19T10:00:00",
-    end: "2026-02-19T11:00:00",
-    resource: "Kletshok 05",
-    toolTip: "Overleg",
-  }]);
+  assertEquals(events.length, 1);
+  assertEquals(events[0].title, "Alice");
+  assertEquals(events[0].start, new Date(2026, 1, 19, 10, 0, 0));
+  assertEquals(events[0].end, new Date(2026, 1, 19, 11, 0, 0));
+  assertEquals(events[0].resourceId, "Kletshok 05");
+  assertEquals(events[0].booking.summary, "Overleg");
+});
+
+Deno.test("toEvents makes own bookings editable and draggable", () => {
+  const events = toEvents(
+    [
+      {
+        canonicalName: "Kletshok 05",
+        shortName: "KH05",
+        bookings: [booking({ booker: "Alice" })],
+      },
+    ],
+    { email: "booker@example.com" },
+  );
+  assertEquals(events[0].editable, true);
+  assertEquals(events[0].draggable, true);
 });
 
 Deno.test("toEvents marks bookings of other users as read-only", () => {
@@ -128,7 +140,8 @@ Deno.test("toEvents marks bookings of other users as read-only", () => {
     ],
     { email: "someone.else@example.com" },
   );
-  assertEquals(events[0].cssClass, READ_ONLY_EVENT_CSS_CLASS);
+  assertEquals(events[0].editable, false);
+  assertEquals(events[0].draggable, false);
 });
 
 Deno.test("toEvents marks all bookings read-only without a profile", () => {
@@ -139,7 +152,8 @@ Deno.test("toEvents marks all bookings read-only without a profile", () => {
       bookings: [booking({})],
     },
   ]);
-  assertEquals(events[0].cssClass, READ_ONLY_EVENT_CSS_CLASS);
+  assertEquals(events[0].editable, false);
+  assertEquals(events[0].draggable, false);
 });
 
 Deno.test("toEvents falls back to the summary when there is no booker", () => {
@@ -150,7 +164,41 @@ Deno.test("toEvents falls back to the summary when there is no booker", () => {
       bookings: [booking({ booker: null, summary: "Overleg" })],
     },
   ]);
-  assertEquals(events[0].text, "Overleg");
+  assertEquals(events[0].title, "Overleg");
+});
+
+Deno.test("applyMovedEvents overrides time and room of a dragged booking", () => {
+  const events = toEvents(
+    [
+      {
+        canonicalName: "Kletshok 05",
+        shortName: "KH05",
+        bookings: [booking({ id: "id-1" })],
+      },
+    ],
+    { email: "booker@example.com" },
+  );
+  const moved = applyMovedEvents(
+    events,
+    new Map([
+      ["id-1", {
+        start: new Date(2026, 1, 19, 12, 0, 0),
+        end: new Date(2026, 1, 19, 13, 0, 0),
+        resourceId: "Tuinkamer",
+      }],
+    ]),
+  );
+  assertEquals(moved[0].start, new Date(2026, 1, 19, 12, 0, 0));
+  assertEquals(moved[0].end, new Date(2026, 1, 19, 13, 0, 0));
+  assertEquals(moved[0].resourceId, "Tuinkamer");
+  // The original events stay untouched
+  assertEquals(events[0].start, new Date(2026, 1, 19, 10, 0, 0));
+  assertEquals(events[0].resourceId, "Kletshok 05");
+});
+
+Deno.test("applyMovedEvents returns the input when nothing moved", () => {
+  const events: BoardEvent[] = [];
+  assertEquals(applyMovedEvents(events, new Map()), events);
 });
 
 Deno.test("findBooking finds a booking by id across rooms", () => {
@@ -200,4 +248,36 @@ Deno.test("roomLabel uses the short name for the unknown room", () => {
     roomLabel({ canonicalName: "Unknown", shortName: "Unknown" }),
     "Unknown",
   );
+});
+
+Deno.test("isCalendarResource accepts resources with a description", () => {
+  const resource: CalendarResource = {
+    id: "KH05",
+    title: "KH05",
+    description: "Kletshok 05",
+  };
+  assert(isCalendarResource(resource));
+});
+
+Deno.test("isCalendarResource rejects plain resources", () => {
+  assertEquals(isCalendarResource({ id: "KH05", title: "KH05" }), false);
+});
+
+Deno.test("toDomTheme maps the MUI palette onto theme tokens", () => {
+  const palette = {
+    secondary: { main: "#be1574" },
+    divider: "#e0e0e0",
+    text: {
+      primary: "rgba(0, 0, 0, 0.87)",
+      secondary: "rgba(0, 0, 0, 0.6)",
+      disabled: "rgba(0, 0, 0, 0.38)",
+    },
+  };
+  const domTheme = toDomTheme(palette);
+  assertEquals(domTheme.gridLine, "#e0e0e0");
+  assertEquals(domTheme.text, "rgba(0, 0, 0, 0.87)");
+  assertEquals(domTheme.textMuted, "rgba(0, 0, 0, 0.6)");
+  assertEquals(domTheme.nowIndicator, "#be1574");
+  assertEquals(domTheme.eventBackground, READ_ONLY_EVENT_BACKGROUND);
+  assert(domTheme.eventBackground !== EDITABLE_EVENT_BACKGROUND);
 });

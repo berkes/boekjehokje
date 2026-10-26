@@ -82,7 +82,7 @@ export function toggleHiddenRoom(
 /**
  * Filter rooms down to the visible ones.
  * Returning an empty list is allowed: the user chose to hide
- * every column, and DayPilot renders an empty grid for that.
+ * every column, and the calendar renders an empty board for that.
  */
 export function visibleRooms(
   rooms: CalendarRoom[],

@@ -1,14 +1,19 @@
 /**
- * Utilities for translating between our domain and DayPilot
+ * Utilities for translating between our domain and super-calendar
  *
- * Helper functions used by the Calendar component (the actual DayPilot
- * wrapper) to translate the domain model (Room[], Booking[]) and plain
- * Date objects into the shapes DayPilot expects: resource columns,
- * calendar events and timezone-less local date strings.
+ * Helper functions used by the Calendar component (the actual
+ * super-calendar wrapper) to translate the domain model (Room[], Booking[])
+ * into the shapes @super-calendar/dom expects: resource lanes, board events
+ * and theme tokens.
  *
  * Pure functions only, so they are unit-testable without rendering the
  * third-party component.
  */
+import type {
+  CalendarEvent,
+  DomCalendarTheme,
+  Resource,
+} from "@super-calendar/dom";
 import {
   type Booking,
   isEditable,
@@ -17,25 +22,51 @@ import {
 } from "../../services/index.ts";
 
 /**
- * DayPilot resource column shape
+ * A resource lane on the board: a room, with the description for the
+ * column header
  */
-export interface DayPilotColumn {
-  id: string;
-  name: string;
-  toolTip: string;
+export interface CalendarResource extends Resource {
+  /** Full room description, shown as header subtitle and tooltip */
+  description: string;
 }
 
 /**
- * DayPilot calendar event shape
+ * Whether the library handed us back one of our own resources, which
+ * carries the room description
  */
-export interface DayPilotEvent {
-  id: string;
-  text: string;
-  start: string;
-  end: string;
-  resource: string;
-  toolTip: string;
+export function isCalendarResource(
+  resource: Resource,
+): resource is CalendarResource {
+  return "description" in resource &&
+    typeof resource.description === "string";
+}
+
+/**
+ * Extra fields every board event carries next to start/end/title,
+ * so callbacks can find the domain booking back.
+ */
+export interface BookingEventMeta {
+  /** The domain booking this event represents */
+  booking: Booking;
+  /** Whether the current user may edit this booking (ADR-0004) */
   editable: boolean;
+  /** Room (resource) the booking is in */
+  resourceId: string;
+}
+
+/**
+ * A calendar event as rendered on the resource timeline
+ */
+export type BoardEvent = CalendarEvent<BookingEventMeta>;
+
+/**
+ * A time/room change applied by dragging an own booking (UI-only,
+ * persistence is issue #14)
+ */
+export interface MovedEvent {
+  start: Date;
+  end: Date;
+  resourceId: string;
 }
 
 /**
@@ -45,22 +76,6 @@ export interface CalendarRoom {
   canonicalName: string;
   shortName: string;
   bookings: Booking[];
-}
-
-/**
- * Convert a Date to a DayPilot-compatible ISO string.
- * DayPilot interprets date strings without timezone suffix as local time.
- */
-export function toDayPilotString(date: Date): string {
-  const pad = (value: number): string => String(value).padStart(2, "0");
-  return (
-    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
-    `T${pad(date.getHours())}:${pad(date.getMinutes())}:${
-      pad(
-        date.getSeconds(),
-      )
-    }`
-  );
 }
 
 /**
@@ -97,47 +112,66 @@ export function withUnknownLast(rooms: CalendarRoom[]): CalendarRoom[] {
 }
 
 /**
- * Map rooms to calendar columns (resources), with Unknown always last
+ * Map rooms to resource timeline lanes, with Unknown always last.
+ * The header shows the short name in bold with the full description
+ * (canonical name) as subtitle and tooltip.
  */
-export function toColumns(rooms: CalendarRoom[]): DayPilotColumn[] {
+export function toResources(rooms: CalendarRoom[]): CalendarResource[] {
   return withUnknownLast(rooms).map((room) => ({
     id: room.canonicalName,
-    name: room.shortName,
-    toolTip: roomDescription(room),
+    title: room.shortName,
+    description: roomDescription(room),
   }));
 }
 
 /**
- * CSS class applied to events the current user may not edit, so they are
- * visually distinct from the user's own bookings (issue #13)
- */
-export const READ_ONLY_EVENT_CSS_CLASS = "event_read-only";
-
-/**
- * Map room bookings to calendar events. Bookings that are not editable by
- * the given user get the read-only CSS class so they look distinct.
+ * Map room bookings to board events. The booking itself and its editability
+ * (ADR-0004) travel along in the meta; events of others are locked
+ * (draggable: false), own events can be dragged and resized (UI-only).
  */
 export function toEvents(
   rooms: CalendarRoom[],
   profile?: { email: string } | null,
-): DayPilotEvent[] {
+): BoardEvent[] {
   return rooms.flatMap((room) =>
     room.bookings.map((booking) => {
       const editable = isEditable(booking, profile);
 
-      const event: DayPilotEvent = {
-        id: booking.id,
-        text: booking.booker || booking.summary,
-        start: toDayPilotString(booking.start),
-        end: toDayPilotString(booking.end),
-        resource: room.canonicalName,
-        toolTip: booking.summary,
-        editable: editable,
+      const event: BoardEvent = {
+        title: booking.booker || booking.summary,
+        start: booking.start,
+        end: booking.end,
+        resourceId: room.canonicalName,
+        booking,
+        editable,
+        draggable: editable,
       };
 
       return event;
     })
   );
+}
+
+/**
+ * Apply locally dragged time/room changes over the mapped events.
+ * An override replaces the booking's original start, end and room, so the
+ * board shows the user's drag even though Google Calendar is not updated.
+ */
+export function applyMovedEvents(
+  events: BoardEvent[],
+  moved: ReadonlyMap<string, MovedEvent>,
+): BoardEvent[] {
+  if (moved.size === 0) return events;
+  return events.map((event) => {
+    const override = moved.get(event.booking.id);
+    if (!override) return event;
+    return {
+      ...event,
+      start: override.start,
+      end: override.end,
+      resourceId: override.resourceId,
+    };
+  });
 }
 
 /**
@@ -152,4 +186,47 @@ export function findBooking(
     if (booking) return booking;
   }
   return null;
+}
+
+/**
+ * Background of events the current user may not edit (issue #13):
+ * low-emphasis grey, like MUI's disabled surfaces
+ */
+export const READ_ONLY_EVENT_BACKGROUND = "rgba(0, 0, 0, 0.08)";
+
+/**
+ * Border of events the current user may not edit
+ */
+export const READ_ONLY_EVENT_BORDER = "rgba(0, 0, 0, 0.2)";
+
+/**
+ * Background of events the current user may edit: light green
+ */
+export const EDITABLE_EVENT_BACKGROUND = "rgba(76, 175, 80, 0.5)";
+
+/**
+ * Minimal MUI palette shape needed to theme the board
+ */
+export interface MuiPaletteLike {
+  secondary: { main: string };
+  divider: string;
+  text: { primary: string; secondary: string; disabled: string };
+}
+
+/**
+ * Map the MUI palette onto super-calendar's dom theme tokens, so the
+ * board follows the app theme without custom CSS (ADR-0005).
+ */
+export function toDomTheme(
+  palette: MuiPaletteLike,
+): Partial<DomCalendarTheme> {
+  return {
+    gridLine: palette.divider,
+    text: palette.text.primary,
+    textMuted: palette.text.secondary,
+    textDisabled: palette.text.disabled,
+    nowIndicator: palette.secondary.main,
+    eventBackground: READ_ONLY_EVENT_BACKGROUND,
+    eventText: palette.text.primary,
+  };
 }

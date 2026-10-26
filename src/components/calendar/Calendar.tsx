@@ -1,12 +1,17 @@
 /**
- * Calendar component: the wrapper around DayPilot
+ * Calendar component: the wrapper around super-calendar
  *
- * This is the actual wrapper around the third-party DayPilot calendar:
- * it owns the DayPilot configuration and uses the helpers in utils.tsx
- * to translate between our domain model and DayPilot's shapes.
- * The rest of the app only sees the CalendarView container.
+ * This is the actual wrapper around the third-party super-calendar
+ * (@super-calendar/dom): it owns the ResourceTimeline configuration and uses
+ * the helpers in utils.tsx to translate between our domain model and
+ * super-calendar's shapes. The rest of the app only sees the CalendarView
+ * container.
  */
-import { type DayPilot, DayPilotCalendar } from "@daypilot/daypilot-lite-react";
+import {
+  type Resource,
+  type ResourceEventArgs,
+  ResourceTimeline,
+} from "@super-calendar/dom";
 import { Delete, Edit, Info } from "@mui/icons-material";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -17,7 +22,14 @@ import Stack from "@mui/material/Stack";
 import { useTheme } from "@mui/material/styles";
 import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import React, { useMemo, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useUser } from "../../context/useUser.ts";
 import { useCalendar } from "../../hooks/useCalendar.ts";
 import { type Booking } from "../../services/index.ts";
@@ -27,32 +39,31 @@ import { CalendarToolbar } from "./CalendarToolbar.tsx";
 import { RoomVisibiltyControls } from "./RoomVisibiltyControls.tsx";
 import { useRoomVisibility } from "./useRoomVisibility.ts";
 import {
+  applyMovedEvents,
+  type BoardEvent,
+  type BookingEventMeta,
   type CalendarRoom,
+  EDITABLE_EVENT_BACKGROUND,
   findBooking,
-  toColumns,
-  toDayPilotString,
+  isCalendarResource,
+  type MovedEvent,
+  READ_ONLY_EVENT_BACKGROUND,
+  READ_ONLY_EVENT_BORDER,
+  toDomTheme,
   toEvents,
+  toResources,
 } from "./utils.tsx";
 
 /**
- * Static calendar configuration
- * Resources view: one column per room, time slots as rows
+ * Height of the board; the time track scrolls inside it
  */
-const CALENDAR_CONFIG = {
-  viewType: "Resources",
-  timeFormat: "Clock24Hours",
-  headerClickHandling: "Disabled",
-  timeRangeSelectedHandling: "Disabled",
-  eventMoveHandling: "Disabled",
-  eventResizeHandling: "Disabled",
-  eventDeleteHandling: "Disabled",
-  eventClickHandling: "Disabled",
-  eventRightClickHandling: "Disabled",
-  durationBarVisible: false,
-  headerHeightAutoFit: false,
-  headerHeight: 50,
-  hourWidth: 50,
-} as const;
+const BOARD_HEIGHT = 640;
+
+/**
+ * First hour shown on the time axis, so the working day fits on screen
+ * without scrolling. Bookings before this hour are outside the window.
+ */
+const START_HOUR = 8;
 
 /**
  * Props for Calendar component
@@ -63,13 +74,121 @@ export interface CalendarProps {
 }
 
 /**
+ * Actions an event bar can invoke, provided to the event renderer
+ */
+interface BoardActions {
+  /** Show the booking details in the sidebar */
+  openSidebar: (bookingId: string) => void;
+  /** Start editing a booking (UI affordance until issue #14) */
+  editBooking: (booking: Booking) => void;
+  /** Delete a booking (UI affordance until issue #14) */
+  deleteBooking: (booking: Booking) => void;
+}
+
+/**
+ * Passes the board actions to the event renderer without changing its
+ * identity, so super-calendar can treat it as a stable component.
+ */
+const BoardActionsContext = createContext<BoardActions | null>(null);
+
+/**
+ * Event bar with the booking name and the info, edit and delete buttons.
+ * Own bookings get a green background; others a muted grey one (issue #13).
+ *
+ * Rendered inside the library's event button, so the icon buttons render as
+ * spans (nested buttons are invalid HTML) and stop pointer events from
+ * starting a bar drag.
+ */
+function BoardEventBar(
+  { event }: ResourceEventArgs<BookingEventMeta>,
+): React.JSX.Element {
+  const actions = useContext(BoardActionsContext);
+  if (actions === null) {
+    throw new Error(
+      "BoardEventBar renders only inside BoardActionsContext.Provider",
+    );
+  }
+  const { openSidebar, editBooking, deleteBooking } = actions;
+  const { booking, editable } = event;
+
+  return (
+    <Box
+      title={booking.summary}
+      sx={{
+        height: "100%",
+        p: "2px 6px",
+        borderRadius: 0.5,
+        overflow: "hidden",
+        backgroundColor: editable
+          ? EDITABLE_EVENT_BACKGROUND
+          : READ_ONLY_EVENT_BACKGROUND,
+        border: editable ? undefined : `1px solid ${READ_ONLY_EVENT_BORDER}`,
+      }}
+    >
+      <Typography
+        variant="body2"
+        component="div"
+        noWrap
+        sx={{
+          color: editable ? "text.primary" : "text.secondary",
+        }}
+      >
+        {event.title}
+        <IconButton
+          component="span"
+          aria-label="delete"
+          size="small"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            deleteBooking(booking);
+          }}
+          sx={{ display: editable ? "inline-flex" : "none" }}
+        >
+          <Delete fontSize="inherit" />
+        </IconButton>
+        <IconButton
+          component="span"
+          aria-label="edit"
+          size="small"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            editBooking(booking);
+          }}
+          sx={{ display: editable ? "inline-flex" : "none" }}
+        >
+          <Edit fontSize="inherit" />
+        </IconButton>
+        <IconButton
+          component="span"
+          aria-label="info"
+          size="small"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            openSidebar(booking.id);
+          }}
+        >
+          <Info fontSize="inherit" />
+        </IconButton>
+      </Typography>
+    </Box>
+  );
+}
+
+/**
  * Calendar component
- * Maps rooms to DayPilot columns and bookings to DayPilot events.
- * Clicking an event opens the booking sidebar.
+ * Maps rooms to super-calendar resources and bookings to board events.
+ * Pressing an event opens the booking sidebar; own bookings can be
+ * dragged and resized (UI-only, persistence is issue #14).
  */
 export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
   const [selectedDate, setSelectedDate] = useState(() => systemClock.now());
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [moved, setMoved] = useState<ReadonlyMap<string, MovedEvent>>(
+    () => new Map(),
+  );
   const { profile } = useUser();
 
   const theme = useTheme();
@@ -77,85 +196,98 @@ export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
 
   const { rooms: visibleRooms, hidden, toggle } = useRoomVisibility(rooms);
 
-  const columns = useMemo(() => toColumns(visibleRooms), [visibleRooms]);
+  /** Fresh data from Google Calendar discards local drag changes */
+  useEffect(() => {
+    setMoved((prev) => prev.size === 0 ? prev : new Map());
+  }, [rooms]);
+
+  const resources = useMemo(() => toResources(visibleRooms), [visibleRooms]);
+  const domTheme = useMemo(() => toDomTheme(theme.palette), [theme.palette]);
   const events = useMemo(
-    () => toEvents(visibleRooms, profile),
-    [visibleRooms, profile],
+    () => applyMovedEvents(toEvents(visibleRooms, profile), moved),
+    [visibleRooms, profile, moved],
   );
-  const startDate = toDayPilotString(selectedDate);
 
   /**
-   * Open the sidebar with the booking belonging to the clicked event
+   * Open the sidebar with the booking belonging to the pressed event
    */
-  const openSidebar = (id: string): void => {
-    setSelectedBooking(findBooking(rooms, id));
+  const openSidebar = useCallback(
+    (bookingId: string): void => {
+      setSelectedBooking(findBooking(rooms, bookingId));
+    },
+    [rooms],
+  );
+
+  /**
+   * Editing and deleting are UI affordances until persistence lands
+   * (issue #14). Edit shows the booking in the sidebar; delete is a no-op.
+   */
+  const boardActions = useMemo<BoardActions>(
+    () => ({
+      openSidebar,
+      editBooking: (booking: Booking) => openSidebar(booking.id),
+      deleteBooking: (booking: Booking) => {
+        console.info("Verwijderen is nog niet beschikbaar.", booking.id);
+      },
+    }),
+    [openSidebar],
+  );
+
+  /**
+   * Own bookings can be moved and resized on the board, others snap back.
+   * The change is applied locally only; persistence is issue #14.
+   * The drop lane retargets the room, the basis for cross-room moves.
+   */
+  const onDragEvent = (
+    event: BoardEvent,
+    start: Date,
+    end: Date,
+    resource: Resource,
+  ): void | boolean => {
+    if (!event.editable) return false;
+    setMoved((prev) => {
+      const next = new Map(prev);
+      next.set(event.booking.id, { start, end, resourceId: resource.id });
+      return next;
+    });
   };
 
-  const closeSidebar = (): void => {
-    setSelectedBooking(null);
-  };
-
-  const onBeforeEventRender = (args: DayPilot.CalendarBeforeEventRenderArgs) => {
-    args.data.areas = [];
-
-    if (args.data.editable) {
-      args.data.moveDisabled = false;
-      args.data.resizeDisabled = false;
-      args.data.clickDisabled = false;
-      args.data.cssClass = "editable";
-    } else {
-      args.data.moveDisabled = true;
-      args.data.resizeDisabled = true;
-      args.data.clickDisabled = true;
-    }
-  };
-
-  const onBeforeEventDomAdd = (args: DayPilot.CalendarBeforeEventDomAddArgs) => {
-    args.element = (
-      <Typography variant="body2" component="div">
-        {args.e.data.text}
-        { args.e.data.editable && (
-            <IconButton
-              aria-label="delete"
-              size="small"
-              onClick={() => {
-                args.e.data.delete();
-              }}
-            >
-              <Delete fontSize="inherit" />
-            </IconButton>
-        )}
-        { args.e.data.editable && (
-            <IconButton
-              aria-label="edit"
-              size="small"
-              onClick={() => {
-                args.e.data.edit();
-              }}
-            >
-              <Edit fontSize="inherit" />
-            </IconButton>
-        )}
-        <IconButton
-          aria-label="info"
-          size="small"
-          onClick={() => openSidebar(String(args.e.id())) }
+  /**
+   * Room column header: the short name with the description as subtitle,
+   * the full description as tooltip. Overflow is clipped by the header
+   * cell, so long descriptions need no manual truncation.
+   */
+  const renderResourceHeader = useCallback(
+    (resource: Resource): React.JSX.Element => {
+      const description = isCalendarResource(resource)
+        ? resource.description
+        : resource.title ?? resource.id;
+      return (
+        <Box
+          title={description}
+          sx={{ width: "100%", overflow: "hidden", px: 0.5 }}
         >
-          <Info fontSize="inherit" />
-        </IconButton>
-      </Typography>
-    )
-  }
-
-  const headerHtml = (header: { name: string; toolTip: string }): string => {
-    let description = "";
-    if (header.toolTip.length > 20) {
-      description = header.toolTip.substring(0, 20).concat("...");
-    } else {
-      description = header.toolTip;
-    }
-    return `<div><strong>${header.name}</strong><br/><span class="subtitle">${description}</div>`;
-  };
+          <Typography
+            variant="body2"
+            component="div"
+            noWrap
+            sx={{ fontWeight: 600 }}
+          >
+            {resource.title ?? resource.id}
+          </Typography>
+          <Typography
+            variant="caption"
+            component="div"
+            noWrap
+            sx={{ display: { xs: "none", sm: "block" } }}
+          >
+            {description}
+          </Typography>
+        </Box>
+      );
+    },
+    [],
+  );
 
   const selectedRoom = selectedBooking
     ? rooms.find((room) => room.canonicalName === selectedBooking.room)
@@ -166,7 +298,7 @@ export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
       <BookingSidebar
         booking={selectedBooking}
         room={selectedRoom}
-        onClose={closeSidebar}
+        onClose={() => setSelectedBooking(null)}
       />
     )
     : null;
@@ -179,16 +311,21 @@ export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
         clock={systemClock}
       />
       <RoomVisibiltyControls rooms={rooms} hidden={hidden} onToggle={toggle} />
-      <DayPilotCalendar
-        {...CALENDAR_CONFIG}
-        startDate={startDate}
-        columns={columns}
-        events={events}
-        onBeforeHeaderRender={(args) =>
-          args.header.html = headerHtml(args.header)}
-        onBeforeEventDomAdd={onBeforeEventDomAdd}
-        onBeforeEventRender={onBeforeEventRender}
-      />
+      <BoardActionsContext.Provider value={boardActions}>
+        <ResourceTimeline<BookingEventMeta>
+          orientation="vertical"
+          date={selectedDate}
+          startHour={START_HOUR}
+          resources={resources}
+          events={events}
+          theme={domTheme}
+          style={{ height: BOARD_HEIGHT }}
+          renderEvent={BoardEventBar}
+          renderResourceHeader={renderResourceHeader}
+          onPressEvent={(event) => openSidebar(event.booking.id)}
+          onDragEvent={onDragEvent}
+        />
+      </BoardActionsContext.Provider>
     </React.Fragment>
   );
 
@@ -225,7 +362,7 @@ export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
       <Drawer
         anchor="right"
         open={selectedBooking !== null}
-        onClose={closeSidebar}
+        onClose={() => setSelectedBooking(null)}
       >
         {sidebar && (
           <Box sx={{ p: 2, width: SIDEBAR_WIDTH, maxWidth: "100vw" }}>

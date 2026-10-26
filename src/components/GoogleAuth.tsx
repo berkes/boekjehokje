@@ -60,7 +60,7 @@ export function GoogleAuthButton(): React.JSX.Element {
       }}
     >
       <img
-        src={ googleLogoUrl }
+        src={googleLogoUrl}
         alt="Google"
         style={{ width: "20px", height: "20px" }}
       />
