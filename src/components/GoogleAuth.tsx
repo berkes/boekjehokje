@@ -2,6 +2,7 @@ import React from "react";
 
 import { GoogleOAuthProvider, useGoogleLogin } from "@react-oauth/google";
 import { useGoogleAuth } from "./useGoogleAuth.ts";
+import googleLogoUrl from "./googleLogo.svg";
 
 // Re-export CredentialResponse and TokenResponse for use in index.ts
 export type { CredentialResponse, TokenResponse } from "@react-oauth/google";
@@ -59,7 +60,7 @@ export function GoogleAuthButton(): React.JSX.Element {
       }}
     >
       <img
-        src="https://www.google.com/favicon.ico"
+        src={ googleLogoUrl }
         alt="Google"
         style={{ width: "20px", height: "20px" }}
       />

@@ -12,6 +12,7 @@
   "nodeModulesDir": "auto",
   "compilerOptions": {
     "lib": ["ES2023", "DOM", "deno.ns"],
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "types": ["vite/client"]
   }
 }
