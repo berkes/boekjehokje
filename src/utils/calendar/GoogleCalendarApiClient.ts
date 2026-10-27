@@ -7,6 +7,7 @@
 
 import type { CalendarApiClient } from "./CalendarApiClient.ts";
 import type { CalendarListEntry } from "./CalendarApiClient.ts";
+import { CALENDAR_API_BASE } from "../../config/googleApi.ts";
 import { CalendarApiError } from "../googleCalendarApi.ts";
 import type { CalendarEvent } from "../types.ts";
 
@@ -14,11 +15,6 @@ import type { CalendarEvent } from "../types.ts";
  * NYMA makersplaats room bookings calendar ID
  */
 export const CALENDAR_ID = "agendadesmeltkroes@gmail.com";
-
-/**
- * Google Calendar API base URL
- */
-const CALENDAR_API_BASE = "https://www.googleapis.com/calendar/v3";
 
 /**
  * Format a Date for Google Calendar API (ISO 8601)

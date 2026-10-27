@@ -1,0 +1,117 @@
+{{!
+  Google Calendar API events response, rendered by the WireMock response
+  template transformer.
+
+  The bookings transcribe the "current week" of the demo content in
+  src/services/DemoCalendarAdapter.ts: the same rooms, bookers and times,
+  one line per booking. Dates are not hardcoded: every event is placed
+  relative to the Monday of the week the app requested (its timeMin query
+  parameter), so week navigation in the UI keeps hitting the same pattern.
+
+  Editable bookings carry the creator email of the mocked user
+  (ber@boekjehokje.test, see e2e/fixtures/auth.ts), since editability is
+  decided by creator email vs. profile email (ADR-0004).
+}}
+{
+  "kind": "calendar#events",
+  "summary": "Boekingen NYMA makersplaats (mock)",
+  "updated": "2026-01-01T00:00:00.000Z",
+  "timeZone": "UTC",
+  "items": [
+    {{#*inline "event"}}
+    {
+      "id": "{{summary}}-{{day}}-{{from}}",
+      "summary": "{{summary}}",
+      "creator": { "email": "{{creator}}" },
+      "start": { "dateTime": "{{date (parseDate request.query.timeMin) offset=dayOffset format='yyyy-MM-dd'}}T{{from}}:00.000Z" },
+      "end": { "dateTime": "{{date (parseDate request.query.timeMin) offset=dayOffset format='yyyy-MM-dd'}}T{{to}}:00.000Z" },
+      "status": "confirmed",
+      "sequence": 0
+    }
+    {{/inline}}
+    {{> event summary="Kletshok 03 - Sanne" creator="sanne@boekjehokje.test" day="0" dayOffset="0 days" from="10:00" to="12:00"}},
+    {{> event summary="Kletshok 03 - Griet" creator="griet@boekjehokje.test" day="0" dayOffset="0 days" from="11:00" to="13:00"}},
+    {{> event summary="Kletshok 03 - Fatima" creator="fatima@boekjehokje.test" day="0" dayOffset="0 days" from="14:00" to="15:00"}},
+    {{> event summary="Kletshok 04 - Ozan" creator="ozan@boekjehokje.test" day="0" dayOffset="0 days" from="10:00" to="12:00"}},
+    {{> event summary="Kletshok 04 - Jorien" creator="jorien@boekjehokje.test" day="0" dayOffset="0 days" from="12:00" to="14:00"}},
+    {{> event summary="Kletshok 05 - Bèr" creator="ber@boekjehokje.test" day="0" dayOffset="0 days" from="11:00" to="13:00"}},
+    {{> event summary="Kletshok 05 - Anneke" creator="anneke@boekjehokje.test" day="0" dayOffset="0 days" from="13:00" to="14:00"}},
+    {{> event summary="Kletshok 05 - Manon" creator="manon@boekjehokje.test" day="0" dayOffset="0 days" from="14:00" to="15:00"}},
+    {{> event summary="Stilteruimte - Dirk" creator="dirk@boekjehokje.test" day="0" dayOffset="0 days" from="09:00" to="12:00"}},
+    {{> event summary="Stilteruimte - Sanne" creator="sanne@boekjehokje.test" day="0" dayOffset="0 days" from="12:00" to="12:30"}},
+    {{> event summary="Stilteruimte - Griet" creator="griet@boekjehokje.test" day="0" dayOffset="0 days" from="12:30" to="13:00"}},
+    {{> event summary="Tuinkamer - Fatima" creator="fatima@boekjehokje.test" day="0" dayOffset="0 days" from="10:00" to="12:00"}},
+    {{> event summary="Tuinkamer - Ozan" creator="ozan@boekjehokje.test" day="0" dayOffset="0 days" from="12:00" to="13:00"}},
+    {{> event summary="Tuinkamer - Jorien" creator="jorien@boekjehokje.test" day="0" dayOffset="0 days" from="13:00" to="13:30"}},
+    {{> event summary="Tuinkamer - Willem" creator="willem@boekjehokje.test" day="0" dayOffset="0 days" from="13:30" to="14:00"}},
+    {{> event summary="Vergaderruimte C3 - Anneke" creator="anneke@boekjehokje.test" day="0" dayOffset="0 days" from="11:00" to="14:00"}},
+    {{> event summary="Vergaderruimte C3 - Manon" creator="manon@boekjehokje.test" day="0" dayOffset="0 days" from="14:00" to="15:00"}},
+    {{> event summary="Kletshok 03 - Dirk" creator="dirk@boekjehokje.test" day="1" dayOffset="1 days" from="10:00" to="12:00"}},
+    {{> event summary="Kletshok 03 - Sanne" creator="sanne@boekjehokje.test" day="1" dayOffset="1 days" from="12:00" to="14:00"}},
+    {{> event summary="Kletshok 04 - Griet" creator="griet@boekjehokje.test" day="1" dayOffset="1 days" from="10:00" to="12:00"}},
+    {{> event summary="Kletshok 04 - Fatima" creator="fatima@boekjehokje.test" day="1" dayOffset="1 days" from="11:00" to="13:00"}},
+    {{> event summary="Kletshok 04 - Ozan" creator="ozan@boekjehokje.test" day="1" dayOffset="1 days" from="14:00" to="15:00"}},
+    {{> event summary="Kletshok 05 - Jorien" creator="jorien@boekjehokje.test" day="1" dayOffset="1 days" from="09:00" to="12:00"}},
+    {{> event summary="Kletshok 05 - Willem" creator="willem@boekjehokje.test" day="1" dayOffset="1 days" from="12:00" to="12:30"}},
+    {{> event summary="Kletshok 05 - Anneke" creator="anneke@boekjehokje.test" day="1" dayOffset="1 days" from="12:30" to="13:00"}},
+    {{> event summary="Tuinkamer - Bèr" creator="ber@boekjehokje.test" day="1" dayOffset="1 days" from="11:00" to="14:00"}},
+    {{> event summary="Tuinkamer - Dirk" creator="dirk@boekjehokje.test" day="1" dayOffset="1 days" from="14:00" to="15:00"}},
+    {{> event summary="Vergaderruimte C3 - Sanne" creator="sanne@boekjehokje.test" day="1" dayOffset="1 days" from="09:00" to="11:00"}},
+    {{> event summary="Vergaderruimte C3 - Griet" creator="griet@boekjehokje.test" day="1" dayOffset="1 days" from="11:00" to="13:00"}},
+    {{> event summary="Werkplaats overleg - Fatima" creator="fatima@boekjehokje.test" day="1" dayOffset="1 days" from="10:00" to="12:00"}},
+    {{> event summary="Werkplaats overleg - Ozan" creator="ozan@boekjehokje.test" day="1" dayOffset="1 days" from="12:00" to="13:00"}},
+    {{> event summary="Werkplaats overleg - Jorien" creator="jorien@boekjehokje.test" day="1" dayOffset="1 days" from="13:00" to="14:00"}},
+    {{> event summary="Kletshok 03 - Willem" creator="willem@boekjehokje.test" day="2" dayOffset="2 days" from="11:00" to="13:00"}},
+    {{> event summary="Kletshok 03 - Anneke" creator="anneke@boekjehokje.test" day="2" dayOffset="2 days" from="13:00" to="14:00"}},
+    {{> event summary="Kletshok 03 - Manon" creator="manon@boekjehokje.test" day="2" dayOffset="2 days" from="14:00" to="15:00"}},
+    {{> event summary="Kletshok 04 - Dirk" creator="dirk@boekjehokje.test" day="2" dayOffset="2 days" from="09:00" to="12:00"}},
+    {{> event summary="Kletshok 04 - Sanne" creator="sanne@boekjehokje.test" day="2" dayOffset="2 days" from="12:00" to="12:30"}},
+    {{> event summary="Kletshok 04 - Griet" creator="griet@boekjehokje.test" day="2" dayOffset="2 days" from="12:30" to="13:00"}},
+    {{> event summary="Kletshok 05 - Fatima" creator="fatima@boekjehokje.test" day="2" dayOffset="2 days" from="10:00" to="12:00"}},
+    {{> event summary="Kletshok 05 - Ozan" creator="ozan@boekjehokje.test" day="2" dayOffset="2 days" from="11:00" to="13:00"}},
+    {{> event summary="Kletshok 05 - Jorien" creator="jorien@boekjehokje.test" day="2" dayOffset="2 days" from="14:00" to="15:00"}},
+    {{> event summary="Stilteruimte - Bèr" creator="ber@boekjehokje.test" day="2" dayOffset="2 days" from="11:00" to="14:00"}},
+    {{> event summary="Stilteruimte - Anneke" creator="anneke@boekjehokje.test" day="2" dayOffset="2 days" from="14:00" to="15:00"}},
+    {{> event summary="Tuinkamer - Manon" creator="manon@boekjehokje.test" day="2" dayOffset="2 days" from="09:00" to="11:00"}},
+    {{> event summary="Tuinkamer - Dirk" creator="dirk@boekjehokje.test" day="2" dayOffset="2 days" from="11:00" to="13:00"}},
+    {{> event summary="Werkplaats overleg - Sanne" creator="sanne@boekjehokje.test" day="2" dayOffset="2 days" from="11:00" to="14:00"}},
+    {{> event summary="Werkplaats overleg - Griet" creator="griet@boekjehokje.test" day="2" dayOffset="2 days" from="14:00" to="14:30"}},
+    {{> event summary="Werkplaats overleg - Fatima" creator="fatima@boekjehokje.test" day="2" dayOffset="2 days" from="14:30" to="15:00"}},
+    {{> event summary="Kletshok 03 - Ozan" creator="ozan@boekjehokje.test" day="3" dayOffset="3 days" from="09:00" to="12:00"}},
+    {{> event summary="Kletshok 03 - Jorien" creator="jorien@boekjehokje.test" day="3" dayOffset="3 days" from="12:00" to="12:30"}},
+    {{> event summary="Kletshok 03 - Willem" creator="willem@boekjehokje.test" day="3" dayOffset="3 days" from="12:30" to="13:00"}},
+    {{> event summary="Kletshok 04 - Bèr" creator="ber@boekjehokje.test" day="3" dayOffset="3 days" from="10:00" to="12:00"}},
+    {{> event summary="Kletshok 04 - Manon" creator="manon@boekjehokje.test" day="3" dayOffset="3 days" from="12:00" to="13:00"}},
+    {{> event summary="Kletshok 04 - Dirk" creator="dirk@boekjehokje.test" day="3" dayOffset="3 days" from="13:00" to="13:30"}},
+    {{> event summary="Kletshok 04 - Sanne" creator="sanne@boekjehokje.test" day="3" dayOffset="3 days" from="13:30" to="14:00"}},
+    {{> event summary="Kletshok 05 - Griet" creator="griet@boekjehokje.test" day="3" dayOffset="3 days" from="11:00" to="14:00"}},
+    {{> event summary="Kletshok 05 - Fatima" creator="fatima@boekjehokje.test" day="3" dayOffset="3 days" from="14:00" to="15:00"}},
+    {{> event summary="Stilteruimte - Ozan" creator="ozan@boekjehokje.test" day="3" dayOffset="3 days" from="09:00" to="11:00"}},
+    {{> event summary="Stilteruimte - Jorien" creator="jorien@boekjehokje.test" day="3" dayOffset="3 days" from="11:00" to="13:00"}},
+    {{> event summary="Vergaderruimte C3 - Willem" creator="willem@boekjehokje.test" day="3" dayOffset="3 days" from="10:00" to="12:00"}},
+    {{> event summary="Vergaderruimte C3 - Anneke" creator="anneke@boekjehokje.test" day="3" dayOffset="3 days" from="11:00" to="13:00"}},
+    {{> event summary="Vergaderruimte C3 - Manon" creator="manon@boekjehokje.test" day="3" dayOffset="3 days" from="14:00" to="15:00"}},
+    {{> event summary="Werkplaats overleg - Dirk" creator="dirk@boekjehokje.test" day="3" dayOffset="3 days" from="09:00" to="11:00"}},
+    {{> event summary="Werkplaats overleg - Sanne" creator="sanne@boekjehokje.test" day="3" dayOffset="3 days" from="11:00" to="12:00"}},
+    {{> event summary="Werkplaats overleg - Griet" creator="griet@boekjehokje.test" day="3" dayOffset="3 days" from="12:00" to="12:30"}},
+    {{> event summary="Werkplaats overleg - Fatima" creator="fatima@boekjehokje.test" day="3" dayOffset="3 days" from="12:30" to="13:00"}},
+    {{> event summary="Kletshok 03 - Bèr" creator="ber@boekjehokje.test" day="4" dayOffset="4 days" from="10:00" to="12:00"}},
+    {{> event summary="Kletshok 03 - Jorien" creator="jorien@boekjehokje.test" day="4" dayOffset="4 days" from="12:00" to="13:00"}},
+    {{> event summary="Kletshok 03 - Willem" creator="willem@boekjehokje.test" day="4" dayOffset="4 days" from="13:00" to="13:30"}},
+    {{> event summary="Kletshok 03 - Anneke" creator="anneke@boekjehokje.test" day="4" dayOffset="4 days" from="13:30" to="14:00"}},
+    {{> event summary="Kletshok 04 - Manon" creator="manon@boekjehokje.test" day="4" dayOffset="4 days" from="11:00" to="14:00"}},
+    {{> event summary="Kletshok 04 - Dirk" creator="dirk@boekjehokje.test" day="4" dayOffset="4 days" from="14:00" to="15:00"}},
+    {{> event summary="Stilteruimte - Sanne" creator="sanne@boekjehokje.test" day="4" dayOffset="4 days" from="10:00" to="12:00"}},
+    {{> event summary="Stilteruimte - Griet" creator="griet@boekjehokje.test" day="4" dayOffset="4 days" from="11:00" to="13:00"}},
+    {{> event summary="Stilteruimte - Fatima" creator="fatima@boekjehokje.test" day="4" dayOffset="4 days" from="14:00" to="15:00"}},
+    {{> event summary="Tuinkamer - Ozan" creator="ozan@boekjehokje.test" day="4" dayOffset="4 days" from="11:00" to="14:00"}},
+    {{> event summary="Tuinkamer - Jorien" creator="jorien@boekjehokje.test" day="4" dayOffset="4 days" from="14:00" to="14:30"}},
+    {{> event summary="Tuinkamer - Willem" creator="willem@boekjehokje.test" day="4" dayOffset="4 days" from="14:30" to="15:00"}},
+    {{> event summary="Vergaderruimte C3 - Anneke" creator="anneke@boekjehokje.test" day="4" dayOffset="4 days" from="09:00" to="11:00"}},
+    {{> event summary="Vergaderruimte C3 - Manon" creator="manon@boekjehokje.test" day="4" dayOffset="4 days" from="11:00" to="12:00"}},
+    {{> event summary="Vergaderruimte C3 - Dirk" creator="dirk@boekjehokje.test" day="4" dayOffset="4 days" from="12:00" to="12:30"}},
+    {{> event summary="Vergaderruimte C3 - Sanne" creator="sanne@boekjehokje.test" day="4" dayOffset="4 days" from="12:30" to="13:00"}},
+    {{> event summary="Werkplaats overleg - Griet" creator="griet@boekjehokje.test" day="4" dayOffset="4 days" from="10:00" to="13:00"}},
+    {{> event summary="Werkplaats overleg - Fatima" creator="fatima@boekjehokje.test" day="4" dayOffset="4 days" from="13:00" to="14:00"}}
+  ]
+}

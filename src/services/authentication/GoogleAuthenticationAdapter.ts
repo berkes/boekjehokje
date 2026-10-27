@@ -16,6 +16,7 @@ import type {
   AuthenticationSession,
   AuthenticationTokens,
 } from "./AuthenticationServicePort.ts";
+import { PEOPLE_API_BASE } from "../../config/googleApi.ts";
 import type { SessionStoragePort } from "./SessionStoragePort.ts";
 
 /** Assumed token lifetime for responses without an expiry (one hour) */
@@ -26,9 +27,6 @@ const UNKNOWN_USER: AuthenticatedUser = {
   name: "Onbekend",
   email: "unknown@example.com",
 };
-
-/** Google People API base URL */
-const PEOPLE_API_BASE = "https://people.googleapis.com/v1";
 
 /** Google People API response shape, only used inside this module */
 interface GooglePeopleProfile {

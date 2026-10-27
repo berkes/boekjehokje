@@ -1,4 +1,8 @@
 {
+  "tasks": {
+    "test:e2e": "deno run -A npm:@playwright/test test --config e2e/playwright.config.ts",
+    "test:google-mock": "docker run --rm -p 8081:8080 -v ./e2e/wiremock:/home/wiremock wiremock/wiremock:3x"
+  },
   "fmt": {
     "exclude": [
       "public/**/*.svg",
