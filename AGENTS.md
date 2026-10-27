@@ -5,13 +5,15 @@
 - **Runtime**: Deno with Vite
 - **Frontend**: React 19+ with TypeScript
 - **UI**: Material-UI (MUI) v9 with TypeScript
-- **Calendar**: DayPilot Lite (`@daypilot/daypilot-lite-react`) with TypeScript
+- **Calendar**: super-calendar (`@super-calendar/dom`) with TypeScript
 - **State**: React Context API with typed hooks
-- **Auth**: Google OAuth 2.0
+- **Auth**: Google OAuth 2.0 behind the AuthenticationService port (see
+  "Authentication Architecture" below)
 - **API**: Google Calendar API
-- **Storage**: Google Calendar for events, localStorage for user preferences
-- **Testing**: Jest + React Testing Library
-- **Hosting**: statichost.eu via GitLab CI
+- **Storage**: Google Calendar for events, localStorage for user preferences and
+  the authentication session
+- **Testing**: Deno's built-in test runner with JSR `@std/testing`
+- **Hosting**: GitHub Pages via GitHub Actions
 
 ## Terminology
 
@@ -26,7 +28,10 @@
 ├── src/               # Source code
 │   ├── App.tsx         # Main application
 │   ├── main.tsx        # Entry point
-│   └── assets/         # Static assets
+│   ├── assets/         # Static assets
+│   ├── components/     # UI components
+│   ├── context/        # React contexts (user session)
+│   ├── services/       # Domain services (calendar, authentication)
 ├── public/            # Static files
 ├── package.json       # Dependencies & scripts
 ├── vite.config.ts     # Vite configuration
@@ -110,6 +115,29 @@
 - Group logically related functionality into bounded domain modules (either in
   subdirs with index.ts or in single files)
 - Use dependency injection with interfaces for testability
+
+### Authentication Architecture
+
+Authentication follows the same service-with-dependency-injection pattern as the
+calendar domain (see issue #12): an anti-corruption layer around Google OAuth,
+in `src/services/authentication/`.
+
+- `AuthenticationServicePort` defines the domain language API (`login`,
+  `logout`, `getAuthenticatedUser`, `isAuthenticated`, `getTokens`) in our own
+  types (`AuthenticatedUser`, `AuthenticationTokens`, `AuthenticationSession`).
+- `GoogleAuthenticationAdapter` implements the port. All Google details (scopes,
+  response shapes, token expiry math, People API, the `@react-oauth/google`
+  wiring) stay in the adapter and its `useGoogleLoginFlow` bridge. Do not import
+  Google OAuth types outside this module.
+- Sessions persist through `SessionStoragePort`; `LocalSessionStorageAdapter`
+  stores them in localStorage.
+
+Fake-auth seam for tests and E2E: establish a fake authenticated session either
+by injecting a fake `AuthenticationServicePort` (and `SessionStoragePort`), or
+by writing a session to the localStorage key `boekjehokje_authentication`
+(`AUTHENTICATION_STORAGE_KEY`) shaped as
+`{"user":{"name":"...","email":"..."},"tokens":{"accessToken":"...","tokenType":"Bearer","expiresAt":<epoch milliseconds in the future>}}`.
+The app restores such a session without any Google interaction.
 
 ## Testing
 
