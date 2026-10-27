@@ -194,7 +194,7 @@ export const UNKNOWN_ROOM_INSTANCE = new Room(
 /**
  * All defined rooms with their canonical names, short names, and aliases
  */
-export const ROOM_CONFIGS: {
+const ROOM_CONFIGS: {
   canonicalName: string;
   shortName: string;
   aliases: string[];
@@ -313,7 +313,7 @@ export const ROOM_CONFIGS: {
 /**
  * Create Room instances from configuration
  */
-export function createRooms(): Room[] {
+function createRooms(): Room[] {
   return [
     ...ROOM_CONFIGS.map(
       (config) =>
@@ -339,7 +339,7 @@ export const CANONICAL_ROOMS = ROOM_CONFIGS.map((config) =>
  * Create a mapping from lowercase alias to Room instance
  * This is used for fast lookup during parsing
  */
-export function createRoomAliasMap(rooms: Room[]): Map<string, Room> {
+function createRoomAliasMap(rooms: Room[]): Map<string, Room> {
   const aliasMap = new Map<string, Room>();
 
   for (const room of rooms) {
@@ -391,23 +391,3 @@ export const BOOKER_EXCLUSIONS = [
   "ev",
   "wt",
 ] as const;
-
-/**
- * Get a room by its canonical name
- */
-export function getRoomByCanonicalName(canonicalName: string): Room | null {
-  for (const room of ROOMS) {
-    if (room.canonicalName === canonicalName) {
-      return room;
-    }
-  }
-  return null;
-}
-
-/**
- * Get a room by any of its identifiers (canonical name, short name, or alias)
- */
-export function getRoomByIdentifier(identifier: string): Room | null {
-  const normalized = identifier.toLowerCase().trim();
-  return ROOM_ALIAS_MAP.get(normalized) || null;
-}

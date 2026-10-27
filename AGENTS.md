@@ -123,14 +123,20 @@ calendar domain (see issue #12): an anti-corruption layer around Google OAuth,
 in `src/services/authentication/`.
 
 - `AuthenticationServicePort` defines the domain language API (`login`,
-  `logout`, `getAuthenticatedUser`, `isAuthenticated`, `getTokens`) in our own
-  types (`AuthenticatedUser`, `AuthenticationTokens`, `AuthenticationSession`).
+  `logout`, `getAuthenticatedUser`, `isAuthenticated`, `getTokens`,
+  `fetchProfile`) in our own types (`AuthenticatedUser`, `AuthenticationTokens`,
+  `AuthenticationSession`).
 - `GoogleAuthenticationAdapter` implements the port. All Google details (scopes,
   response shapes, token expiry math, People API, the `@react-oauth/google`
   wiring) stay in the adapter and its `useGoogleLoginFlow` bridge. Do not import
   Google OAuth types outside this module.
 - Sessions persist through `SessionStoragePort`; `LocalSessionStorageAdapter`
   stores them in localStorage.
+- `AuthenticationProvider` provides the port and the session storage through
+  React context. The session storage and the adapter are passed in as
+  properties, so tests and E2E harnesses can inject fakes;
+  `GoogleAuthenticationWrapper` is the composition root for the Google adapter
+  and its login-flow bridge.
 
 Fake-auth seam for tests and E2E: establish a fake authenticated session either
 by injecting a fake `AuthenticationServicePort` (and `SessionStoragePort`), or

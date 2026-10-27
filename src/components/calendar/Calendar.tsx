@@ -189,7 +189,7 @@ export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
   const [moved, setMoved] = useState<ReadonlyMap<string, MovedEvent>>(
     () => new Map(),
   );
-  const { profile } = useUser();
+  const { user } = useUser();
 
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
@@ -204,8 +204,8 @@ export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
   const resources = useMemo(() => toResources(visibleRooms), [visibleRooms]);
   const domTheme = useMemo(() => toDomTheme(theme.palette), [theme.palette]);
   const events = useMemo(
-    () => applyMovedEvents(toEvents(visibleRooms, profile), moved),
-    [visibleRooms, profile, moved],
+    () => applyMovedEvents(toEvents(visibleRooms, user), moved),
+    [visibleRooms, user, moved],
   );
 
   /**

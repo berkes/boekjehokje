@@ -16,7 +16,7 @@ import { useNavigate } from "react-router-dom";
 export function ProfileMenu(): React.JSX.Element {
   const {
     isLoggedIn,
-    profile,
+    user,
     logout,
   } = useUser();
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(
@@ -55,18 +55,18 @@ export function ProfileMenu(): React.JSX.Element {
               sx={{ paddingRight: "1em", fontWeight: "bold" }}
               color="palette.primary.contrastText"
             >
-              {profile?.name || "Onbekend"}
+              {user?.name || "Onbekend"}
             </Typography>
             <Avatar
-              alt={profile?.name || "Onbekend"}
-              src={profile?.picture}
+              alt={user?.name || "Onbekend"}
+              src={user?.picture}
               slotProps={{
                 img: {
                   crossOrigin: "anonymous",
                 },
               }}
             >
-              {profile?.name?.charAt(0).toUpperCase() || "U"}
+              {user?.name?.charAt(0).toUpperCase() || "U"}
             </Avatar>
           </IconButton>
         </Tooltip>

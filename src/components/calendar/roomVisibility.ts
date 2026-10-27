@@ -9,8 +9,10 @@
  * Storage access is injected so the functions stay unit-testable
  * without a browser environment.
  */
-import { STORAGE_KEYS } from "../../utils/storage.ts";
 import type { CalendarRoom } from "./utils.tsx";
+
+/** localStorage key for the set of hidden room ids */
+const HIDDEN_ROOMS_STORAGE_KEY = "boekjehokje_hidden_rooms";
 
 /**
  * Minimal storage surface needed to persist hidden rooms
@@ -28,7 +30,7 @@ export function loadHiddenRooms(
   storage: RoomVisibilityStorage = globalThis.localStorage,
 ): ReadonlySet<string> {
   try {
-    const serialized = storage.getItem(STORAGE_KEYS.HIDDEN_ROOMS);
+    const serialized = storage.getItem(HIDDEN_ROOMS_STORAGE_KEY);
     if (serialized === null) {
       return new Set();
     }
@@ -55,7 +57,7 @@ export function saveHiddenRooms(
 ): void {
   try {
     storage.setItem(
-      STORAGE_KEYS.HIDDEN_ROOMS,
+      HIDDEN_ROOMS_STORAGE_KEY,
       JSON.stringify([...hidden]),
     );
   } catch (error) {

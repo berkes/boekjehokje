@@ -1,33 +1,24 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import {
-  clearAuthenticationState,
-  getAuthenticationState,
-  isAuthenticated,
-  saveAuthenticationState,
-} from "../utils/storage.ts";
-import type { AuthenticationTokens } from "../utils/storage.ts";
+import type {
+  AuthenticatedUser,
+  AuthenticationTokens,
+} from "../services/authentication/index.ts";
+import { useAuthenticationService } from "../services/authentication/index.ts";
 import { UserContext } from "./useUser.ts";
 
 // Type definitions
-export interface UserProfile {
-  name: string;
-  email: string;
-  picture?: string;
-}
-
 export interface AuthenticationState {
+  user: AuthenticatedUser | null;
   tokens: AuthenticationTokens | null;
-  profile: UserProfile | null;
   isLoggedIn: boolean;
   isLoading: boolean;
   error: string | null;
 }
 
 export interface UserContextType extends AuthenticationState {
-  login: (tokens: AuthenticationTokens, profile: UserProfile) => void;
+  login: () => Promise<void>;
   logout: () => void;
-  updateProfile: (profile: UserProfile) => void;
 }
 
 // Provider component
@@ -38,113 +29,75 @@ interface UserProviderProps {
 export function UserProvider(
   { children }: UserProviderProps,
 ): React.JSX.Element {
+  const service = useAuthenticationService();
   const [state, setState] = useState<AuthenticationState>({
+    user: null,
     tokens: null,
-    profile: null,
     isLoggedIn: false,
     isLoading: true,
     error: null,
   });
 
-  // Initialize from localStorage on mount
+  // Restore the session from the authentication service on mount
   useEffect(() => {
-    const initialize = () => {
-      try {
-        const authState = getAuthenticationState();
-        const isAuth = isAuthenticated();
-        // Only use profile if authenticated
-        const profile = isAuth ? authState.profile : null;
+    const user = service.getAuthenticatedUser();
 
-        setState({
-          tokens: authState.tokens,
-          profile,
-          isLoggedIn: isAuth,
-          isLoading: false,
-          error: null,
-        });
-      } catch (error) {
-        console.error("Failed to initialize authentication state:", error);
-        setState({
-          tokens: null,
-          profile: null,
-          isLoggedIn: false,
-          isLoading: false,
-          error: "Failed to initialize authentication state",
-        });
-      }
-    };
+    setState({
+      user,
+      tokens: service.getTokens(),
+      isLoggedIn: user !== null,
+      isLoading: false,
+      error: null,
+    });
+  }, [service]);
 
-    initialize();
-  }, []);
+  // Login function - runs the login flow through the authentication service
+  const login = useCallback(async (): Promise<void> => {
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
-  // Login function - saves tokens and profile to localStorage
-  const login = (tokens: AuthenticationTokens, profile: UserProfile): void => {
     try {
-      saveAuthenticationState({ tokens, profile });
+      const user = await service.login();
 
       setState({
-        tokens,
-        profile,
+        user,
+        tokens: service.getTokens(),
         isLoggedIn: true,
         isLoading: false,
         error: null,
       });
     } catch (error) {
-      console.error("Failed to save authentication data:", error);
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-        error: "Failed to save authentication data",
-      }));
-    }
-  };
+      console.error("Authentication failed:", error);
 
-  // Logout function - clears all authentication data
-  const logout = (): void => {
-    try {
-      clearAuthenticationState();
+      // Clear user data on authentication failure
+      service.logout();
 
       setState({
+        user: null,
         tokens: null,
-        profile: null,
         isLoggedIn: false,
         isLoading: false,
-        error: null,
+        error: "Inloggen mislukt",
       });
-    } catch (error) {
-      console.error("Failed to clear authentication data:", error);
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-        error: "Failed to clear authentication data",
-      }));
     }
-  };
+  }, [service]);
 
-  // Update profile function
-  const updateProfile = (profile: UserProfile): void => {
-    try {
-      const state = getAuthenticationState();
-      saveAuthenticationState({ ...state, profile });
-      setState((prev) => ({
-        ...prev,
-        profile,
-        error: null,
-      }));
-    } catch (error) {
-      console.error("Failed to update profile:", error);
-      setState((prev) => ({
-        ...prev,
-        error: "Failed to update profile",
-      }));
-    }
-  };
+  // Logout function - clears all authentication data
+  const logout = useCallback((): void => {
+    service.logout();
+
+    setState({
+      user: null,
+      tokens: null,
+      isLoggedIn: false,
+      isLoading: false,
+      error: null,
+    });
+  }, [service]);
 
   const value: UserContextType = {
     ...state,
     login,
     logout,
-    updateProfile,
   };
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

@@ -30,8 +30,8 @@ function App(): React.JSX.Element {
     <React.Fragment>
       <CssBaseline enableColorScheme />
       <Router basename={import.meta.env.BASE_URL}>
-        <UserProvider>
-          <GoogleAuthWrapper clientId={clientId}>
+        <GoogleAuthWrapper clientId={clientId}>
+          <UserProvider>
             <AppBar position="static" color="primary" enableColorOnDark>
               <Toolbar>
                 <Typography
@@ -58,8 +58,8 @@ function App(): React.JSX.Element {
                 />
               </Routes>
             </Container>
-          </GoogleAuthWrapper>
-        </UserProvider>
+          </UserProvider>
+        </GoogleAuthWrapper>
       </Router>
     </React.Fragment>
   );

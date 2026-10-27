@@ -8,7 +8,6 @@
 
 // Import internal functions for testing
 import {
-  CANONICAL_ROOMS,
   extractBooker,
   extractRoom,
   isIgnoredEvent,
@@ -16,10 +15,8 @@ import {
   normalizeRoomName,
   parseAndGroupEvents,
   parseEvent,
-  ROOMS,
-  UNKNOWN_ROOM,
 } from "../parser.ts";
-import { Room } from "../rooms.ts";
+import { CANONICAL_ROOMS, Room, ROOMS, UNKNOWN_ROOM } from "../rooms.ts";
 import type { CalendarEvent } from "../../utils/types.ts";
 import type { Booking } from "../CalendarService.ts";
 

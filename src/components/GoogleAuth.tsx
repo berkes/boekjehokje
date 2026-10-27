@@ -1,42 +1,18 @@
 import React from "react";
-
-import { GoogleOAuthProvider, useGoogleLogin } from "@react-oauth/google";
-import { useGoogleAuth } from "./useGoogleAuth.ts";
 import googleLogoUrl from "./googleLogo.svg";
+import { useUser } from "../context/useUser.ts";
 
-// Re-export CredentialResponse and TokenResponse for use in index.ts
-export type { CredentialResponse, TokenResponse } from "@react-oauth/google";
-
-// Google OAuth scopes for People API and Calendar API
-const GOOGLE_OAUTH_SCOPES = [
-  "https://www.googleapis.com/auth/userinfo.profile",
-  "https://www.googleapis.com/auth/userinfo.email",
-  "https://www.googleapis.com/auth/calendar.readonly",
-].join(" ");
+// Re-export the provider wrapper so app wiring stays unchanged
+export {
+  GoogleAuthenticationWrapper as GoogleAuthWrapper,
+} from "../services/authentication/index.ts";
 
 /**
  * Main Google authentication button component
  * Uses Dutch text per project plan
  */
 export function GoogleAuthButton(): React.JSX.Element {
-  const {
-    isLoading,
-    loginGoogleUser,
-    handleError,
-  } = useGoogleAuth();
-
-  // Use useGoogleLogin hook for implicit flow with proper scopes
-  const login = useGoogleLogin({
-    flow: "implicit",
-    scope: GOOGLE_OAUTH_SCOPES,
-    onSuccess: (tokenResponse) => {
-      // Pass the TokenResponse directly to loginGoogleUser
-      loginGoogleUser(tokenResponse);
-    },
-    onError: () => {
-      handleError();
-    },
-  });
+  const { isLoading, login } = useUser();
 
   if (isLoading) {
     return <div className="authentication-loading">Laden...</div>;
@@ -45,7 +21,9 @@ export function GoogleAuthButton(): React.JSX.Element {
   return (
     <button
       type="button"
-      onClick={() => login()}
+      onClick={() => {
+        login();
+      }}
       className="google-authentication-button"
       style={{
         padding: "10px 20px",
@@ -66,22 +44,5 @@ export function GoogleAuthButton(): React.JSX.Element {
       />
       Inloggen met Google
     </button>
-  );
-}
-
-/**
- * Wrapper component that provides Google OAuth context
- * This should wrap the entire application or at least the authentication-dependent parts
- */
-export interface GoogleAuthWrapperProps {
-  children: React.ReactNode;
-  clientId: string;
-}
-
-export function GoogleAuthWrapper(
-  { children, clientId }: GoogleAuthWrapperProps,
-): React.JSX.Element {
-  return (
-    <GoogleOAuthProvider clientId={clientId}>{children}</GoogleOAuthProvider>
   );
 }

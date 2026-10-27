@@ -11,17 +11,9 @@
 import type { CalendarApiClient } from "../utils/calendar/CalendarApiClient.ts";
 import { CALENDAR_ID } from "../utils/calendar/GoogleCalendarApiClient.ts";
 import { CalendarApiError } from "../utils/googleCalendarApi.ts";
-import {
-  type Booking,
-  createRooms,
-  parseAndGroupEvents,
-  populateRoomsWithBookings,
-  type Room,
-  ROOMS,
-  UNKNOWN_ROOM,
-  UNKNOWN_ROOM_DESCRIPTION,
-  UNKNOWN_ROOM_INSTANCE,
-} from "./parser.ts";
+import { parseAndGroupEvents, populateRoomsWithBookings } from "./parser.ts";
+import type { Booking, Room } from "./rooms.ts";
+import { UNKNOWN_ROOM, UNKNOWN_ROOM_DESCRIPTION } from "./rooms.ts";
 import type { CalendarEvent } from "../utils/types.ts";
 
 // Re-export CalendarApiError for use by other modules
@@ -37,6 +29,11 @@ export interface WeekRange {
 
 // Re-export Booking type for backward compatibility
 export type { Booking };
+
+// Re-export Room type and unknown-room constants that are part of the
+// public API
+export type { Room };
+export { UNKNOWN_ROOM, UNKNOWN_ROOM_DESCRIPTION };
 
 /**
  * Get the current week range (Monday to Sunday)
@@ -150,13 +147,3 @@ export async function createCalendarService(
   const apiClient = new GoogleCalendarApiClient(accessToken);
   return new CalendarService(apiClient, CALENDAR_ID);
 }
-
-// Export Room type and helper functions
-export type { Room };
-export {
-  createRooms,
-  ROOMS,
-  UNKNOWN_ROOM,
-  UNKNOWN_ROOM_DESCRIPTION,
-  UNKNOWN_ROOM_INSTANCE,
-};

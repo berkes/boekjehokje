@@ -11,13 +11,13 @@ import { useUser } from "../context/useUser.ts";
  * Fields are not editable per requirements
  */
 export function Settings(): React.JSX.Element {
-  const { profile, logout } = useUser();
+  const { user, logout } = useUser();
 
   return (
     <Box sx={{ py: 4 }}>
       <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 4 }}>
         <Typography variant="h2" component="h1">
-          Ingelogd als {profile!.name}
+          Ingelogd als {user!.name}
         </Typography>
         <Button variant="contained" onClick={logout}>
           Uitloggen
@@ -28,8 +28,8 @@ export function Settings(): React.JSX.Element {
         sx={{ display: "flex", flexDirection: "column", gap: 2, maxWidth: 600 }}
       >
         <Avatar
-          alt={profile!.name}
-          src={profile!.picture}
+          alt={user!.name}
+          src={user!.picture}
           sx={{ width: 64, height: 64 }}
           slotProps={{
             img: {
@@ -37,7 +37,7 @@ export function Settings(): React.JSX.Element {
             },
           }}
         >
-          {profile!.name.charAt(0).toUpperCase()}
+          {user!.name.charAt(0).toUpperCase()}
         </Avatar>
 
         <Box
@@ -48,14 +48,14 @@ export function Settings(): React.JSX.Element {
             Naam
           </Typography>
           <Typography component="dd">
-            {profile!.name}
+            {user!.name}
           </Typography>
 
           <Typography component="dt" sx={{ fontWeight: "bold" }}>
             E-mail
           </Typography>
           <Typography component="dd">
-            {profile!.email}
+            {user!.email}
           </Typography>
         </Box>
       </Box>

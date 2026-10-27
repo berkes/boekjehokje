@@ -22,12 +22,10 @@ import {
  */
 import type { CalendarEvent } from "../utils/types.ts";
 
-export type { Booking, CalendarEvent, Room, RoomName };
-
 /**
  * Parsed event with extracted room and booker information
  */
-export interface ParsedEvent {
+interface ParsedEvent {
   id: string;
   uid: string;
   summary: string;
@@ -95,17 +93,9 @@ export function normalizeRoomName(roomName: string): RoomName {
 }
 
 /**
- * Get the Room instance for a given identifier
- */
-export function getRoom(roomName: string): Room | null {
-  const lowerName = roomName.toLowerCase().trim();
-  return ROOM_ALIAS_MAP.get(lowerName) || null;
-}
-
-/**
  * Get the Room instance by its canonical name
  */
-export function getRoomByCanonicalName(canonicalName: string): Room | null {
+function getRoomByCanonicalName(canonicalName: string): Room | null {
   for (const room of ROOMS) {
     if (room.canonicalName === canonicalName) {
       return room;
@@ -279,7 +269,7 @@ export function parseEvent(event: CalendarEvent): ParsedEvent {
 /**
  * Convert ParsedEvent to Booking
  */
-export function toBooking(parsedEvent: ParsedEvent): Booking {
+function toBooking(parsedEvent: ParsedEvent): Booking {
   return {
     id: parsedEvent.id,
     uid: parsedEvent.uid,
@@ -414,12 +404,3 @@ export function populateRoomsWithBookings(
 
   return roomsWithData;
 }
-
-export {
-  CANONICAL_ROOMS,
-  createRooms,
-  ROOMS,
-  UNKNOWN_ROOM,
-  UNKNOWN_ROOM_DESCRIPTION,
-  UNKNOWN_ROOM_INSTANCE,
-} from "./rooms.ts";
