@@ -6,7 +6,6 @@ import type {
 } from "../services/authentication/index.ts";
 import { useAuthenticationService } from "../services/authentication/index.ts";
 import { UserContext } from "./useUser.ts";
-
 // Type definitions
 export interface AuthenticationState {
   user: AuthenticatedUser | null;

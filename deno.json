@@ -2,7 +2,8 @@
   "fmt": {
     "exclude": [
       "public/**/*.svg",
-      "src/assets/**/*.svg"
+      "src/assets/**/*.svg",
+      "src/services/DemoCalendarAdapter.ts"
     ]
   },
   "imports": {

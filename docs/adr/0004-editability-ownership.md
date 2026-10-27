@@ -46,11 +46,11 @@ extra API calls, and keeps the rule out of the components so it can be
 unit-tested and reused.
 
 A booking is editable if and only if `booking.details.author`
-(case-insensitively, trimmed) equals `profile.email` of the currently
-authenticated user, and the user is authenticated. Not authenticated, or an
-unknown creator email, means not editable. The predicate lives in
-`src/services/editability.ts` (`isEditable(booking, profile)`); components never
-inline the comparison.
+(case-insensitively, trimmed) equals `profile.email` of the user the calendar is
+served for. Not authenticated, or an unknown creator email, means not editable.
+The calendar service (the adapter implementing `CalendarServicePort`, e.g.
+`GoogleCalendarAdapter`) decides editability and hands each booking to the
+components with an `editable` flag; components never inline the comparison.
 
 ### Consequences
 
@@ -63,9 +63,10 @@ inline the comparison.
 
 ## Validation
 
-- Unit tests in `src/services/__tests__/editability.test.ts` cover: matching
-  email, differing email, case-insensitivity, whitespace, unauthenticated user,
-  empty profile email and unknown creator email.
+- Unit tests cover the adapter's editability behaviour: matching email,
+  differing email, case-insensitivity and unauthenticated user (see
+  `src/services/__tests__/`). The demo adapter hands two bookings per week to
+  the profile's user, so editable and read-only states are both visible.
 - `deno lint` and `deno check` pass; the calendar only enables event moving for
   events the predicate accepts.
 

@@ -16,8 +16,13 @@ import { ProfileMenu } from "./components/ProfileMenu.tsx";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import { BrowserRouter as Router, Link, Route, Routes } from "react-router-dom";
-import { Settings } from "./pages/index.ts";
+import { DemoCalendar, Settings } from "./pages/index.ts";
 import { ProtectedRoute } from "./components/ProtectedRoute.tsx";
+import { GoogleCalendarAdapter } from "./services/GoogleCalendarAdapter.ts";
+import {
+  CALENDAR_ID,
+  GoogleCalendarApiClient,
+} from "./utils/calendar/GoogleCalendarApiClient.ts";
 
 /**
  * Main application component
@@ -56,6 +61,7 @@ function App(): React.JSX.Element {
                     </ProtectedRoute>
                   }
                 />
+                <Route path="/demo" element={<DemoCalendar />} />
               </Routes>
             </Container>
           </UserProvider>
@@ -131,10 +137,20 @@ function LandingPage(): React.JSX.Element {
  * Main content shown when user is authenticated
  */
 function MainContent(): React.JSX.Element {
+  const { tokens, user } = useUser();
+  if (!tokens || !user) {
+    throw new Error("MainContent needs tokens and user");
+  }
+
+  const service = new GoogleCalendarAdapter(
+    new GoogleCalendarApiClient(tokens.accessToken),
+    CALENDAR_ID,
+    user,
+  );
   return (
     <Box>
       <Box component="section" sx={{ mb: 4 }}>
-        <CalendarView />
+        <CalendarView service={service} />
       </Box>
     </Box>
   );
