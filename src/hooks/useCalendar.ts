@@ -5,12 +5,12 @@
  * room bookings from the NYMA makersplaats calendar.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useUser } from "../context/useUser.ts";
 import {
   type Booking,
   CalendarApiError,
-  createCalendarService,
+  type CalendarServicePort,
   type Room,
 } from "../services/index.ts";
 
@@ -18,14 +18,14 @@ import {
  * Return type for useCalendar hook
  */
 export interface UseCalendarReturn {
+  /** (re)Load the calendar data  **/
+  load: () => Promise<void>;
   /** All rooms with their bookings for the current week */
   rooms: Room[];
   /** Whether data is currently loading */
   isLoading: boolean;
   /** Any error that occurred, or null */
   error: Error | null;
-  /** Refresh the calendar data */
-  refresh: () => Promise<void>;
   /** Get bookings for a specific room */
   getBookingsForRoom: (roomName: string) => Booking[];
   /** Get a specific room by name */
@@ -51,16 +51,18 @@ export interface UseCalendarReturn {
  * }
  * ```
  */
-export function useCalendar(): UseCalendarReturn {
-  const { tokens } = useUser();
+export function useCalendar(
+  calendarService: CalendarServicePort,
+): UseCalendarReturn {
+  const { tokens, user } = useUser();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   /**
-   * Load calendar data from API using CalendarService
+   * Load calendar data through the calendar service port
    */
-  const loadCalendarData = useCallback(async () => {
+  const load = useCallback(async () => {
     // Clear previous error
     setError(null);
 
@@ -73,9 +75,6 @@ export function useCalendar(): UseCalendarReturn {
 
     try {
       setIsLoading(true);
-
-      // Create service with dependency injection
-      const calendarService = await createCalendarService(tokens.accessToken);
 
       const roomsWithBookings = await calendarService.getRoomsWithBookings();
       setRooms(roomsWithBookings);
@@ -95,21 +94,7 @@ export function useCalendar(): UseCalendarReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [tokens?.accessToken]);
-
-  /**
-   * Initial load on mount
-   */
-  useEffect(() => {
-    loadCalendarData();
-  }, [loadCalendarData]);
-
-  /**
-   * Refresh function to manually reload data
-   */
-  const refresh = useCallback(async () => {
-    await loadCalendarData();
-  }, [loadCalendarData]);
+  }, [tokens?.accessToken, user]);
 
   /**
    * Get bookings for a specific room (from already loaded data)
@@ -133,10 +118,10 @@ export function useCalendar(): UseCalendarReturn {
   );
 
   return {
+    load,
     rooms,
     isLoading,
     error,
-    refresh,
     getBookingsForRoom,
     getRoomByName,
   };

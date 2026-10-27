@@ -30,9 +30,8 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { useUser } from "../../context/useUser.ts";
 import { useCalendar } from "../../hooks/useCalendar.ts";
-import { type Booking } from "../../services/index.ts";
+import type { Booking, CalendarServicePort } from "../../services/index.ts";
 import { systemClock } from "../../utils/clock.ts";
 import { BookingSidebar, SIDEBAR_WIDTH } from "./BookingSidebar.tsx";
 import { CalendarToolbar } from "./CalendarToolbar.tsx";
@@ -189,7 +188,6 @@ export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
   const [moved, setMoved] = useState<ReadonlyMap<string, MovedEvent>>(
     () => new Map(),
   );
-  const { user } = useUser();
 
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
@@ -204,8 +202,8 @@ export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
   const resources = useMemo(() => toResources(visibleRooms), [visibleRooms]);
   const domTheme = useMemo(() => toDomTheme(theme.palette), [theme.palette]);
   const events = useMemo(
-    () => applyMovedEvents(toEvents(visibleRooms, user), moved),
-    [visibleRooms, user, moved],
+    () => applyMovedEvents(toEvents(visibleRooms), moved),
+    [visibleRooms, moved],
   );
 
   /**
@@ -374,13 +372,26 @@ export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
   );
 }
 
+interface CalendarViewProps {
+  service: CalendarServicePort;
+}
+
 /**
  * Calendar view component
  * Fetches rooms with their bookings and renders the calendar
  * with loading, error and empty states
  */
-export function CalendarView(): React.JSX.Element {
-  const { rooms, isLoading, error, refresh } = useCalendar();
+export function CalendarView(
+  { service }: CalendarViewProps,
+): React.JSX.Element {
+  const { load, rooms, isLoading, error } = useCalendar(service);
+
+  /**
+   * Initial load on mount
+   */
+  useEffect(() => {
+    load();
+  }, [load]);
 
   if (isLoading) {
     return (
@@ -413,7 +424,7 @@ export function CalendarView(): React.JSX.Element {
         }}
       >
         <Typography color="error">Fout: {error.message}</Typography>
-        <Button variant="contained" onClick={refresh}>
+        <Button variant="contained" onClick={load}>
           Opnieuw proberen
         </Button>
       </Box>

@@ -1,20 +1,23 @@
 /**
  * Services - public API
  *
- * Exports only the domain language API for calendar operations.
- * Implementation details are not exposed.
+ * The calendar is served through the CalendarServicePort; the two
+ * adapters (Google Calendar and demo) implement it. The domain types
+ * (Room, Booking) and the week helpers are part of the port. Everything
+ * else in this module stays private to it.
  *
  * Authentication is its own module with its own public API:
  * ./authentication/index.ts.
  */
 
-export {
-  type Booking,
-  CalendarApiError,
-  createCalendarService,
-  type Room,
-  UNKNOWN_ROOM,
-  UNKNOWN_ROOM_DESCRIPTION,
-  type WeekRange,
-} from "./CalendarService.ts";
-export { isEditable, type UserProfileLike } from "./editability.ts";
+export type {
+  Booking,
+  CalendarServicePort,
+  Room,
+  WeekRange,
+} from "./CalendarServicePort.ts";
+export { getNextWeek, getThisWeek } from "./CalendarServicePort.ts";
+export { DemoCalendarAdapter } from "./DemoCalendarAdapter.ts";
+export { GoogleCalendarAdapter } from "./GoogleCalendarAdapter.ts";
+export { UNKNOWN_ROOM, UNKNOWN_ROOM_DESCRIPTION } from "./rooms.ts";
+export { CalendarApiError } from "../utils/googleCalendarApi.ts";

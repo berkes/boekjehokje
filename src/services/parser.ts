@@ -1,17 +1,17 @@
 /**
- * Room parser for CalendarService
+ * Room parser for the calendar service adapters
  *
  * Parses event summaries to extract room and booker information.
- * Uses room configuration from rooms.ts.
- * Populates Room instances with their bookings.
+ * Uses the room configuration from rooms.ts. Returns parsed bookings
+ * grouped by room configuration: a subset of the domain model, without
+ * the attributes (like editability) that the adapters determine when
+ * they build the final rooms.
  */
 
 import {
   BOOKER_EXCLUSIONS,
-  type Booking,
-  type Room,
-  Room as RoomClass,
   ROOM_ALIAS_MAP,
+  type RoomConfig,
   type RoomName,
   ROOMS,
   UNKNOWN_ROOM,
@@ -21,6 +21,35 @@ import {
  * Google Calendar API event type
  */
 import type { CalendarEvent } from "../utils/types.ts";
+
+export type { CalendarEvent, RoomName };
+
+/**
+ * A booking as parsed from a calendar event: everything the adapters
+ * need to build a domain booking, without the adapter-determined
+ * attributes such as editability
+ */
+export interface ParsedBooking {
+  id: string;
+  uid: string;
+  summary: string;
+  room: string;
+  booker: string | null;
+  details: {
+    originalName: string;
+    author: string;
+  };
+  start: Date;
+  end: Date;
+}
+
+/**
+ * Parsed bookings grouped under their room configuration
+ */
+export interface RoomGroup {
+  room: RoomConfig;
+  bookings: ParsedBooking[];
+}
 
 /**
  * Parsed event with extracted room and booker information
@@ -93,9 +122,19 @@ export function normalizeRoomName(roomName: string): RoomName {
 }
 
 /**
- * Get the Room instance by its canonical name
+ * Get the room configuration for a given identifier
  */
-function getRoomByCanonicalName(canonicalName: string): Room | null {
+export function getRoom(roomName: string): RoomConfig | null {
+  const lowerName = roomName.toLowerCase().trim();
+  return ROOM_ALIAS_MAP.get(lowerName) || null;
+}
+
+/**
+ * Get the room configuration by its canonical name
+ */
+export function getRoomByCanonicalName(
+  canonicalName: string,
+): RoomConfig | null {
   for (const room of ROOMS) {
     if (room.canonicalName === canonicalName) {
       return room;
@@ -267,9 +306,9 @@ export function parseEvent(event: CalendarEvent): ParsedEvent {
 }
 
 /**
- * Convert ParsedEvent to Booking
+ * Convert ParsedEvent to a ParsedBooking
  */
-function toBooking(parsedEvent: ParsedEvent): Booking {
+export function toBooking(parsedEvent: ParsedEvent): ParsedBooking {
   return {
     id: parsedEvent.id,
     uid: parsedEvent.uid,
@@ -325,13 +364,13 @@ export function isIgnoredEvent(summary: string): boolean {
  */
 export function parseAndGroupEvents(
   events: CalendarEvent[],
-): { room: Room; bookings: Booking[] }[] {
+): RoomGroup[] {
   const parsedEvents = events
     .filter((event) => !isIgnoredEvent(event.summary))
     .map(parseEvent);
   const roomMap = new Map<
     string,
-    { room: Room; parsedEvents: ParsedEvent[] }
+    { room: RoomConfig; parsedEvents: ParsedEvent[] }
   >();
 
   // Initialize all known rooms
@@ -363,8 +402,8 @@ export function parseAndGroupEvents(
     }
   }
 
-  // Convert to array of Room with Bookings
-  const result: { room: Room; bookings: Booking[] }[] = [];
+  // Convert to array of room groups with parsed bookings
+  const result: RoomGroup[] = [];
   for (const [_roomName, { room, parsedEvents }] of roomMap) {
     // Only include rooms that have bookings
     if (parsedEvents.length > 0) {
@@ -380,27 +419,10 @@ export function parseAndGroupEvents(
   return result;
 }
 
-/**
- * Populate Room instances with their bookings from parsed events
- * Creates new Room instances to avoid modifying the original static instances
- */
-export function populateRoomsWithBookings(
-  roomWithBookings: { room: Room; bookings: Booking[] }[],
-): Room[] {
-  const roomsWithData: Room[] = [];
-
-  for (const { room, bookings } of roomWithBookings) {
-    // Create a new Room instance with the same config
-    const newRoom = new RoomClass(
-      room.canonicalName,
-      room.shortName,
-      [...room.aliases],
-    );
-
-    // Set the bookings on the new Room instance
-    newRoom.bookings = bookings;
-    roomsWithData.push(newRoom);
-  }
-
-  return roomsWithData;
-}
+export {
+  CANONICAL_ROOMS,
+  type RoomConfig,
+  ROOMS,
+  UNKNOWN_ROOM,
+  UNKNOWN_ROOM_DESCRIPTION,
+} from "./rooms.ts";

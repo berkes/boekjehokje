@@ -1,169 +1,19 @@
 /**
- * Room configuration and types for CalendarService
+ * Room configuration for the calendar service
  *
- * Contains Room class with canonicalName, shortName, aliases, and bookings.
- * This allows for extensibility with future attributes like image, location, description, etc.
+ * The static configuration of the rooms of the NYMA Makersplaats:
+ * canonical names, short names and aliases. The domain Room and Booking
+ * types live in CalendarServicePort.ts; this module only describes the
+ * rooms themselves.
  */
 
 /**
- * A booking represents a room reservation
+ * The configuration of one room
  */
-export interface Booking {
-  id: string;
-  uid: string;
-  summary: string;
-  room: string;
-  booker: string | null;
-  details: {
-    originalName: string;
-    author: string;
-  };
-  start: Date;
-  end: Date;
-}
-
-/**
- * A meeting room with its various identifiers and bookings
- */
-export class Room {
-  readonly canonicalName: string;
-  readonly shortName: string;
-  readonly aliases: string[];
-  private _bookings: Booking[] = [];
-
-  constructor(
-    canonicalName: string,
-    shortName: string,
-    aliases: string[],
-  ) {
-    this.canonicalName = canonicalName;
-    this.shortName = shortName;
-    this.aliases = aliases;
-  }
-
-  /**
-   * Get all bookings for this room
-   */
-  get bookings(): Booking[] {
-    return this._bookings;
-  }
-
-  /**
-   * Set bookings for this room
-   */
-  set bookings(bookings: Booking[]) {
-    this._bookings = bookings;
-  }
-
-  /**
-   * Get bookings for today
-   */
-  todayBookings(): Booking[] {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    return this._bookings.filter((booking) => {
-      const bookingDate = new Date(booking.start);
-      bookingDate.setHours(0, 0, 0, 0);
-
-      return bookingDate.getTime() === today.getTime();
-    });
-  }
-
-  /**
-   * Get bookings for previous days (before today)
-   */
-  previousBookings(): Booking[] {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    return this._bookings.filter((booking) => {
-      const bookingDate = new Date(booking.start);
-      bookingDate.setHours(0, 0, 0, 0);
-
-      return bookingDate.getTime() < today.getTime();
-    });
-  }
-
-  /**
-   * Get bookings for future days (after today)
-   */
-  futureBookings(): Booking[] {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    return this._bookings.filter((booking) => {
-      const bookingDate = new Date(booking.start);
-      bookingDate.setHours(0, 0, 0, 0);
-
-      return bookingDate.getTime() > today.getTime();
-    });
-  }
-
-  /**
-   * Get bookings for next days (tomorrow and later this week)
-   * This is a subset of futureBookings, excluding today
-   */
-  nextDaysBookings(): Booking[] {
-    return this.futureBookings();
-  }
-
-  /**
-   * Get count of bookings for next days (tomorrow and later)
-   */
-  nextDaysCount(): number {
-    return this.nextDaysBookings().length;
-  }
-
-  /**
-   * Check if there are bookings for today
-   */
-  hasTodayBookings(): boolean {
-    return this.todayBookings().length > 0;
-  }
-
-  /**
-   * Check if there are bookings for previous days
-   */
-  hasPreviousBookings(): boolean {
-    return this.previousBookings().length > 0;
-  }
-
-  /**
-   * Check if there are bookings for future days
-   */
-  hasFutureBookings(): boolean {
-    return this.futureBookings().length > 0;
-  }
-
-  /**
-   * Add a single booking to this room
-   */
-  addBooking(booking: Booking): void {
-    this._bookings.push(booking);
-  }
-
-  /**
-   * Check if this room matches a given identifier (canonical name or alias)
-   */
-  matchesIdentifier(identifier: string): boolean {
-    const normalized = identifier.toLowerCase().trim();
-
-    // Check canonical name
-    if (this.canonicalName.toLowerCase() === normalized) {
-      return true;
-    }
-
-    // Check short name
-    if (this.shortName.toLowerCase() === normalized) {
-      return true;
-    }
-
-    // Check aliases
-    return this.aliases.some((alias) =>
-      alias.toLowerCase().trim() === normalized
-    );
-  }
+export interface RoomConfig {
+  canonicalName: string;
+  shortName: string;
+  aliases: string[];
 }
 
 /**
@@ -185,11 +35,11 @@ export type RoomName = string;
 /**
  * The special Unknown room instance for events that couldn't be matched
  */
-export const UNKNOWN_ROOM_INSTANCE = new Room(
-  UNKNOWN_ROOM,
-  UNKNOWN_ROOM,
-  [],
-);
+export const UNKNOWN_ROOM_CONFIG: RoomConfig = {
+  canonicalName: UNKNOWN_ROOM,
+  shortName: UNKNOWN_ROOM,
+  aliases: [],
+};
 
 /**
  * All defined rooms with their canonical names, short names, and aliases
@@ -311,22 +161,16 @@ const ROOM_CONFIGS: {
 ] as const;
 
 /**
- * Create Room instances from configuration
+ * All rooms, the Unknown room included
  */
-function createRooms(): Room[] {
-  return [
-    ...ROOM_CONFIGS.map(
-      (config) =>
-        new Room(config.canonicalName, config.shortName, config.aliases),
-    ),
-    UNKNOWN_ROOM_INSTANCE,
-  ];
-}
-
-/**
- * Pre-computed Room instances
- */
-export const ROOMS: Room[] = createRooms();
+export const ROOMS: RoomConfig[] = [
+  ...ROOM_CONFIGS.map((config) => ({
+    canonicalName: config.canonicalName,
+    shortName: config.shortName,
+    aliases: [...config.aliases],
+  })),
+  UNKNOWN_ROOM_CONFIG,
+];
 
 /**
  * Get all canonical room names (excluding Unknown)
@@ -339,8 +183,10 @@ export const CANONICAL_ROOMS = ROOM_CONFIGS.map((config) =>
  * Create a mapping from lowercase alias to Room instance
  * This is used for fast lookup during parsing
  */
-function createRoomAliasMap(rooms: Room[]): Map<string, Room> {
-  const aliasMap = new Map<string, Room>();
+export function createRoomAliasMap(
+  rooms: RoomConfig[],
+): Map<string, RoomConfig> {
+  const aliasMap = new Map<string, RoomConfig>();
 
   for (const room of rooms) {
     // Add canonical name (lowercase)
@@ -391,3 +237,25 @@ export const BOOKER_EXCLUSIONS = [
   "ev",
   "wt",
 ] as const;
+
+/**
+ * Get a room by its canonical name
+ */
+export function getRoomByCanonicalName(
+  canonicalName: string,
+): RoomConfig | null {
+  for (const room of ROOMS) {
+    if (room.canonicalName === canonicalName) {
+      return room;
+    }
+  }
+  return null;
+}
+
+/**
+ * Get a room by any of its identifiers (canonical name, short name, or alias)
+ */
+export function getRoomByIdentifier(identifier: string): RoomConfig | null {
+  const normalized = identifier.toLowerCase().trim();
+  return ROOM_ALIAS_MAP.get(normalized) || null;
+}

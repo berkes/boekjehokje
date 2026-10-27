@@ -16,7 +16,6 @@ import type {
 } from "@super-calendar/dom";
 import {
   type Booking,
-  isEditable,
   UNKNOWN_ROOM,
   UNKNOWN_ROOM_DESCRIPTION,
 } from "../../services/index.ts";
@@ -125,17 +124,14 @@ export function toResources(rooms: CalendarRoom[]): CalendarResource[] {
 }
 
 /**
- * Map room bookings to board events. The booking itself and its editability
- * (ADR-0004) travel along in the meta; events of others are locked
- * (draggable: false), own events can be dragged and resized (UI-only).
+ * Map room bookings to board events. The booking itself travels along in
+ * the meta; its editability was decided by the calendar service (ADR-0004)
+ * and events of others are locked (draggable: false).
  */
-export function toEvents(
-  rooms: CalendarRoom[],
-  profile?: { email: string } | null,
-): BoardEvent[] {
+export function toEvents(rooms: CalendarRoom[]): BoardEvent[] {
   return rooms.flatMap((room) =>
     room.bookings.map((booking) => {
-      const editable = isEditable(booking, profile);
+      const editable = booking.editable;
 
       const event: BoardEvent = {
         title: booking.booker || booking.summary,

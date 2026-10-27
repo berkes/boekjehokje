@@ -30,6 +30,7 @@ function booking(overrides: Partial<Booking>): Booking {
     summary: "Summary",
     room: "Kletshok 05",
     booker: null,
+    editable: false,
     details: {
       originalName: "Kletshok 05",
       author: "booker@example.com",
@@ -94,18 +95,15 @@ Deno.test("withUnknownLast does not change the input rooms", () => {
 });
 
 Deno.test("toEvents maps bookings to events on the room's resource", () => {
-  const events = toEvents(
-    [
-      {
-        canonicalName: "Kletshok 05",
-        shortName: "KH05",
-        bookings: [
-          booking({ booker: "Alice", summary: "Overleg" }),
-        ],
-      },
-    ],
-    { email: "booker@example.com" },
-  );
+  const events = toEvents([
+    {
+      canonicalName: "Kletshok 05",
+      shortName: "KH05",
+      bookings: [
+        booking({ booker: "Alice", summary: "Overleg" }),
+      ],
+    },
+  ]);
   assertEquals(events.length, 1);
   assertEquals(events[0].title, "Alice");
   assertEquals(events[0].start, new Date(2026, 1, 19, 10, 0, 0));
@@ -114,42 +112,24 @@ Deno.test("toEvents maps bookings to events on the room's resource", () => {
   assertEquals(events[0].booking.summary, "Overleg");
 });
 
-Deno.test("toEvents makes own bookings editable and draggable", () => {
-  const events = toEvents(
-    [
-      {
-        canonicalName: "Kletshok 05",
-        shortName: "KH05",
-        bookings: [booking({ booker: "Alice" })],
-      },
-    ],
-    { email: "booker@example.com" },
-  );
-  assertEquals(events[0].editable, true);
-  assertEquals(events[0].draggable, true);
-});
-
-Deno.test("toEvents marks bookings of other users as read-only", () => {
-  const events = toEvents(
-    [
-      {
-        canonicalName: "Kletshok 05",
-        shortName: "KH05",
-        bookings: [booking({ booker: "Alice" })],
-      },
-    ],
-    { email: "someone.else@example.com" },
-  );
-  assertEquals(events[0].editable, false);
-  assertEquals(events[0].draggable, false);
-});
-
-Deno.test("toEvents marks all bookings read-only without a profile", () => {
+Deno.test("toEvents keeps editable bookings editable and draggable", () => {
   const events = toEvents([
     {
       canonicalName: "Kletshok 05",
       shortName: "KH05",
-      bookings: [booking({})],
+      bookings: [booking({ booker: "Alice", editable: true })],
+    },
+  ]);
+  assertEquals(events[0].editable, true);
+  assertEquals(events[0].draggable, true);
+});
+
+Deno.test("toEvents keeps read-only bookings locked", () => {
+  const events = toEvents([
+    {
+      canonicalName: "Kletshok 05",
+      shortName: "KH05",
+      bookings: [booking({ booker: "Alice", editable: false })],
     },
   ]);
   assertEquals(events[0].editable, false);
@@ -168,16 +148,13 @@ Deno.test("toEvents falls back to the summary when there is no booker", () => {
 });
 
 Deno.test("applyMovedEvents overrides time and room of a dragged booking", () => {
-  const events = toEvents(
-    [
-      {
-        canonicalName: "Kletshok 05",
-        shortName: "KH05",
-        bookings: [booking({ id: "id-1" })],
-      },
-    ],
-    { email: "booker@example.com" },
-  );
+  const events = toEvents([
+    {
+      canonicalName: "Kletshok 05",
+      shortName: "KH05",
+      bookings: [booking({ id: "id-1", editable: true })],
+    },
+  ]);
   const moved = applyMovedEvents(
     events,
     new Map([
