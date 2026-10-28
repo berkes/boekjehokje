@@ -151,7 +151,28 @@ The app restores such a session without any Google interaction.
 - Keep tests simple, clean, and focused on behavior
 - Use dependency injection to mock external dependencies
 - Test domain logic, not implementation details
-- No e2e or integration tests needed for now
+
+### E2E tests
+
+The Playwright suite in `e2e/` runs against the WireMock-mocked Google APIs; see
+[docs/e2e.md](docs/e2e.md) for the full setup. Conventions:
+
+- Run `deno task test:google-mock` (the WireMock container) and
+  `deno task test:e2e` (the suite) in separate terminals.
+- Every test carries a user-story comment (Given/When/Then plus "So that ...")
+  and a user-view title. The body reads like the story: setup and `goto()` for
+  Given, actions for When, `assert*` methods for Then.
+- Page objects in `e2e/pages/` hold the state and speak the app's domain
+  language. Selectors, labels and shapes of expected strings live in the page
+  objects — never in the tests. Expectations in actions bubble up.
+- Assertions are explicit and reproducible: tests pass the concrete strings they
+  expect (bookings, bookers, durations, day labels), made stable by the fixed
+  clock in `e2e/fixtures/auth.ts` (`FIXED_NOW`). Never parse page content and
+  assert against the parsed value, and never depend on the real run date.
+- Booking specs stay read-side only until write flows are finalized (issue #14).
+- `deno lint` and `deno fmt --check` cover `e2e/` with the rest of the repo; the
+  suite is type-checked by `deno check` (CI runs it on `e2e/`, since
+  `deno task build` only covers `src`).
 
 ## Getting Started
 

@@ -18,3 +18,4 @@ you prefer.
 
 - Workflow details: see [ADR-0002](docs/adr/0002-hybrid-booking-workflow.md)
 - Technical stack: see [ADR-0003](docs/adr/0003-pure-frontend-tech-stack.md)
+- E2E testing: see [E2E testing](docs/e2e.md)
