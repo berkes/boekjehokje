@@ -5,7 +5,8 @@
 
 # This workflow runs format checks, lint, and a build on every
 # push and pull request. On a successful build of a pushed tag, it deploys
-# the contents of ./dist to GitHub Pages.
+# the contents of ./dist to GitHub Pages. Every run also executes the
+# Playwright E2E suite against a WireMock container.
 # For more information see: https://github.com/denoland/setup-deno
 
 name: Deno
@@ -63,6 +64,65 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
+
+  # Runs the Playwright E2E suite against a WireMock container that mocks
+  # the Google APIs (ADR-0001). The Deno version is pinned to a combination
+  # known to work with Playwright (denoland/deno#27623, #31595).
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: 2.9.7
+
+      - name: Install dependencies
+        run: deno install
+
+      - name: Run linter
+        run: deno lint
+
+      - name: Type-check the E2E suite
+        run: >
+          deno check e2e/playwright.config.ts e2e/fixtures/auth.ts
+          e2e/pages/*.ts e2e/tests/*.spec.ts
+
+      - name: Install the Playwright browser
+        run: deno run -A npm:@playwright/test install --with-deps chromium
+
+      - name: Start the Google API mock
+        run: >
+          docker run -d --name google-mock -p 8081:8080
+          -v "$PWD/e2e/wiremock:/home/wiremock" wiremock/wiremock:3x
+
+      - name: Wait for the mock to become healthy
+        run: |
+          for _ in $(seq 1 30); do
+            if curl -fsS http://localhost:8081/__admin/health > /dev/null; then
+              echo "WireMock is healthy"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "WireMock did not become healthy in time"
+          docker logs google-mock
+          exit 1
+
+      - name: Run the E2E suite
+        run: deno task test:e2e
+        env:
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+
+      - name: Upload the Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
 
   deploy:
     needs: build
