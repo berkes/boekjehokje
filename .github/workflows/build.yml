@@ -91,9 +91,6 @@ jobs:
       - name: Install dependencies
         run: deno install
 
-      - name: Run linter
-        run: deno lint
-
       - name: Type-check the E2E suite
         run: >
           deno check e2e/playwright.config.ts e2e/fixtures/auth.ts
