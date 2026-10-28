@@ -68,8 +68,17 @@ jobs:
   # Runs the Playwright E2E suite against a WireMock container that mocks
   # the Google APIs (ADR-0001). The Deno version is pinned to a combination
   # known to work with Playwright (denoland/deno#27623, #31595).
+  #
+  # The mock runs as a service container. Service containers start before
+  # the job's steps, so e2e/wiremock cannot be mounted into it; instead a
+  # job step uploads the stubs through WireMock's admin API.
   e2e:
     runs-on: ubuntu-latest
+    services:
+      google-mock:
+        image: wiremock/wiremock:3x
+        ports:
+          - 8081:8080
     steps:
       - name: Setup repo
         uses: actions/checkout@v4
@@ -93,11 +102,6 @@ jobs:
       - name: Install the Playwright browser
         run: deno run -A npm:@playwright/test install --with-deps chromium
 
-      - name: Start the Google API mock
-        run: >
-          docker run -d --name google-mock -p 8081:8080
-          -v "$PWD/e2e/wiremock:/home/wiremock" wiremock/wiremock:3x
-
       - name: Wait for the mock to become healthy
         run: |
           for _ in $(seq 1 30); do
@@ -108,8 +112,18 @@ jobs:
             sleep 1
           done
           echo "WireMock did not become healthy in time"
-          docker logs google-mock
           exit 1
+
+      - name: Load the Google API stubs into the mock
+        run: |
+          curl -fsS -X PUT -H 'Content-Type: text/plain' \
+            --data-binary @e2e/wiremock/__files/calendar-events.hbs \
+            http://localhost:8081/__admin/files/calendar-events.hbs
+          for mapping in e2e/wiremock/mappings/*.json; do
+            curl -fsS -X POST -H 'Content-Type: application/json' \
+              --data-binary @"$mapping" \
+              http://localhost:8081/__admin/mappings
+          done
 
       - name: Run the E2E suite
         run: deno task test:e2e
