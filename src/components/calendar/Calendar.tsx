@@ -16,7 +16,6 @@ import { Delete, Edit, Info } from "@mui/icons-material";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
-import Drawer from "@mui/material/Drawer";
 import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
 import { useTheme } from "@mui/material/styles";
@@ -33,8 +32,9 @@ import React, {
 import { useCalendar } from "../../hooks/useCalendar.ts";
 import type { Booking, CalendarServicePort } from "../../services/index.ts";
 import { systemClock } from "../../utils/clock.ts";
-import { BookingSidebar, SIDEBAR_WIDTH } from "./BookingSidebar.tsx";
+import { BookingSidebar } from "./BookingSidebar.tsx";
 import { CalendarToolbar } from "./CalendarToolbar.tsx";
+import { SidebarShell } from "./SidebarShell.tsx";
 import { RoomVisibiltyControls } from "./RoomVisibiltyControls.tsx";
 import { useRoomVisibility } from "./useRoomVisibility.ts";
 import {
@@ -292,14 +292,26 @@ export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
     : undefined;
 
   const sidebar = selectedBooking
-    ? (
-      <BookingSidebar
-        booking={selectedBooking}
-        room={selectedRoom}
-        onClose={() => setSelectedBooking(null)}
-      />
-    )
+    ? <BookingSidebar booking={selectedBooking} room={selectedRoom} />
     : null;
+
+  const sidebarTitle = selectedBooking
+    ? `${
+      selectedBooking.booker || selectedBooking.summary
+    } — ${selectedBooking.room}`
+    : "";
+
+  const closeSidebar = (): void => setSelectedBooking(null);
+
+  const sidebarShell = (
+    <SidebarShell
+      open={selectedBooking !== null}
+      title={sidebarTitle}
+      onClose={closeSidebar}
+    >
+      {sidebar}
+    </SidebarShell>
+  );
 
   const calendar = (
     <React.Fragment>
@@ -333,23 +345,7 @@ export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
         <Stack spacing={1} sx={{ flex: 1, minWidth: 0 }}>
           {calendar}
         </Stack>
-        {sidebar && (
-          <Box
-            sx={{
-              width: SIDEBAR_WIDTH,
-              flexShrink: 0,
-              p: 2,
-              borderTop: 1,
-              borderLeft: 1,
-              borderBottom: 1,
-              borderColor: "divider",
-              borderRadius: (theme) =>
-                `${theme.shape.borderRadius}px 0 0 ${theme.shape.borderRadius}px`,
-            }}
-          >
-            {sidebar}
-          </Box>
-        )}
+        {sidebarShell}
       </Stack>
     );
   }
@@ -357,17 +353,7 @@ export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
   return (
     <Stack spacing={1}>
       {calendar}
-      <Drawer
-        anchor="right"
-        open={selectedBooking !== null}
-        onClose={() => setSelectedBooking(null)}
-      >
-        {sidebar && (
-          <Box sx={{ p: 2, width: SIDEBAR_WIDTH, maxWidth: "100vw" }}>
-            {sidebar}
-          </Box>
-        )}
-      </Drawer>
+      {sidebarShell}
     </Stack>
   );
 }
