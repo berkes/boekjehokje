@@ -16,7 +16,7 @@ import { ProfileMenu } from "./components/ProfileMenu.tsx";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import { BrowserRouter as Router, Link, Route, Routes } from "react-router-dom";
-import { DemoCalendar, Settings } from "./pages/index.ts";
+import { DemoCalendar, Faq, Settings } from "./pages/index.ts";
 import { ProtectedRoute } from "./components/ProtectedRoute.tsx";
 import { GoogleCalendarAdapter } from "./services/GoogleCalendarAdapter.ts";
 import {
@@ -61,6 +61,7 @@ function App(): React.JSX.Element {
                     </ProtectedRoute>
                   }
                 />
+                <Route path="/faq" element={<Faq />} />
                 <Route path="/demo" element={<DemoCalendar />} />
               </Routes>
             </Container>
