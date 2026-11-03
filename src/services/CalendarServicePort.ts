@@ -41,6 +41,22 @@ export interface Room {
 }
 
 /**
+ * A new booking in domain language: the event as the service knows it.
+ * Persisting it to the calendar source is the service's job (issue #14
+ * adds the real write; for now the adapters only log it).
+ */
+export interface NewBooking {
+  /** Canonical room name */
+  room: string;
+  /** Booker's name */
+  booker: string;
+  /** Booker's contact details */
+  contact: string;
+  start: Date;
+  end: Date;
+}
+
+/**
  * A week range for querying bookings
  */
 export interface WeekRange {
@@ -59,6 +75,15 @@ export interface CalendarServicePort {
    * @returns Promise resolving to array of rooms with their bookings
    */
   getRoomsWithBookings(week?: WeekRange): Promise<Room[]>;
+
+  /**
+   * Save a new booking. Until the write API lands (issue #14) this only
+   * logs the event as it is in the service; the Google Calendar write
+   * with the standardized event format follows there.
+   *
+   * @param booking - The booking event in domain language
+   */
+  saveBooking(booking: NewBooking): Promise<void>;
 }
 
 /**

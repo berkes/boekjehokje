@@ -16,6 +16,7 @@ import type { CalendarEvent } from "../utils/types.ts";
 import {
   type CalendarServicePort,
   getThisWeek,
+  type NewBooking,
   type Room,
   type WeekRange,
 } from "./CalendarServicePort.ts";
@@ -74,6 +75,20 @@ export class GoogleCalendarAdapter implements CalendarServicePort {
 
     const groups = parseAndGroupEvents(events as CalendarEvent[]);
     return this.buildRooms(groups);
+  }
+
+  /**
+   * Save a new booking. The write to Google Calendar is not built yet
+   * (issue #14): for now the event is only logged as it is in the
+   * service, so the conversion to the Google event format can be added
+   * there later.
+   */
+  saveBooking(booking: NewBooking): Promise<void> {
+    console.log(
+      "Nieuwe boeking (nog niet naar Google Calendar geschreven):",
+      booking,
+    );
+    return Promise.resolve();
   }
 
   /**

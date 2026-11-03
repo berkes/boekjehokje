@@ -12,12 +12,13 @@
  */
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Calendar } from "../components/calendar/Calendar.tsx";
 import { useUser } from "../context/useUser.ts";
 import {
   DemoCalendarAdapter,
   getThisWeek,
+  type NewBooking,
   type Room,
 } from "../services/index.ts";
 
@@ -62,6 +63,16 @@ export function DemoCalendar(): React.JSX.Element {
   const { user } = useUser();
   const { rooms, isLoading, error } = useDemoRooms(user);
 
+  const demoAdapter = useMemo(
+    () => (user ? new DemoCalendarAdapter(user) : null),
+    [user],
+  );
+  const createBooking = useCallback(
+    (booking: NewBooking): Promise<void> =>
+      demoAdapter ? demoAdapter.saveBooking(booking) : Promise.resolve(),
+    [demoAdapter],
+  );
+
   if (isLoading) {
     return (
       <Box sx={{ py: 4 }}>
@@ -80,7 +91,7 @@ export function DemoCalendar(): React.JSX.Element {
 
   return (
     <Box>
-      <Calendar rooms={rooms} />
+      <Calendar rooms={rooms} onCreateBooking={createBooking} />
     </Box>
   );
 }

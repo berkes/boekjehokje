@@ -11,14 +11,23 @@ import {
   applyMovedEvents,
   type BoardEvent,
   type CalendarResource,
+  checkMargin,
+  defaultSlotAt,
   EDITABLE_EVENT_BACKGROUND,
   findBooking,
+  formatDateTimeLocal,
   isCalendarResource,
+  isInvertedRange,
+  isLongBooking,
+  LONG_BOOKING_MINUTES,
+  MARGIN_MINUTES,
   READ_ONLY_EVENT_BACKGROUND,
   roomDescription,
   roomLabel,
+  summaryPreview,
   toDomTheme,
   toEvents,
+  toPreviewEvent,
   toResources,
   withUnknownLast,
 } from "../utils.tsx";
@@ -109,7 +118,7 @@ Deno.test("toEvents maps bookings to events on the room's resource", () => {
   assertEquals(events[0].start, new Date(2026, 1, 19, 10, 0, 0));
   assertEquals(events[0].end, new Date(2026, 1, 19, 11, 0, 0));
   assertEquals(events[0].resourceId, "Kletshok 05");
-  assertEquals(events[0].booking.summary, "Overleg");
+  assertEquals(events[0].booking?.summary, "Overleg");
 });
 
 Deno.test("toEvents keeps editable bookings editable and draggable", () => {
@@ -240,6 +249,131 @@ Deno.test("isCalendarResource rejects plain resources", () => {
   assertEquals(isCalendarResource({ id: "KH05", title: "KH05" }), false);
 });
 
+Deno.test("defaultSlotAt without a preceding booking starts at the whole hour and ends five to the next hour (ADR-0006)", () => {
+  const slot = defaultSlotAt(new Date(2026, 9, 28, 10, 23), []);
+
+  assertEquals(MARGIN_MINUTES, 5);
+  assertEquals(slot.start, new Date(2026, 9, 28, 10, 0, 0));
+  assertEquals(slot.end, new Date(2026, 9, 28, 10, 55, 0));
+});
+
+Deno.test("defaultSlotAt clicked on the whole hour ends five to the next hour", () => {
+  const slot = defaultSlotAt(new Date(2026, 9, 28, 15, 0), []);
+
+  assertEquals(slot.start, new Date(2026, 9, 28, 15, 0, 0));
+  assertEquals(slot.end, new Date(2026, 9, 28, 15, 55, 0));
+});
+
+Deno.test("defaultSlotAt after a booking ending at the whole hour starts five minutes later (ADR-0006)", () => {
+  const bookings = [{
+    start: new Date(2026, 9, 28, 9, 0),
+    end: new Date(2026, 9, 28, 13, 0),
+  }];
+  const slot = defaultSlotAt(new Date(2026, 9, 28, 13, 30), bookings);
+
+  assertEquals(slot.start, new Date(2026, 9, 28, 13, 5, 0));
+  assertEquals(slot.end, new Date(2026, 9, 28, 13, 55, 0));
+});
+
+Deno.test("defaultSlotAt after a booking ending at an arbitrary time starts five minutes after it", () => {
+  const bookings = [{
+    start: new Date(2026, 9, 28, 12, 0),
+    end: new Date(2026, 9, 28, 13, 30),
+  }];
+  const slot = defaultSlotAt(new Date(2026, 9, 28, 13, 50), bookings);
+
+  assertEquals(slot.start, new Date(2026, 9, 28, 13, 35, 0));
+  assertEquals(slot.end, new Date(2026, 9, 28, 14, 55, 0));
+});
+
+Deno.test("defaultSlotAt skips a whole hour less than 30 minutes after the slot start", () => {
+  const bookings = [{
+    start: new Date(2026, 9, 28, 11, 0),
+    end: new Date(2026, 9, 28, 13, 35),
+  }];
+  // slot starts at 13:40; 14:00 is only 20 minutes away, so the proposal
+  // runs until 14:55 (five to 15:00)
+  const slot = defaultSlotAt(new Date(2026, 9, 28, 13, 50), bookings);
+
+  assertEquals(slot.start, new Date(2026, 9, 28, 13, 40, 0));
+  assertEquals(slot.end, new Date(2026, 9, 28, 14, 55, 0));
+});
+
+Deno.test("defaultSlotAt does not mutate the clicked time", () => {
+  const at = new Date(2026, 9, 28, 10, 59, 30);
+  defaultSlotAt(at, []);
+
+  assertEquals(at, new Date(2026, 9, 28, 10, 59, 30));
+});
+
+Deno.test("checkMargin flags a zero-minute gap to an adjacent booking (ADR-0006)", () => {
+  const bookings = [{
+    start: new Date(2026, 9, 28, 11, 0),
+    end: new Date(2026, 9, 28, 14, 0),
+  }];
+
+  const before = checkMargin(
+    bookings,
+    new Date(2026, 9, 28, 10, 0),
+    new Date(2026, 9, 28, 11, 0),
+  );
+  assertEquals(before, { overlappingBooking: null, zeroGap: true });
+
+  const after = checkMargin(
+    bookings,
+    new Date(2026, 9, 28, 14, 0),
+    new Date(2026, 9, 28, 15, 0),
+  );
+  assertEquals(after, { overlappingBooking: null, zeroGap: true });
+});
+
+Deno.test("checkMargin flags an overlap as never allowed and names the booking (ADR-0006)", () => {
+  const bookings = [{
+    start: new Date(2026, 9, 28, 11, 0),
+    end: new Date(2026, 9, 28, 14, 0),
+    summary: "Kletshok 03 - Willem",
+  }];
+
+  const result = checkMargin(
+    bookings,
+    new Date(2026, 9, 28, 10, 30),
+    new Date(2026, 9, 28, 11, 30),
+  );
+  assertEquals(result, {
+    overlappingBooking: "Kletshok 03 - Willem",
+    zeroGap: false,
+  });
+});
+
+Deno.test("checkMargin passes a booking with a five-minute margin on both sides", () => {
+  const bookings = [
+    { start: new Date(2026, 9, 28, 9, 0), end: new Date(2026, 9, 28, 10, 0) },
+    { start: new Date(2026, 9, 28, 11, 0), end: new Date(2026, 9, 28, 12, 0) },
+  ];
+
+  const result = checkMargin(
+    bookings,
+    new Date(2026, 9, 28, 10, 5),
+    new Date(2026, 9, 28, 10, 55),
+  );
+  assertEquals(result, { overlappingBooking: null, zeroGap: false });
+});
+
+Deno.test("formatDateTimeLocal formats a date for a datetime-local input", () => {
+  assertEquals(
+    formatDateTimeLocal(new Date(2026, 9, 28, 10, 5)),
+    "2026-10-28T10:05",
+  );
+  assertEquals(
+    formatDateTimeLocal(new Date(2026, 9, 28, 9, 0)),
+    "2026-10-28T09:00",
+  );
+});
+
+Deno.test("summaryPreview shows the room's short name and the booker", () => {
+  assertEquals(summaryPreview("KH 03", "Bèr"), "KH 03 | Bèr");
+});
+
 Deno.test("toDomTheme maps the MUI palette onto theme tokens", () => {
   const palette = {
     secondary: { main: "#be1574" },
@@ -257,4 +391,85 @@ Deno.test("toDomTheme maps the MUI palette onto theme tokens", () => {
   assertEquals(domTheme.nowIndicator, "#be1574");
   assertEquals(domTheme.eventBackground, READ_ONLY_EVENT_BACKGROUND);
   assert(domTheme.eventBackground !== EDITABLE_EVENT_BACKGROUND);
+});
+
+Deno.test("toPreviewEvent renders the draft as a preview block in a visible room", () => {
+  const rooms = [{
+    canonicalName: "Kletshok 03",
+    shortName: "KH 03",
+    bookings: [],
+  }];
+  const draft = {
+    room: "Kletshok 03",
+    start: new Date(2026, 9, 28, 10, 0),
+    end: new Date(2026, 9, 28, 10, 55),
+  };
+
+  const event = toPreviewEvent(draft, rooms, null);
+
+  assert(event !== null);
+  assertEquals(event.preview, true);
+  assertEquals(event.resourceId, "Kletshok 03");
+  assertEquals(event.start, draft.start);
+  assertEquals(event.end, draft.end);
+});
+
+Deno.test("toPreviewEvent returns null when the draft room is hidden", () => {
+  const rooms = [{
+    canonicalName: "Kletshok 03",
+    shortName: "KH 03",
+    bookings: [],
+  }];
+  const draft = {
+    room: "Stilteruimte",
+    start: new Date(2026, 9, 28, 10, 0),
+    end: new Date(2026, 9, 28, 10, 55),
+  };
+
+  assertEquals(toPreviewEvent(draft, rooms, null), null);
+});
+
+Deno.test("toPreviewEvent returns null while the draft equals the selected slot", () => {
+  const rooms = [{
+    canonicalName: "Kletshok 03",
+    shortName: "KH 03",
+    bookings: [],
+  }];
+  const selected = {
+    room: "Kletshok 03",
+    start: new Date(2026, 9, 28, 10, 0),
+    end: new Date(2026, 9, 28, 10, 55),
+  };
+
+  assertEquals(toPreviewEvent(selected, rooms, selected), null);
+});
+
+Deno.test("isLongBooking flags ranges longer than 3 hours", () => {
+  assertEquals(LONG_BOOKING_MINUTES, 180);
+  assertEquals(
+    isLongBooking(new Date(2026, 9, 28, 13, 5), new Date(2026, 9, 28, 16, 5)),
+    false,
+  );
+  assertEquals(
+    isLongBooking(new Date(2026, 9, 28, 13, 5), new Date(2026, 9, 28, 16, 6)),
+    true,
+  );
+});
+
+Deno.test("isInvertedRange flags a Van that is not before Tot", () => {
+  assertEquals(
+    isInvertedRange(
+      new Date(2026, 9, 28, 10, 0),
+      new Date(2026, 9, 28, 10, 55),
+    ),
+    false,
+  );
+  assertEquals(
+    isInvertedRange(new Date(2026, 9, 28, 11, 0), new Date(2026, 9, 28, 10, 0)),
+    true,
+  );
+  assertEquals(
+    isInvertedRange(new Date(2026, 9, 28, 10, 0), new Date(2026, 9, 28, 10, 0)),
+    true,
+  );
 });

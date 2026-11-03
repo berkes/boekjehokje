@@ -12,7 +12,7 @@ import {
   type ResourceEventArgs,
   ResourceTimeline,
 } from "@super-calendar/dom";
-import { Delete, Edit, Info } from "@mui/icons-material";
+import { Add, Delete, Edit, Info } from "@mui/icons-material";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -30,8 +30,13 @@ import React, {
   useState,
 } from "react";
 import { useCalendar } from "../../hooks/useCalendar.ts";
-import type { Booking, CalendarServicePort } from "../../services/index.ts";
+import type {
+  Booking,
+  CalendarServicePort,
+  NewBooking,
+} from "../../services/index.ts";
 import { systemClock } from "../../utils/clock.ts";
+import { BookingForm } from "./BookingForm.tsx";
 import { BookingSidebar } from "./BookingSidebar.tsx";
 import { CalendarToolbar } from "./CalendarToolbar.tsx";
 import { SidebarShell } from "./SidebarShell.tsx";
@@ -40,16 +45,25 @@ import { useRoomVisibility } from "./useRoomVisibility.ts";
 import {
   applyMovedEvents,
   type BoardEvent,
-  type BookingEventMeta,
+  type BoardEventMeta,
   type CalendarRoom,
+  defaultSlotAt,
   EDITABLE_EVENT_BACKGROUND,
   findBooking,
+  FREE_SLOT_BACKGROUND,
+  FREE_SLOT_BORDER,
+  FREE_SLOT_PREVIEW_BACKGROUND,
+  FREE_SLOT_PREVIEW_BORDER,
+  FREE_SLOT_SELECTED_BACKGROUND,
+  FREE_SLOT_SELECTED_BORDER,
   isCalendarResource,
   type MovedEvent,
   READ_ONLY_EVENT_BACKGROUND,
   READ_ONLY_EVENT_BORDER,
   toDomTheme,
   toEvents,
+  toFreeSlotEvents,
+  toPreviewEvent,
   toResources,
 } from "./utils.tsx";
 
@@ -70,7 +84,26 @@ const START_HOUR = 8;
 export interface CalendarProps {
   /** Rooms with their bookings to display */
   rooms: CalendarRoom[];
+  /** Save a new booking through the calendar service (issue #15) */
+  onCreateBooking: (booking: NewBooking) => Promise<void>;
 }
+
+/**
+ * What the sidebar shows: the details of a booking, or the booking form
+ * pre-filled from a selected free slot
+ */
+type SidebarState = {
+  mode: "details";
+  booking: Booking;
+} | {
+  mode: "create";
+  /** Current draft values, edited in the form */
+  room: string;
+  start: Date;
+  end: Date;
+  /** The free-slot block that was originally selected (room included), highlighted on the board */
+  slot: { room: string; start: Date; end: Date };
+} | null;
 
 /**
  * Actions an event bar can invoke, provided to the event renderer
@@ -99,8 +132,11 @@ const BoardActionsContext = createContext<BoardActions | null>(null);
  * starting a bar drag.
  */
 function BoardEventBar(
-  { event }: ResourceEventArgs<BookingEventMeta>,
+  { event }: ResourceEventArgs<BoardEventMeta>,
 ): React.JSX.Element {
+  if (event.freeSlot) {
+    return <FreeSlotBar event={event} />;
+  }
   const actions = useContext(BoardActionsContext);
   if (actions === null) {
     throw new Error(
@@ -108,7 +144,11 @@ function BoardEventBar(
     );
   }
   const { openSidebar, editBooking, deleteBooking } = actions;
-  const { booking, editable } = event;
+  const booking = event.booking;
+  if (!booking) {
+    throw new Error("BoardEventBar got a non-booking event without freeSlot");
+  }
+  const editable = event.editable ?? false;
 
   return (
     <Box
@@ -177,14 +217,68 @@ function BoardEventBar(
 }
 
 /**
- * Calendar component
- * Maps rooms to super-calendar resources and bookings to board events.
- * Pressing an event opens the booking sidebar; own bookings can be
- * dragged and resized (UI-only, persistence is issue #14).
+ * A free-slot block on the board: painted green with a plus icon and a
+ * "Nu boeken" tooltip, marking it as a slot for booking (ADR-0006).
+ * Pressing it (handled via onPressEvent) opens the booking form with the
+ * block's exact range.
  */
-export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
+function FreeSlotBar(
+  { event }: { event: BoardEvent },
+): React.JSX.Element {
+  const selected = event.selected === true;
+  const preview = event.preview === true;
+  const disabled = event.disabled === true;
+  return (
+    <Box
+      title="Nu boeken"
+      data-slot-selected={selected ? "true" : undefined}
+      data-slot-preview={preview ? "true" : undefined}
+      data-slot-disabled={disabled ? "true" : undefined}
+      sx={{
+        cursor: disabled ? "default" : undefined,
+        opacity: disabled && !selected && !preview ? 0.45 : undefined,
+        height: "100%",
+        p: "2px 6px",
+        borderRadius: 0.5,
+        overflow: "hidden",
+        display: "flex",
+        alignItems: "center",
+        gap: 0.5,
+        backgroundColor: selected
+          ? FREE_SLOT_SELECTED_BACKGROUND
+          : preview
+          ? FREE_SLOT_PREVIEW_BACKGROUND
+          : FREE_SLOT_BACKGROUND,
+        border: selected
+          ? `2px solid ${FREE_SLOT_SELECTED_BORDER}`
+          : preview
+          ? `2px solid ${FREE_SLOT_PREVIEW_BORDER}`
+          : `1px dashed ${FREE_SLOT_BORDER}`,
+        color: "success.dark",
+      }}
+    >
+      <Add fontSize="inherit" />
+      <Typography variant="caption" component="span" noWrap>
+        {event.title}
+      </Typography>
+    </Box>
+  );
+}
+
+/**
+ * Calendar component
+ * Maps rooms to super-calendar resources and bookings to board events, and
+ * paints every bookable free slot as a green block (ADR-0006). Pressing a
+ * booking opens its details in the sidebar; pressing a free-slot block, or
+ * pressing or dragging empty lane space, opens the booking form in the same
+ * sidebar (issue #15); own bookings can be dragged and resized (UI-only,
+ * persistence is #14).
+ */
+export function Calendar(
+  { rooms, onCreateBooking }: CalendarProps,
+): React.JSX.Element {
   const [selectedDate, setSelectedDate] = useState(() => systemClock.now());
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [sidebarState, setSidebarState] = useState<SidebarState>(null);
   const [moved, setMoved] = useState<ReadonlyMap<string, MovedEvent>>(
     () => new Map(),
   );
@@ -201,9 +295,33 @@ export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
 
   const resources = useMemo(() => toResources(visibleRooms), [visibleRooms]);
   const domTheme = useMemo(() => toDomTheme(theme.palette), [theme.palette]);
+  const selectedSlot = sidebarState?.mode === "create"
+    ? sidebarState.slot
+    : null;
+  const previewEvent = sidebarState?.mode === "create"
+    ? toPreviewEvent(
+      {
+        room: sidebarState.room,
+        start: sidebarState.start,
+        end: sidebarState.end,
+      },
+      visibleRooms,
+      selectedSlot,
+    )
+    : null;
+  const formOpen = sidebarState?.mode === "create";
   const events = useMemo(
-    () => applyMovedEvents(toEvents(visibleRooms), moved),
-    [visibleRooms, moved],
+    () => [
+      ...applyMovedEvents(toEvents(visibleRooms), moved),
+      ...toFreeSlotEvents(
+        visibleRooms,
+        selectedDate,
+        systemClock.now(),
+        selectedSlot,
+      ).map((event) => ({ ...event, disabled: formOpen })),
+      ...(previewEvent ? [previewEvent] : []),
+    ],
+    [visibleRooms, moved, selectedDate, selectedSlot, previewEvent, formOpen],
   );
 
   /**
@@ -211,9 +329,102 @@ export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
    */
   const openSidebar = useCallback(
     (bookingId: string): void => {
-      setSelectedBooking(findBooking(rooms, bookingId));
+      const booking = findBooking(rooms, bookingId);
+      if (booking) {
+        setSidebarState({ mode: "details", booking });
+      }
     },
     [rooms],
+  );
+
+  /**
+   * Pressing a booking opens its details; pressing a free-slot block opens
+   * the booking form with exactly that block's range
+   */
+  const onPressBoardEvent = useCallback(
+    (event: BoardEvent): void => {
+      // Free-slot blocks are disabled while the booking form is open
+      if (event.freeSlot && sidebarState?.mode === "create") return;
+      if (event.freeSlot) {
+        setSidebarState({
+          mode: "create",
+          room: event.resourceId,
+          start: event.freeSlot.start,
+          end: event.freeSlot.end,
+          slot: { room: event.resourceId, ...event.freeSlot },
+        });
+      } else if (event.booking) {
+        openSidebar(event.booking.id);
+      }
+    },
+    [openSidebar, sidebarState],
+  );
+
+  /**
+   * A click on empty lane space opens the booking form with the default
+   * slot for that free slot (ADR-0006): starting at the whole hour or five
+   * minutes after the preceding booking, ending five to the hour; a drag
+   * opens it with the exact swept range
+   */
+  const onPressCell = useCallback(
+    (at: Date, resource: Resource): void => {
+      // While the booking form is open, clicks on the board do nothing:
+      // the form keeps the user's edits
+      if (sidebarState?.mode === "create") return;
+      const roomBookings =
+        rooms.find((room) => room.canonicalName === resource.id)?.bookings ??
+          [];
+      const slot = defaultSlotAt(at, roomBookings);
+      setSidebarState({
+        mode: "create",
+        room: resource.id,
+        start: slot.start,
+        end: slot.end,
+        slot: { room: resource.id, start: slot.start, end: slot.end },
+      });
+    },
+    [rooms, sidebarState],
+  );
+
+  const onCreateEvent = useCallback(
+    (start: Date, end: Date, resource: Resource): void => {
+      if (sidebarState?.mode === "create") return;
+      setSidebarState({
+        mode: "create",
+        room: resource.id,
+        start,
+        end,
+        slot: { room: resource.id, start, end },
+      });
+    },
+    [sidebarState],
+  );
+
+  /**
+   * The booking form's draft changed: update the create state, so the
+   * board can highlight the selected slot and preview the draft
+   */
+  const handleDraftChange = useCallback(
+    (draft: { room: string; start: Date; end: Date }): void => {
+      setSidebarState((prev) =>
+        prev?.mode === "create"
+          ? { ...prev, room: draft.room, start: draft.start, end: draft.end }
+          : prev
+      );
+    },
+    [],
+  );
+
+  /**
+   * Confirming the booking form saves it through the calendar service and
+   * closes the sidebar; the service decides persistence (issue #14)
+   */
+  const handleCreateBooking = useCallback(
+    async (booking: NewBooking): Promise<void> => {
+      await onCreateBooking(booking);
+      setSidebarState(null);
+    },
+    [onCreateBooking],
   );
 
   /**
@@ -242,10 +453,10 @@ export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
     end: Date,
     resource: Resource,
   ): void | boolean => {
-    if (!event.editable) return false;
+    if (event.freeSlot || !event.booking || !event.editable) return false;
     setMoved((prev) => {
       const next = new Map(prev);
-      next.set(event.booking.id, { start, end, resourceId: resource.id });
+      next.set(event.booking!.id, { start, end, resourceId: resource.id });
       return next;
     });
   };
@@ -287,25 +498,41 @@ export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
     [],
   );
 
-  const selectedRoom = selectedBooking
-    ? rooms.find((room) => room.canonicalName === selectedBooking.room)
+  const detailsBooking = sidebarState?.mode === "details"
+    ? sidebarState.booking
+    : null;
+  const selectedRoom = detailsBooking
+    ? rooms.find((room) => room.canonicalName === detailsBooking.room)
     : undefined;
 
-  const sidebar = selectedBooking
-    ? <BookingSidebar booking={selectedBooking} room={selectedRoom} />
-    : null;
+  const sidebar = sidebarState === null
+    ? null
+    : sidebarState.mode === "details"
+    ? <BookingSidebar booking={sidebarState.booking} room={selectedRoom} />
+    : (
+      <BookingForm
+        rooms={rooms}
+        initialRoom={sidebarState.room}
+        initialStart={sidebarState.start}
+        initialEnd={sidebarState.end}
+        onDraftChange={handleDraftChange}
+        onSubmit={handleCreateBooking}
+      />
+    );
 
-  const sidebarTitle = selectedBooking
+  const sidebarTitle = sidebarState === null
+    ? ""
+    : sidebarState.mode === "details"
     ? `${
-      selectedBooking.booker || selectedBooking.summary
-    } — ${selectedBooking.room}`
-    : "";
+      sidebarState.booking.booker || sidebarState.booking.summary
+    } — ${sidebarState.booking.room}`
+    : "Nieuwe boeking";
 
-  const closeSidebar = (): void => setSelectedBooking(null);
+  const closeSidebar = (): void => setSidebarState(null);
 
   const sidebarShell = (
     <SidebarShell
-      open={selectedBooking !== null}
+      open={sidebarState !== null}
       title={sidebarTitle}
       onClose={closeSidebar}
     >
@@ -322,7 +549,7 @@ export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
       />
       <RoomVisibiltyControls rooms={rooms} hidden={hidden} onToggle={toggle} />
       <BoardActionsContext.Provider value={boardActions}>
-        <ResourceTimeline<BookingEventMeta>
+        <ResourceTimeline<BoardEventMeta>
           orientation="vertical"
           date={selectedDate}
           startHour={START_HOUR}
@@ -332,8 +559,10 @@ export function Calendar({ rooms }: CalendarProps): React.JSX.Element {
           style={{ height: BOARD_HEIGHT }}
           renderEvent={BoardEventBar}
           renderResourceHeader={renderResourceHeader}
-          onPressEvent={(event) => openSidebar(event.booking.id)}
+          onPressEvent={onPressBoardEvent}
           onDragEvent={onDragEvent}
+          onPressCell={onPressCell}
+          onCreateEvent={onCreateEvent}
         />
       </BoardActionsContext.Provider>
     </React.Fragment>
@@ -378,6 +607,18 @@ export function CalendarView(
   useEffect(() => {
     load();
   }, [load]);
+
+  /**
+   * Saving a booking goes through the service port and refreshes the
+   * board afterwards; persistence itself is the service's job (#14)
+   */
+  const createBooking = useCallback(
+    async (booking: NewBooking): Promise<void> => {
+      await service.saveBooking(booking);
+      await load();
+    },
+    [service, load],
+  );
 
   if (isLoading) {
     return (
@@ -427,7 +668,7 @@ export function CalendarView(
 
   return (
     <Box>
-      <Calendar rooms={rooms} />
+      <Calendar rooms={rooms} onCreateBooking={createBooking} />
     </Box>
   );
 }
