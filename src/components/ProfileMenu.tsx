@@ -34,10 +34,6 @@ export function ProfileMenu(): React.JSX.Element {
     navigate("/settings");
     handleCloseUserMenu();
   };
-  const handleNavigateToFaq = () => {
-    navigate("/faq");
-    handleCloseUserMenu();
-  };
   const handleLogout = () => {
     logout();
     handleCloseUserMenu();
@@ -92,11 +88,6 @@ export function ProfileMenu(): React.JSX.Element {
         >
           <MenuItem key="account" onClick={handleNavigateToSettings}>
             <Typography sx={{ textAlign: "center" }}>Mijn account</Typography>
-          </MenuItem>
-          <MenuItem key="faq" onClick={handleNavigateToFaq}>
-            <Typography sx={{ textAlign: "center" }}>
-              Veelgestelde vragen
-            </Typography>
           </MenuItem>
           <MenuItem key="logout" onClick={handleLogout}>
             <Typography sx={{ textAlign: "center" }}>Uitloggen</Typography>

@@ -15,6 +15,8 @@ import { useUser } from "./context/useUser.ts";
 import { ProfileMenu } from "./components/ProfileMenu.tsx";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
+import Button from "@mui/material/Button";
+import HelpIcon from "@mui/icons-material/Help";
 import { BrowserRouter as Router, Link, Route, Routes } from "react-router-dom";
 import { DemoCalendar, Faq, Settings } from "./pages/index.ts";
 import { ProtectedRoute } from "./components/ProtectedRoute.tsx";
@@ -47,6 +49,15 @@ function App(): React.JSX.Element {
                 >
                   Boek je Hokje
                 </Typography>
+                <Button
+                  component={Link}
+                  to="/faq"
+                  color="inherit"
+                  startIcon={<HelpIcon />}
+                  sx={{ mr: 1 }}
+                >
+                  Help
+                </Button>
                 <ProfileMenu />
               </Toolbar>
             </AppBar>
