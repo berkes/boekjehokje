@@ -19,6 +19,48 @@ const ROOM_COLUMNS: Readonly<Record<string, string>> = {
 const UNMATCHED_GROUP = "Unknown";
 
 /**
+ * Geometry of the board's time axis: the first hour shown and the
+ * pixels per hour, so tests can click the lane at a concrete time.
+ */
+const START_HOUR = 8;
+const HOUR_HEIGHT_PX = 48;
+
+/**
+ * The booking form as it opens from a selected free slot.
+ */
+interface BookingFormValues {
+  /** Room shown in the select, e.g. "Kletshok 03 (KH 03)" */
+  room: string;
+  /** Value of the "Van" field, e.g. "2026-10-28T10:00" */
+  from: string;
+  /** Value of the "Tot" field */
+  to: string;
+  /** Value of the read-only "Boeker" field */
+  booker: string;
+  /** Value of the read-only "Samenvatting" preview */
+  summary: string;
+}
+
+/**
+ * The booking the service logs on confirm, as plain serializable data.
+ */
+interface LoggedBooking {
+  room: string;
+  booker: string;
+  contact: string;
+  start: string;
+  end: string;
+}
+
+/**
+ * A logged date as an ISO string, whether it arrived as a Date or a
+ * string
+ */
+function isoString(value: unknown): string {
+  return value instanceof Date ? value.toISOString() : String(value);
+}
+
+/**
  * The week overview: the board with the room columns, the bookings, the
  * day toolbar and the booking details.
  *
@@ -28,9 +70,23 @@ const UNMATCHED_GROUP = "Unknown";
  */
 export class OverviewPage {
   private readonly page: Page;
+  /** Console log messages seen so far (the service logs new bookings) */
+  /**
+   * Serialized arguments of the console log messages seen so far. The
+   * handles are serialized eagerly in the handler, while they are alive.
+   */
+  private readonly consoleLogArgs: Promise<unknown[]>[] = [];
 
   constructor(page: Page) {
     this.page = page;
+    page.on("console", (msg) => {
+      if (msg.type() !== "log") return;
+      this.consoleLogArgs.push(
+        Promise.all(
+          msg.args().map((arg) => arg.jsonValue().catch(() => null)),
+        ),
+      );
+    });
   }
 
   /**
@@ -282,6 +338,269 @@ export class OverviewPage {
   }
 
   /**
+   * Click a free slot in a room's column at the given time ("HH:mm").
+   */
+  async clickFreeSlot(room: string, at: string): Promise<this> {
+    const point = await this.slotPoint(room, at);
+    await this.page.mouse.click(point.x, point.y);
+    return this;
+  }
+
+  /**
+   * Drag a free range in a room's column, from "HH:mm" to "HH:mm".
+   */
+  async dragFreeRange(room: string, from: string, to: string): Promise<this> {
+    const start = await this.slotPoint(room, from);
+    const end = await this.slotPoint(room, to);
+    await this.page.mouse.move(start.x, start.y);
+    await this.page.mouse.down();
+    await this.page.mouse.move(end.x, end.y, { steps: 8 });
+    await this.page.mouse.up();
+    return this;
+  }
+
+  /**
+   * Assert the booking form is open with the given pre-filled values.
+   */
+  async assertBookingFormIsOpen(values: BookingFormValues): Promise<void> {
+    await expect(this.bookingFormTitle()).toBeVisible();
+    await expect(this.roomSelect()).toHaveText(values.room);
+    await expect(this.page.getByLabel("Van")).toHaveValue(values.from);
+    await expect(this.page.getByLabel("Tot")).toHaveValue(values.to);
+    const booker = this.page.getByLabel("Boeker");
+    await expect(booker).toHaveValue(values.booker);
+    await expect(booker).toBeDisabled();
+    const summary = this.page.getByLabel("Samenvatting");
+    await expect(summary).toHaveValue(values.summary);
+    await expect(summary).not.toBeEditable();
+  }
+
+  /**
+   * Assert the room select offers exactly the given room labels
+   * ("full name (short name)"), without the Unknown group.
+   */
+  async assertRoomOptions(labels: string[]): Promise<void> {
+    await this.roomSelect().click();
+    const options = this.page.getByRole("option");
+    await expect(options).toHaveCount(labels.length);
+    for (const label of labels) {
+      await expect(this.page.getByRole("option", { name: label }))
+        .toBeVisible();
+    }
+    await expect(
+      this.page.getByRole("option", { name: /Unknown/ }),
+    ).toHaveCount(0);
+    await this.page.keyboard.press("Escape");
+  }
+
+  /**
+   * Pick another room in the booking form's select.
+   */
+  async selectRoom(label: string): Promise<this> {
+    await this.roomSelect().click();
+    await this.page.getByRole("option", { name: label }).click();
+    return this;
+  }
+
+  /**
+   * Fill the contact field of the booking form.
+   */
+  async fillContact(contact: string): Promise<this> {
+    await this.page.getByLabel("Contact").fill(contact);
+    return this;
+  }
+
+  /**
+   * Confirm the booking form.
+   */
+  async submitBookingForm(): Promise<this> {
+    await this.page.getByRole("button", { name: "Boeking aanmaken" }).click();
+    return this;
+  }
+
+  /**
+   * Assert the booking form is closed.
+   */
+  async assertBookingFormIsClosed(): Promise<void> {
+    await expect(this.bookingFormTitle()).toBeHidden();
+  }
+
+  /**
+   * Assert the form warns that there is no five-minute margin to an
+   * adjacent booking (ADR-0006: encouraged, never enforced).
+   */
+  async assertMarginWarningIsShown(): Promise<void> {
+    await expect(
+      this.page.getByText(
+        /geen 5 minuten tussen deze en een aansluitende boeking/i,
+      ),
+    ).toBeVisible();
+  }
+
+  /**
+   * Assert the form shows an error naming the booking the range overlaps
+   * (ADR-0006: overlaps are never allowed).
+   */
+  async assertOverlapErrorIsShown(bookingName: string): Promise<void> {
+    const escaped = bookingName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    await expect(
+      this.page.getByText(new RegExp(`Overlapt met boeking "${escaped}"`)),
+    ).toBeVisible();
+  }
+
+  /**
+   * The bookable free-slot blocks ("Nu boeken") painted in a room's lane.
+   */
+  async assertFreeSlotCount(room: string, count: number): Promise<void> {
+    await expect(this.freeSlotBlocks(room)).toHaveCount(count);
+  }
+
+  /**
+   * Assert the selected free-slot block is highlighted in a room's lane.
+   */
+  async assertSelectedSlotIsHighlighted(room: string): Promise<void> {
+    await expect(
+      this.page.locator(
+        `[data-resource-id="${room}"] [data-slot-selected="true"]`,
+      ),
+    ).toHaveCount(1);
+  }
+
+  /**
+   * Assert a preview block (the form's current draft) is shown in a room's
+   * lane.
+   */
+  async assertPreviewSlotIsShownIn(room: string): Promise<void> {
+    await expect(
+      this.page.locator(
+        `[data-resource-id="${room}"] [data-slot-preview="true"]`,
+      ),
+    ).toHaveCount(1);
+  }
+
+  /**
+   * Assert no preview block is shown in a room's lane.
+   */
+  async assertNoPreviewSlotIn(room: string): Promise<void> {
+    await expect(
+      this.page.locator(
+        `[data-resource-id="${room}"] [data-slot-preview="true"]`,
+      ),
+    ).toHaveCount(0);
+  }
+
+  /**
+   * Assert no preview block is shown anywhere on the board.
+   */
+  async assertNoPreviewSlotAnywhere(): Promise<void> {
+    await expect(this.page.locator('[data-slot-preview="true"]')).toHaveCount(
+      0,
+    );
+  }
+
+  /**
+   * Assert all free-slot blocks in a room's lane are disabled.
+   */
+  async assertAllSlotsDisabled(room: string): Promise<void> {
+    const total = await this.freeSlotBlocks(room).count();
+    await expect(
+      this.page.locator(
+        `[data-resource-id="${room}"] [data-slot-disabled="true"]`,
+      ),
+    ).toHaveCount(total);
+  }
+
+  /**
+   * Assert no free-slot block in a room's lane is disabled.
+   */
+  async assertNoSlotIsDisabled(room: string): Promise<void> {
+    await expect(
+      this.page.locator(
+        `[data-resource-id="${room}"] [data-slot-disabled="true"]`,
+      ),
+    ).toHaveCount(0);
+  }
+
+  /**
+   * Assert the form warns that the booking is very long (> 3 hours).
+   */
+  async assertLongBookingWarningIsShown(): Promise<void> {
+    await expect(
+      this.page.getByText(/deze boeking is erg lang/i),
+    ).toBeVisible();
+  }
+
+  /**
+   * Assert the form warns that Van must be before Tot.
+   */
+  async assertInvertedRangeWarningIsShown(): Promise<void> {
+    await expect(
+      this.page.getByText(/Van moet vóór Tot liggen/i),
+    ).toBeVisible();
+  }
+
+  /**
+   * Assert the confirm button is enabled.
+   */
+  async assertSubmitIsEnabled(): Promise<void> {
+    await expect(
+      this.page.getByRole("button", { name: "Boeking aanmaken" }),
+    ).toBeEnabled();
+  }
+
+  /**
+   * Click the free-slot block at the given index in a room's lane.
+   */
+  async clickFreeSlotBlock(room: string, index: number): Promise<this> {
+    await this.freeSlotBlocks(room).nth(index).click();
+    return this;
+  }
+
+  /**
+   * Set a datetime field of the booking form ("Van" or "Tot").
+   */
+  async setDateTime(label: "Van" | "Tot", value: string): Promise<this> {
+    await this.page.getByLabel(label).fill(value);
+    return this;
+  }
+
+  /**
+   * Assert the confirm button is disabled.
+   */
+  async assertSubmitIsDisabled(): Promise<void> {
+    await expect(
+      this.page.getByRole("button", { name: "Boeking aanmaken" }),
+    ).toBeDisabled();
+  }
+
+  /**
+   * Assert the service logged the booking event with these values
+   * (saving currently only logs; the write API is issue #14).
+   */
+  async assertBookingWasLogged(expected: LoggedBooking): Promise<void> {
+    await expect.poll(
+      async () => {
+        for (const argsPromise of this.consoleLogArgs) {
+          for (const value of await argsPromise) {
+            if (
+              value !== null && typeof value === "object" &&
+              (value as LoggedBooking).room === expected.room &&
+              (value as LoggedBooking).booker === expected.booker &&
+              (value as LoggedBooking).contact === expected.contact &&
+              isoString((value as LoggedBooking).start) === expected.start &&
+              isoString((value as LoggedBooking).end) === expected.end
+            ) {
+              return true;
+            }
+          }
+        }
+        return false;
+      },
+      { timeout: 5000 },
+    ).toBe(true);
+  }
+
+  /**
    * The toolbar of the loaded overview: proof the board is up.
    */
   private toolbar(): Locator {
@@ -349,5 +668,60 @@ export class OverviewPage {
    */
   private detailsTerm(term: string): Locator {
     return this.page.getByText(term, { exact: true });
+  }
+
+  /**
+   * The title of the booking form in the sidebar.
+   */
+  private bookingFormTitle(): Locator {
+    return this.page.getByRole("heading", { name: "Nieuwe boeking" });
+  }
+
+  /**
+   * The room select of the booking form.
+   */
+  private roomSelect(): Locator {
+    return this.page.getByRole("combobox", { name: "Ruimte" });
+  }
+
+  /**
+   * The free-slot blocks painted in a room's lane.
+   */
+  private freeSlotBlocks(room: string): Locator {
+    return this.page.locator(
+      `[data-resource-id="${room}"] [title="Nu boeken"]`,
+    );
+  }
+
+  /**
+   * The viewport point of a time ("HH:mm") in a room's lane. The lane's
+   * bounding box already accounts for the board's scroll position, so the
+   * time axis maps directly onto its height.
+   */
+  private async slotPoint(
+    room: string,
+    hhmm: string,
+  ): Promise<{ x: number; y: number }> {
+    const lane = this.page.locator(`[data-resource-id="${room}"]`);
+    const [hours, minutes] = hhmm.split(":").map(Number);
+    const offsetPx = ((hours - START_HOUR) * 60 + minutes) / 60 *
+      HOUR_HEIGHT_PX;
+    // Scroll the board so the target time is comfortably inside the
+    // viewport, then map the time axis onto the lane's bounding box
+    const rect = await lane.evaluate((el, offset) => {
+      let scroller: Element | null = el.parentElement;
+      while (scroller && scroller.scrollHeight <= scroller.clientHeight) {
+        scroller = scroller.parentElement;
+      }
+      if (scroller) {
+        scroller.scrollTop = Math.max(0, offset - 100);
+      }
+      const r = el.getBoundingClientRect();
+      return { x: r.x, y: r.y, width: r.width };
+    }, offsetPx);
+    return {
+      x: rect.x + rect.width / 2,
+      y: rect.y + offsetPx,
+    };
   }
 }

@@ -6,7 +6,11 @@
  */
 
 import { GoogleCalendarAdapter } from "../GoogleCalendarAdapter.ts";
-import { getNextWeek, getThisWeek } from "../CalendarServicePort.ts";
+import {
+  getNextWeek,
+  getThisWeek,
+  type NewBooking,
+} from "../CalendarServicePort.ts";
 import type { CalendarEvent } from "../../utils/types.ts";
 
 import { assert, assertEquals } from "@std/assert";
@@ -195,4 +199,30 @@ Deno.test("getRoomsWithBookings marks all bookings read-only without a profile",
   const bookings = rooms.flatMap((room) => room.bookings);
   assertEquals(bookings.length, 1);
   assert(!bookings[0].editable, "without a profile nothing is editable");
+});
+
+Deno.test("saveBooking only logs the booking event as it is in the service", async () => {
+  const mockClient = {
+    fetchEvents: () => Promise.resolve([]),
+    listCalendars: () => Promise.resolve([]),
+  };
+  const service = new GoogleCalendarAdapter(mockClient, CALENDAR_ID, null);
+
+  const booking: NewBooking = {
+    room: "Kletshok 03",
+    booker: "Bèr",
+    contact: "ber@boekjehokje.test",
+    start: new Date("2026-10-28T10:00:00Z"),
+    end: new Date("2026-10-28T10:55:00Z"),
+  };
+
+  const logSpy = spy(console, "log");
+  try {
+    await service.saveBooking(booking);
+
+    assertSpyCalls(logSpy, 1);
+    assertSpyCallArg(logSpy, 0, 1, booking);
+  } finally {
+    logSpy.restore();
+  }
 });

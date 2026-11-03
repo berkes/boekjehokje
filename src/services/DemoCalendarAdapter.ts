@@ -17,6 +17,7 @@ import {
   type Booking,
   type CalendarServicePort,
   getThisWeek,
+  type NewBooking,
   type Room,
   type WeekRange,
 } from "./CalendarServicePort.ts";
@@ -359,6 +360,15 @@ export class DemoCalendarAdapter implements CalendarServicePort {
    */
   getRoomsWithBookings(week: WeekRange = getThisWeek()): Promise<Room[]> {
     return Promise.resolve(this.buildRooms(week));
+  }
+
+  /**
+   * Save a new booking. Like the Google adapter, the demo adapter only
+   * logs the event for now; the real write is issue #14.
+   */
+  saveBooking(booking: NewBooking): Promise<void> {
+    console.log("Nieuwe boeking (nog niet naar Google Calendar geschreven):", booking);
+    return Promise.resolve();
   }
 
   /**

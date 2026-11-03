@@ -13,6 +13,7 @@
 export type {
   Booking,
   CalendarServicePort,
+  NewBooking,
   Room,
   WeekRange,
 } from "./CalendarServicePort.ts";

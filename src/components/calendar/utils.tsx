@@ -19,6 +19,7 @@ import {
   UNKNOWN_ROOM,
   UNKNOWN_ROOM_DESCRIPTION,
 } from "../../services/index.ts";
+import { freeSlotBlocks } from "./freeSlots.ts";
 
 /**
  * A resource lane on the board: a room, with the description for the
@@ -41,22 +42,33 @@ export function isCalendarResource(
 }
 
 /**
- * Extra fields every board event carries next to start/end/title,
- * so callbacks can find the domain booking back.
+ * Extra fields every board event carries next to start/end/title.
+ * A booking event carries `booking` and `editable`; a free-slot block
+ * carries `freeSlot` instead. (super-calendar's event type intersects its
+ * own fields with the meta via Omit, which collapses a union meta, so the
+ * meta is one interface with optional fields and code guards on them.)
  */
-export interface BookingEventMeta {
-  /** The domain booking this event represents */
-  booking: Booking;
-  /** Whether the current user may edit this booking (ADR-0004) */
-  editable: boolean;
-  /** Room (resource) the booking is in */
+export interface BoardEventMeta {
+  /** Room (resource) the event is in */
   resourceId: string;
+  /** The domain booking this event represents (booking events only) */
+  booking?: Booking;
+  /** Whether the current user may edit this booking (ADR-0004) */
+  editable?: boolean;
+  /** The exact range of a bookable free slot (free-slot blocks only) */
+  freeSlot?: { start: Date; end: Date };
+  /** The free-slot block currently selected in the open booking form */
+  selected?: boolean;
+  /** A preview block at the booking form's current draft values */
+  preview?: boolean;
+  /** Free-slot blocks are disabled while the booking form is open */
+  disabled?: boolean;
 }
 
 /**
  * A calendar event as rendered on the resource timeline
  */
-export type BoardEvent = CalendarEvent<BookingEventMeta>;
+export type BoardEvent = CalendarEvent<BoardEventMeta>;
 
 /**
  * A time/room change applied by dragging an own booking (UI-only,
@@ -149,6 +161,78 @@ export function toEvents(rooms: CalendarRoom[]): BoardEvent[] {
 }
 
 /**
+ * Map the free slots of the rooms on the given day to board events, so the
+ * board paints every bookable slot as a green block (ADR-0006). The blocks
+ * are not draggable and carry no booking.
+ */
+export function toFreeSlotEvents(
+  rooms: CalendarRoom[],
+  day: Date,
+  now: Date,
+  selected?: { room: string; start: Date; end: Date } | null,
+): BoardEvent[] {
+  return rooms.flatMap((room) =>
+    freeSlotBlocks(room.bookings, day, now).map((slot) => {
+      const isSelected = selected !== null && selected !== undefined &&
+        selected.room === room.canonicalName &&
+        selected.start.getTime() === slot.start.getTime() &&
+        selected.end.getTime() === slot.end.getTime();
+      const event: BoardEvent = {
+        title: "Nu boeken",
+        start: slot.start,
+        end: slot.end,
+        resourceId: room.canonicalName,
+        freeSlot: slot,
+        selected: isSelected,
+        draggable: false,
+      };
+      return event;
+    })
+  );
+}
+
+/**
+ * The draft booking of an open booking form: what the user is currently
+ * "inserting"
+ */
+export interface BookingDraft {
+  room: string;
+  start: Date;
+  end: Date;
+}
+
+/**
+ * A preview event for the current draft of the booking form, so the board
+ * shows what is being booked and where while the form is edited. Returns
+ * null when the draft's room is not visible (hidden column) or when the
+ * draft still equals the selected slot (that block is already highlighted)
+ */
+export function toPreviewEvent(
+  draft: BookingDraft,
+  rooms: CalendarRoom[],
+  selected: { room: string; start: Date; end: Date } | null,
+): BoardEvent | null {
+  if (!rooms.some((room) => room.canonicalName === draft.room)) return null;
+  if (
+    selected !== null &&
+    selected.room === draft.room &&
+    selected.start.getTime() === draft.start.getTime() &&
+    selected.end.getTime() === draft.end.getTime()
+  ) {
+    return null;
+  }
+  return {
+    title: "Nu boeken",
+    start: draft.start,
+    end: draft.end,
+    resourceId: draft.room,
+    freeSlot: { start: draft.start, end: draft.end },
+    preview: true,
+    draggable: false,
+  };
+}
+
+/**
  * Apply locally dragged time/room changes over the mapped events.
  * An override replaces the booking's original start, end and room, so the
  * board shows the user's drag even though Google Calendar is not updated.
@@ -159,6 +243,7 @@ export function applyMovedEvents(
 ): BoardEvent[] {
   if (moved.size === 0) return events;
   return events.map((event) => {
+    if (!event.booking) return event;
     const override = moved.get(event.booking.id);
     if (!override) return event;
     return {
@@ -185,6 +270,123 @@ export function findBooking(
 }
 
 /**
+ * Default margin between consecutive bookings in a room, in minutes
+ * (ADR-0006): encouraged through defaults and a warning, never enforced
+ */
+export const MARGIN_MINUTES = 5;
+
+/**
+ * A proposed slot shorter than this many minutes is skipped: the proposal
+ * runs until five to the next whole hour instead (ADR-0006)
+ */
+const MIN_PROPOSAL_MINUTES = 30;
+
+/**
+ * The default booking slot for a click on empty lane space at `at` in a
+ * room with the given bookings (ADR-0006): the slot starts at the whole
+ * hour below `at`, or five minutes after the latest preceding booking's
+ * end when that is later, and ends five minutes before the first whole
+ * hour more than MIN_PROPOSAL_MINUTES after the start
+ */
+export function defaultSlotAt(
+  at: Date,
+  bookings: ReadonlyArray<{ start: Date; end: Date }>,
+): { start: Date; end: Date } {
+  const start = new Date(at);
+  start.setMinutes(0, 0, 0);
+  for (const booking of bookings) {
+    if (booking.end.getTime() <= at.getTime()) {
+      const withMargin = booking.end.getTime() + MARGIN_MINUTES * 60_000;
+      if (withMargin > start.getTime()) {
+        start.setTime(withMargin);
+      }
+    }
+  }
+  const end = new Date(start);
+  end.setHours(start.getHours() + 1, 0, 0, 0);
+  while (end.getTime() - start.getTime() <= MIN_PROPOSAL_MINUTES * 60_000) {
+    end.setHours(end.getHours() + 1);
+  }
+  end.setMinutes(end.getMinutes() - MARGIN_MINUTES);
+  return { start, end };
+}
+
+/**
+ * Bookings longer than this many minutes get a "this is very long"
+ * warning in the booking form
+ */
+export const LONG_BOOKING_MINUTES = 180;
+
+/**
+ * Whether a range is longer than LONG_BOOKING_MINUTES
+ */
+export function isLongBooking(start: Date, end: Date): boolean {
+  return end.getTime() - start.getTime() > LONG_BOOKING_MINUTES * 60_000;
+}
+
+/**
+ * Whether the range is inverted: "Van" must be before "Tot"
+ */
+export function isInvertedRange(start: Date, end: Date): boolean {
+  return end.getTime() <= start.getTime();
+}
+
+/**
+ * How a proposed range relates to the existing bookings of the room
+ * (ADR-0006): overlaps are never allowed; a zero-minute gap to an adjacent
+ * booking is allowed but warned about. `overlappingBooking` names the
+ * first booking the range overlaps, so the form can show it
+ */
+export interface MarginCheck {
+  overlappingBooking: string | null;
+  zeroGap: boolean;
+}
+
+/**
+ * Check a proposed range against the room's existing bookings
+ */
+export function checkMargin(
+  bookings: ReadonlyArray<{ start: Date; end: Date; summary?: string }>,
+  start: Date,
+  end: Date,
+): MarginCheck {
+  let overlappingBooking: string | null = null;
+  let zeroGap = false;
+  for (const booking of bookings) {
+    if (start < booking.end && end > booking.start) {
+      if (overlappingBooking === null) {
+        overlappingBooking = booking.summary ?? null;
+      }
+    } else if (
+      start.getTime() === booking.end.getTime() ||
+      end.getTime() === booking.start.getTime()
+    ) {
+      zeroGap = true;
+    }
+  }
+  return { overlappingBooking, zeroGap };
+}
+
+/**
+ * Format a date for a datetime-local input ("yyyy-MM-ddTHH:mm", local
+ * time), the inverse of parsing the input's value with `new Date(value)`
+ */
+export function formatDateTimeLocal(date: Date): string {
+  const pad = (n: number): string => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${
+    pad(date.getDate())
+  }T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+/**
+ * The summary a new booking will get in the calendar source, shown as a
+ * live preview in the booking form: "room short name | booker"
+ */
+export function summaryPreview(shortName: string, booker: string): string {
+  return `${shortName} | ${booker}`;
+}
+
+/**
  * Background of events the current user may not edit (issue #13):
  * low-emphasis grey, like MUI's disabled surfaces
  */
@@ -199,6 +401,39 @@ export const READ_ONLY_EVENT_BORDER = "rgba(0, 0, 0, 0.2)";
  * Background of events the current user may edit: light green
  */
 export const EDITABLE_EVENT_BACKGROUND = "rgba(76, 175, 80, 0.5)";
+
+/**
+ * Background of a free-slot block: a light, inviting green, clearly
+ * distinct from both booking styles
+ */
+export const FREE_SLOT_BACKGROUND = "rgba(76, 175, 80, 0.16)";
+
+/**
+ * Border of a free-slot block
+ */
+export const FREE_SLOT_BORDER = "rgba(46, 125, 50, 0.55)";
+
+/**
+ * Background of the free-slot block selected in the open booking form:
+ * clearly stronger than a plain free slot
+ */
+export const FREE_SLOT_SELECTED_BACKGROUND = "rgba(76, 175, 80, 0.4)";
+
+/**
+ * Border of the selected free-slot block: solid and strong
+ */
+export const FREE_SLOT_SELECTED_BORDER = "rgba(27, 94, 32, 0.9)";
+
+/**
+ * Background of the preview block showing the booking form's current
+ * draft: outlined, distinct from the selected slot
+ */
+export const FREE_SLOT_PREVIEW_BACKGROUND = "rgba(76, 175, 80, 0.08)";
+
+/**
+ * Border of the preview block
+ */
+export const FREE_SLOT_PREVIEW_BORDER = "rgba(46, 125, 50, 0.9)";
 
 /**
  * Minimal MUI palette shape needed to theme the board
