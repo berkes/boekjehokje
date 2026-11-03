@@ -4,6 +4,7 @@ import Typography from "@mui/material/Typography";
 import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
+import Link from "@mui/material/Link";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 type FaqEntry = {
@@ -32,6 +33,18 @@ export function Faq(): React.JSX.Element {
       ),
     },
     {
+      vraag: "Ik ben ingelogd met mijn Google-account, maar zie niks.",
+      antwoord: (
+        <>
+          Controleer of je bent ingelogd met het account waarmee je bij de
+          NYMA-agenda kunt. Boekjehokje leest de boekingen met dat account; met
+          een ander Google-account (bijvoorbeeld je privé-account) zie je geen
+          ruimtes of boekingen. Log uit en log opnieuw in met het juiste
+          account.
+        </>
+      ),
+    },
+    {
       vraag: "Moet ik de app gebruiken?",
       antwoord: (
         <>
@@ -47,6 +60,73 @@ export function Faq(): React.JSX.Element {
         <>
           De workshopruimte is gesloten en tot nader bericht niet boekbaar,
           zoals NYMA in oktober 2026 heeft aangekondigd.
+        </>
+      ),
+    },
+    {
+      vraag: "Waarom krijg ik waarschuwingen over 5 minuten?",
+      antwoord: (
+        <>
+          Tussen twee boekingen in dezelfde ruimte raden we een marge van 5
+          minuten aan, zodat je de ruimte kunt opruimen en de volgende groep
+          zich kan installeren. De marge wordt aangemoedigd, nooit afgedwongen:
+          standaard beginnen boekingen op het hele uur en eindigen ze vijf
+          minuten voor het volgende hele uur (bijvoorbeeld 14:00–14:55). Boek je
+          expres direct aansluitend, zonder marge, dan krijg je daarvoor een
+          waarschuwing die je mag negeren. Overlappende boekingen zijn nooit
+          mogelijk.
+        </>
+      ),
+    },
+    {
+      vraag: "Wat is 'Onbekend'?",
+      antwoord: (
+        <>
+          Een fictieve ruimte waarin we alle boekingen zetten die we niet konden
+          koppelen aan een echte ruimte. Bijvoorbeeld door een typefout
+          ('Ketshok 03'), een niet-bestaande ruimte ('KH 06'), of omdat de
+          boeking zich niet houdt aan de afspraken over het opmaken van
+          boekingen.
+        </>
+      ),
+    },
+    {
+      vraag: "Wie heeft dit gebouwd?",
+      antwoord: <>Bär Kessels uit unit 65/63.</>,
+    },
+    {
+      vraag: "Ik zie een bug.",
+      antwoord: (
+        <>
+          Meld de bug op{" "}
+          <Link href="https://github.com/berkes/boekjehokje/issues">
+            onze issue tracker
+          </Link>{" "}
+          en voeg een schermafdruk toe, dan kunnen we het snel oplossen.
+        </>
+      ),
+    },
+    {
+      vraag: "Ik mis iets, of ik wil iets.",
+      antwoord: (
+        <>
+          Feature requests kun je ook op{" "}
+          <Link href="https://github.com/berkes/boekjehokje/issues">
+            de issue tracker
+          </Link>{" "}
+          zetten. Leg vooral uit waarom je het wilt.
+        </>
+      ),
+    },
+    {
+      vraag: "Kan ik helpen?",
+      antwoord: (
+        <>
+          Jazeker! Boekjehokje is open source:{" "}
+          <Link href="https://github.com/berkes/boekjehokje">
+            github.com/berkes/boekjehokje
+          </Link>
+          .
         </>
       ),
     },
