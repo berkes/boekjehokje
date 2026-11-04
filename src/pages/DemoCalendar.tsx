@@ -68,8 +68,9 @@ export function DemoCalendar(): React.JSX.Element {
     [user],
   );
   const createBooking = useCallback(
-    (booking: NewBooking): Promise<void> =>
-      demoAdapter ? demoAdapter.saveBooking(booking) : Promise.resolve(),
+    async (booking: NewBooking): Promise<void> => {
+      await demoAdapter?.createBooking(booking);
+    },
     [demoAdapter],
   );
 

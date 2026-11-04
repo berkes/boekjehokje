@@ -5,8 +5,8 @@
  * board, by click or drag (issue #15). Pre-filled with the selected room
  * and time range; the booker is the signed-in user and stays read-only.
  * The summary preview shows the event title the booking will get in the
- * calendar source. Confirming hands the booking to the calendar service
- * (which logs it until the write API lands, issue #14).
+ * calendar source. Confirming hands the booking to the calendar service,
+ * which writes it to the calendar source.
  */
 import Button from "@mui/material/Button";
 import FormControl from "@mui/material/FormControl";

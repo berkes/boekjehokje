@@ -42,8 +42,7 @@ export interface Room {
 
 /**
  * A new booking in domain language: the event as the service knows it.
- * Persisting it to the calendar source is the service's job (issue #14
- * adds the real write; for now the adapters only log it).
+ * Persisting it to the calendar source is the service's job.
  */
 export interface NewBooking {
   /** Canonical room name */
@@ -54,6 +53,15 @@ export interface NewBooking {
   contact: string;
   start: Date;
   end: Date;
+}
+
+/**
+ * An existing booking with new values, in domain language: everything
+ * needed to update a booking on the calendar source, identified by its id
+ */
+export interface BookingUpdate extends NewBooking {
+  /** Id of the booking event on the calendar source */
+  id: string;
 }
 
 /**
@@ -77,13 +85,29 @@ export interface CalendarServicePort {
   getRoomsWithBookings(week?: WeekRange): Promise<Room[]>;
 
   /**
-   * Save a new booking. Until the write API lands (issue #14) this only
-   * logs the event as it is in the service; the Google Calendar write
-   * with the standardized event format follows there.
+   * Create a new booking on the calendar source
    *
-   * @param booking - The booking event in domain language
+   * @param booking - The booking in domain language
+   * @returns Promise resolving to the created booking, as the calendar
+   *          source stored it (parsed back into domain language)
    */
-  saveBooking(booking: NewBooking): Promise<void>;
+  createBooking(booking: NewBooking): Promise<Booking>;
+
+  /**
+   * Update an existing booking on the calendar source
+   *
+   * @param booking - The booking with its new values, identified by id
+   * @returns Promise resolving to the updated booking, as the calendar
+   *          source stored it (parsed back into domain language)
+   */
+  updateBooking(booking: BookingUpdate): Promise<Booking>;
+
+  /**
+   * Delete a booking from the calendar source
+   *
+   * @param bookingId - The id of the booking to delete
+   */
+  deleteBooking(bookingId: string): Promise<void>;
 }
 
 /**

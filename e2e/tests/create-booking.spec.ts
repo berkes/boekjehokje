@@ -5,8 +5,9 @@ import { OverviewPage } from "../pages/OverviewPage.ts";
  * Creating a booking from a free slot (issue #15). The board opens on the
  * fixed Wednesday 28 October 2026 (FIXED_NOW). Free slots are painted as
  * green 55-minute blocks ("Nu boeken") within business hours 08:00-18:00,
- * with a five-minute margin around bookings (ADR-0006). Saving currently
- * only logs the booking event in the service; the write API is issue #14.
+ * with a five-minute margin around bookings (ADR-0006). Confirming writes
+ * the booking to the (WireMock-mocked) Google Calendar events endpoint in
+ * the standardized event format (issue #14).
  *
  * On Wednesday, Kletshok 03 is booked 11:00-13:00 (Willem), 13:00-14:00
  * (Anneke) and 14:00-15:00 (Manon). With the fixed clock at 10:00, the past
@@ -163,8 +164,10 @@ test("User can pick another room in the booking form", async ({ authedPage }) =>
  * When I set the end time to 11:00, exactly when the next booking starts
  * Then the form warns that there is no five-minute margin (ADR-0006)
  * And when I fill in my contact and confirm anyway
- * Then the service logs the booking with start "2026-10-28T10:00:00.000Z"
- * and end "2026-10-28T11:00:00.000Z", and the form closes
+ * Then the booking is written to the calendar API (POST) with summary
+ * "KH 03 | Bèr", the contact in the description, start
+ * "2026-10-28T10:00:00.000Z" and end "2026-10-28T11:00:00.000Z", and the
+ * form closes
  * So that I can deliberately book without a margin after seeing the warning.
  */
 test("User is warned when booking without a margin, but can still confirm", async ({ authedPage }) => {
@@ -184,10 +187,10 @@ test("User is warned when booking without a margin, but can still confirm", asyn
 
   await overview.fillContact("ber@boekjehokje.test");
   await overview.submitBookingForm();
-  await overview.assertBookingWasLogged({
-    room: "Kletshok 03",
-    booker: "Bèr",
-    contact: "ber@boekjehokje.test",
+  await overview.assertBookingWasWritten({
+    method: "POST",
+    summary: "KH 03 | Bèr",
+    description: "ber@boekjehokje.test",
     start: "2026-10-28T10:00:00.000Z",
     end: "2026-10-28T11:00:00.000Z",
   });
@@ -250,22 +253,23 @@ test("The board previews the form's draft and drops it for a hidden room", async
 /**
  * Given the booking form is open for Kletshok 03 at 10:00-10:55
  * When I fill in my contact "ber@boekjehokje.test" and confirm the booking
- * Then the service logs the booking event with room "Kletshok 03", booker
- * "Bèr", contact "ber@boekjehokje.test", start "2026-10-28T10:00:00.000Z"
- * and end "2026-10-28T10:55:00.000Z", and the form closes
- * So that my booking is registered (persisted to Google Calendar in #14).
+ * Then the booking is written to the calendar API (POST) with summary
+ * "KH 03 | Bèr", the contact in the description, start
+ * "2026-10-28T10:00:00.000Z" and end "2026-10-28T10:55:00.000Z", and the
+ * form closes
+ * So that my booking is registered on the shared calendar (#14).
  */
-test("User can confirm a booking, which the service logs", async ({ authedPage }) => {
+test("User can confirm a booking, which is written to the calendar API", async ({ authedPage }) => {
   const overview = await new OverviewPage(authedPage).goto();
 
   await overview.clickFreeSlot("Kletshok 03", "10:30");
   await overview.fillContact("ber@boekjehokje.test");
   await overview.submitBookingForm();
 
-  await overview.assertBookingWasLogged({
-    room: "Kletshok 03",
-    booker: "Bèr",
-    contact: "ber@boekjehokje.test",
+  await overview.assertBookingWasWritten({
+    method: "POST",
+    summary: "KH 03 | Bèr",
+    description: "ber@boekjehokje.test",
     start: "2026-10-28T10:00:00.000Z",
     end: "2026-10-28T10:55:00.000Z",
   });

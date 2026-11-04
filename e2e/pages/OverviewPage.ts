@@ -42,22 +42,12 @@ interface BookingFormValues {
 }
 
 /**
- * The booking the service logs on confirm, as plain serializable data.
+ * A write request (POST/PATCH/DELETE) the app sent to the calendar
+ * events endpoint, with its JSON body as the calendar API receives it.
  */
-interface LoggedBooking {
-  room: string;
-  booker: string;
-  contact: string;
-  start: string;
-  end: string;
-}
-
-/**
- * A logged date as an ISO string, whether it arrived as a Date or a
- * string
- */
-function isoString(value: unknown): string {
-  return value instanceof Date ? value.toISOString() : String(value);
+interface CalendarWrite {
+  method: string;
+  body: unknown;
 }
 
 /**
@@ -70,22 +60,33 @@ function isoString(value: unknown): string {
  */
 export class OverviewPage {
   private readonly page: Page;
-  /** Console log messages seen so far (the service logs new bookings) */
   /**
-   * Serialized arguments of the console log messages seen so far. The
-   * handles are serialized eagerly in the handler, while they are alive.
+   * The write requests (POST/PATCH/DELETE on .../events) seen so far,
+   * with their parsed JSON bodies (DELETE carries none).
    */
-  private readonly consoleLogArgs: Promise<unknown[]>[] = [];
+  private readonly calendarWrites: CalendarWrite[] = [];
 
   constructor(page: Page) {
     this.page = page;
-    page.on("console", (msg) => {
-      if (msg.type() !== "log") return;
-      this.consoleLogArgs.push(
-        Promise.all(
-          msg.args().map((arg) => arg.jsonValue().catch(() => null)),
-        ),
-      );
+    page.on("request", (request) => {
+      const method = request.method();
+      if (method !== "POST" && method !== "PATCH" && method !== "DELETE") {
+        return;
+      }
+      if (
+        !/\/calendars\/[^/]+\/events(\/[^/?]+)?$/.test(
+          new URL(request.url()).pathname,
+        )
+      ) {
+        return;
+      }
+      let body: unknown = null;
+      try {
+        body = request.postDataJSON();
+      } catch {
+        body = null;
+      }
+      this.calendarWrites.push({ method, body });
     });
   }
 
@@ -574,25 +575,35 @@ export class OverviewPage {
   }
 
   /**
-   * Assert the service logged the booking event with these values
-   * (saving currently only logs; the write API is issue #14).
+   * Assert the app wrote a booking event to the calendar API with these
+   * values, in the standardized event format (summary "short name |
+   * booker", contact in the description, RFC 3339 start/end).
    */
-  async assertBookingWasLogged(expected: LoggedBooking): Promise<void> {
+  async assertBookingWasWritten(expected: {
+    method?: string;
+    summary: string;
+    description?: string;
+    start: string;
+    end: string;
+  }): Promise<void> {
     await expect.poll(
-      async () => {
-        for (const argsPromise of this.consoleLogArgs) {
-          for (const value of await argsPromise) {
-            if (
-              value !== null && typeof value === "object" &&
-              (value as LoggedBooking).room === expected.room &&
-              (value as LoggedBooking).booker === expected.booker &&
-              (value as LoggedBooking).contact === expected.contact &&
-              isoString((value as LoggedBooking).start) === expected.start &&
-              isoString((value as LoggedBooking).end) === expected.end
-            ) {
-              return true;
-            }
+      () => {
+        for (const write of this.calendarWrites) {
+          if (expected.method && write.method !== expected.method) continue;
+          const event = write.body as {
+            summary?: string;
+            description?: string;
+            start?: { dateTime?: string };
+            end?: { dateTime?: string };
+          } | null;
+          if (!event || typeof event !== "object") continue;
+          if (event.summary !== expected.summary) continue;
+          if ((event.description ?? "") !== (expected.description ?? "")) {
+            continue;
           }
+          if (event.start?.dateTime !== expected.start) continue;
+          if (event.end?.dateTime !== expected.end) continue;
+          return true;
         }
         return false;
       },

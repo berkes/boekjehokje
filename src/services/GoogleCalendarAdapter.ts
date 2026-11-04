@@ -4,8 +4,10 @@
  * The adapter that fulfils the CalendarServicePort with real data: it
  * fetches events from the NYMA calendar through a CalendarApiClient,
  * has them parsed into room groups, and builds the domain rooms from
- * those. Editability (ADR-0004) is decided here, by creator email vs.
- * the profile email of the user this calendar is served for.
+ * those; bookings are written back through the same client, serialized
+ * into the standardized event format. Editability (ADR-0004) is decided
+ * here, by creator email vs. the profile email of the user this
+ * calendar is served for.
  */
 
 import type { AuthenticatedUser } from "./authentication/AuthenticationServicePort.ts";
@@ -14,6 +16,8 @@ import { CalendarApiError } from "../utils/googleCalendarApi.ts";
 import type { CalendarEvent } from "../utils/types.ts";
 
 import {
+  type Booking,
+  type BookingUpdate,
   type CalendarServicePort,
   getThisWeek,
   type NewBooking,
@@ -21,9 +25,12 @@ import {
   type WeekRange,
 } from "./CalendarServicePort.ts";
 import {
+  bookingToEvent,
   parseAndGroupEvents,
   type ParsedBooking,
+  parseEvent,
   type RoomGroup,
+  toBooking,
 } from "./parser.ts";
 
 // Re-export CalendarApiError for use by other modules
@@ -78,17 +85,38 @@ export class GoogleCalendarAdapter implements CalendarServicePort {
   }
 
   /**
-   * Save a new booking. The write to Google Calendar is not built yet
-   * (issue #14): for now the event is only logged as it is in the
-   * service, so the conversion to the Google event format can be added
-   * there later.
+   * Create a new booking: serialize it into the standardized event format
+   * and POST it to the NYMA calendar. The created event is parsed back
+   * into domain language, so callers get the booking as the calendar
+   * stored it.
    */
-  saveBooking(booking: NewBooking): Promise<void> {
-    console.log(
-      "Nieuwe boeking (nog niet naar Google Calendar geschreven):",
-      booking,
+  async createBooking(booking: NewBooking): Promise<Booking> {
+    const event = await this.apiClient.createEvent(
+      this.calendarId,
+      bookingToEvent(booking),
     );
-    return Promise.resolve();
+    return this.toDomainBooking(event);
+  }
+
+  /**
+   * Update an existing booking: serialize the new values and PATCH them
+   * onto the event on the NYMA calendar
+   */
+  async updateBooking(booking: BookingUpdate): Promise<Booking> {
+    const { id, ...fields } = booking;
+    const event = await this.apiClient.updateEvent(
+      this.calendarId,
+      id,
+      bookingToEvent(fields),
+    );
+    return this.toDomainBooking(event);
+  }
+
+  /**
+   * Delete a booking: DELETE the event from the NYMA calendar
+   */
+  async deleteBooking(bookingId: string): Promise<void> {
+    await this.apiClient.deleteEvent(this.calendarId, bookingId);
   }
 
   /**
@@ -106,6 +134,15 @@ export class GoogleCalendarAdapter implements CalendarServicePort {
         editable: this.can("edit", booking),
       })),
     }));
+  }
+
+  /**
+   * Parse one event from the calendar back into a domain booking,
+   * deciding editability the same way as for fetched bookings
+   */
+  private toDomainBooking(event: CalendarEvent): Booking {
+    const parsed = toBooking(parseEvent(event));
+    return { ...parsed, editable: this.can("edit", parsed) };
   }
 
   /**
