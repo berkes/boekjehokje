@@ -15,6 +15,7 @@
 import type { AuthenticatedUser } from "./authentication/AuthenticationServicePort.ts";
 import {
   type Booking,
+  type BookingUpdate,
   type CalendarServicePort,
   getThisWeek,
   type NewBooking,
@@ -22,6 +23,7 @@ import {
   type WeekRange,
 } from "./CalendarServicePort.ts";
 
+import { bookingToEvent } from "./parser.ts";
 import { ROOMS } from "./rooms.ts";
 
 /**
@@ -340,6 +342,7 @@ const DEMO_BOOKINGS: DemoBooking[] = [
  */
 export class DemoCalendarAdapter implements CalendarServicePort {
   private bookings: Booking[];
+  private profile: AuthenticatedUser;
 
   /**
    * Create a new demo calendar adapter
@@ -348,6 +351,7 @@ export class DemoCalendarAdapter implements CalendarServicePort {
    *                  bookings marked editable are theirs
    */
   constructor(profile: AuthenticatedUser) {
+    this.profile = profile;
     this.bookings = this.demoBookings(profile);
   }
 
@@ -363,12 +367,55 @@ export class DemoCalendarAdapter implements CalendarServicePort {
   }
 
   /**
-   * Save a new booking. Like the Google adapter, the demo adapter only
-   * logs the event for now; the real write is issue #14.
+   * Create a new booking. The demo adapter never touches a calendar
+   * source: it only logs the event and returns it as a booking, like the
+   * Google adapter would after its write.
    */
-  saveBooking(booking: NewBooking): Promise<void> {
-    console.log("Nieuwe boeking (nog niet naar Google Calendar geschreven):", booking);
+  createBooking(booking: NewBooking): Promise<Booking> {
+    console.log("Nieuwe boeking (demo: wordt niet opgeslagen):", booking);
+    return Promise.resolve(this.asBooking(booking, `demo-created-${this.bookings.length}`));
+  }
+
+  /**
+   * Update a booking. Like create, only logged: the demo calendar has no
+   * calendar source to write to.
+   */
+  updateBooking(booking: BookingUpdate): Promise<Booking> {
+    console.log("Boeking bijgewerkt (demo: wordt niet opgeslagen):", booking);
+    return Promise.resolve(this.asBooking(booking, booking.id));
+  }
+
+  /**
+   * Delete a booking. Only logged, for the same reason.
+   */
+  deleteBooking(bookingId: string): Promise<void> {
+    console.log("Boeking verwijderd (demo: wordt niet opgeslagen):", bookingId);
     return Promise.resolve();
+  }
+
+  /**
+   * A domain booking out of the write-side fields, as the profile user's
+   * own (editable) booking
+   */
+  private asBooking(
+    booking: NewBooking,
+    id: string,
+  ): Booking {
+    const summary = bookingToEvent(booking).summary;
+    return {
+      id,
+      uid: `${id}@boekjehokje.invalid`,
+      summary,
+      room: booking.room,
+      booker: booking.booker,
+      editable: true,
+      details: {
+        originalName: summary,
+        author: this.profile.email,
+      },
+      start: booking.start,
+      end: booking.end,
+    };
   }
 
   /**

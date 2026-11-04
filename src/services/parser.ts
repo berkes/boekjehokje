@@ -20,7 +20,7 @@ import {
 /**
  * Google Calendar API event type
  */
-import type { CalendarEvent } from "../utils/types.ts";
+import type { CalendarEvent, CalendarEventDraft } from "../utils/types.ts";
 
 export type { CalendarEvent, RoomName };
 
@@ -303,6 +303,46 @@ export function parseEvent(event: CalendarEvent): ParsedEvent {
     status: event.status,
     sequence: event.sequence || 0,
   };
+}
+
+/**
+ * The fields of a booking that the serializer needs: the room (canonical
+ * name), the booker, the optional contact, and the time range. NewBooking
+ * and BookingUpdate both carry them.
+ */
+export interface BookingEventSource {
+  room: string;
+  booker: string;
+  contact?: string;
+  start: Date;
+  end: Date;
+}
+
+/**
+ * Serialize a booking into the standardized calendar event format: the
+ * inverse of parseEvent. The summary is "room short name | booker" (the
+ * same format the booking form previews), so parsing the written event
+ * yields the same room and booker; the contact goes into the description.
+ */
+export function bookingToEvent(
+  booking: BookingEventSource,
+): CalendarEventDraft {
+  const room = getRoomByCanonicalName(booking.room);
+  const shortName = room?.shortName ?? booking.room;
+  const summary = `${shortName} | ${booking.booker}`;
+
+  const event: CalendarEventDraft = {
+    summary,
+    start: { dateTime: booking.start.toISOString() },
+    end: { dateTime: booking.end.toISOString() },
+  };
+
+  const contact = booking.contact?.trim();
+  if (contact) {
+    event.description = contact;
+  }
+
+  return event;
 }
 
 /**

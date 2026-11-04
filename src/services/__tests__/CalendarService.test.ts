@@ -7,13 +7,15 @@
 
 import { GoogleCalendarAdapter } from "../GoogleCalendarAdapter.ts";
 import {
+  type BookingUpdate,
   getNextWeek,
   getThisWeek,
   type NewBooking,
 } from "../CalendarServicePort.ts";
-import type { CalendarEvent } from "../../utils/types.ts";
+import type { CalendarEvent, CalendarEventDraft } from "../../utils/types.ts";
+import { CalendarApiError } from "../../utils/googleCalendarApi.ts";
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertRejects } from "@std/assert";
 import { assertSpyCallArg, assertSpyCalls, spy } from "@std/testing/mock";
 
 const CALENDAR_ID = "nyma-fake-calendar@example.com";
@@ -36,6 +38,38 @@ function createMockEvent(
     updated: "2026-10-05T09:00:00Z",
     status: "confirmed",
     sequence: 0,
+  };
+}
+
+/**
+ * The write operations every fake client stubs out: create and update
+ * echo the draft back as a stored event (with an id and creator, like
+ * the calendar does), delete resolves.
+ */
+function writeOps(creatorEmail = "boeker@example.com") {
+  const stored = (event: CalendarEventDraft, id: string): CalendarEvent => ({
+    id,
+    uid: `${id}@example.com`,
+    summary: event.summary,
+    creator: { email: creatorEmail },
+    start: event.start,
+    end: event.end,
+    created: "2026-10-28T09:00:00Z",
+    updated: "2026-10-28T09:00:00Z",
+    status: "confirmed",
+    sequence: 0,
+  });
+  return {
+    createEvent: spy((_calendarId: string, event: CalendarEventDraft) =>
+      Promise.resolve(stored(event, "created-event"))
+    ),
+    updateEvent: spy(
+      (_calendarId: string, eventId: string, changes: CalendarEventDraft) =>
+        Promise.resolve(stored(changes, eventId)),
+    ),
+    deleteEvent: spy((_calendarId: string, _eventId: string) =>
+      Promise.resolve()
+    ),
   };
 }
 
@@ -93,6 +127,7 @@ Deno.test("getRoomsThisWeek calls API client with correct attributes", async () 
     fetchEvents: spy((_calendarId: string, _timeMin?: Date, _timeMax?: Date) =>
       Promise.resolve(mockEvents)
     ),
+    ...writeOps(),
     listCalendars: () => Promise.resolve([]),
   };
 
@@ -122,6 +157,7 @@ Deno.test("getRoomsThisWeek calls API client with custom calendar ID", async () 
     fetchEvents: spy((_calendarId: string, _timeMin?: Date, _timeMax?: Date) =>
       Promise.resolve(mockEvents)
     ),
+    ...writeOps(),
     listCalendars: () => Promise.resolve([]),
   };
 
@@ -158,6 +194,7 @@ Deno.test("getRoomsWithBookings marks bookings of the profile user editable", as
 
   const mockClient = {
     fetchEvents: () => Promise.resolve(mockEvents),
+    ...writeOps(),
     listCalendars: () => Promise.resolve([]),
   };
 
@@ -191,6 +228,7 @@ Deno.test("getRoomsWithBookings marks all bookings read-only without a profile",
 
   const mockClient = {
     fetchEvents: () => Promise.resolve(mockEvents),
+    ...writeOps(),
     listCalendars: () => Promise.resolve([]),
   };
 
@@ -200,13 +238,17 @@ Deno.test("getRoomsWithBookings marks all bookings read-only without a profile",
   assertEquals(bookings.length, 1);
   assert(!bookings[0].editable, "without a profile nothing is editable");
 });
-
-Deno.test("saveBooking only logs the booking event as it is in the service", async () => {
+Deno.test("createBooking writes the standardized event format to the calendar", async () => {
+  const ops = writeOps("ber@berkes.nl");
   const mockClient = {
     fetchEvents: () => Promise.resolve([]),
+    ...ops,
     listCalendars: () => Promise.resolve([]),
   };
-  const service = new GoogleCalendarAdapter(mockClient, CALENDAR_ID, null);
+  const service = new GoogleCalendarAdapter(mockClient, CALENDAR_ID, {
+    name: "Bèr",
+    email: "ber@berkes.nl",
+  });
 
   const booking: NewBooking = {
     room: "Kletshok 03",
@@ -216,13 +258,95 @@ Deno.test("saveBooking only logs the booking event as it is in the service", asy
     end: new Date("2026-10-28T10:55:00Z"),
   };
 
-  const logSpy = spy(console, "log");
-  try {
-    await service.saveBooking(booking);
+  const created = await service.createBooking(booking);
 
-    assertSpyCalls(logSpy, 1);
-    assertSpyCallArg(logSpy, 0, 1, booking);
-  } finally {
-    logSpy.restore();
-  }
+  assertSpyCalls(ops.createEvent, 1);
+  assertSpyCallArg(ops.createEvent, 0, 0, CALENDAR_ID);
+  assertSpyCallArg(ops.createEvent, 0, 1, {
+    summary: "KH 03 | Bèr",
+    description: "ber@boekjehokje.test",
+    start: { dateTime: "2026-10-28T10:00:00.000Z" },
+    end: { dateTime: "2026-10-28T10:55:00.000Z" },
+  });
+
+  // The stored event is parsed back into domain language (round-trip)
+  assertEquals(created.id, "created-event");
+  assertEquals(created.room, "Kletshok 03");
+  assertEquals(created.booker, "Bèr");
+  assertEquals(created.start, new Date("2026-10-28T10:00:00Z"));
+  assertEquals(created.end, new Date("2026-10-28T10:55:00Z"));
+  assert(created.editable, "the profile user's own booking is editable");
+});
+
+Deno.test("updateBooking patches the standardized event format onto the existing event", async () => {
+  const ops = writeOps();
+  const mockClient = {
+    fetchEvents: () => Promise.resolve([]),
+    ...ops,
+    listCalendars: () => Promise.resolve([]),
+  };
+  const service = new GoogleCalendarAdapter(mockClient, CALENDAR_ID, null);
+
+  const update: BookingUpdate = {
+    id: "event-1",
+    room: "Tuinkamer",
+    booker: "Bèr",
+    contact: "",
+    start: new Date("2026-10-28T12:00:00Z"),
+    end: new Date("2026-10-28T13:00:00Z"),
+  };
+
+  const updated = await service.updateBooking(update);
+
+  assertSpyCalls(ops.updateEvent, 1);
+  assertSpyCallArg(ops.updateEvent, 0, 0, CALENDAR_ID);
+  assertSpyCallArg(ops.updateEvent, 0, 1, "event-1");
+  assertSpyCallArg(ops.updateEvent, 0, 2, {
+    summary: "TK | Bèr",
+    start: { dateTime: "2026-10-28T12:00:00.000Z" },
+    end: { dateTime: "2026-10-28T13:00:00.000Z" },
+  });
+  assertEquals(updated.id, "event-1");
+  assertEquals(updated.room, "Tuinkamer");
+  assertEquals(updated.booker, "Bèr");
+  assert(!updated.editable, "without a profile the booking is read-only");
+});
+
+Deno.test("deleteBooking deletes the event from the calendar", async () => {
+  const ops = writeOps();
+  const mockClient = {
+    fetchEvents: () => Promise.resolve([]),
+    ...ops,
+    listCalendars: () => Promise.resolve([]),
+  };
+  const service = new GoogleCalendarAdapter(mockClient, CALENDAR_ID, null);
+
+  await service.deleteBooking("event-1");
+
+  assertSpyCalls(ops.deleteEvent, 1);
+  assertSpyCallArg(ops.deleteEvent, 0, 0, CALENDAR_ID);
+  assertSpyCallArg(ops.deleteEvent, 0, 1, "event-1");
+});
+
+Deno.test("write operations propagate API errors to the caller", async () => {
+  const failing = {
+    ...writeOps(),
+    createEvent: () => Promise.reject(new CalendarApiError("forbidden", 403)),
+  };
+  const mockClient = {
+    fetchEvents: () => Promise.resolve([]),
+    ...failing,
+    listCalendars: () => Promise.resolve([]),
+  };
+  const service = new GoogleCalendarAdapter(mockClient, CALENDAR_ID, null);
+
+  const booking: NewBooking = {
+    room: "Kletshok 03",
+    booker: "Bèr",
+    contact: "",
+    start: new Date("2026-10-28T10:00:00Z"),
+    end: new Date("2026-10-28T10:55:00Z"),
+  };
+
+  await assertRejects(() => service.createBooking(booking), CalendarApiError);
 });

@@ -1,0 +1,19 @@
+{
+  "id": "wiremock-written-event",
+  "uid": "wiremock-written-event@google.com",
+  "summary": "{{jsonPath request.body '$.summary'}}",
+  "description": "{{jsonPath request.body '$.description'}}",
+  "creator": {
+    "email": "ber@boekjehokje.test"
+  },
+  "start": {
+    "dateTime": "{{jsonPath request.body '$.start.dateTime'}}"
+  },
+  "end": {
+    "dateTime": "{{jsonPath request.body '$.end.dateTime'}}"
+  },
+  "created": "2026-10-28T09:00:00.000Z",
+  "updated": "2026-10-28T09:00:00.000Z",
+  "status": "confirmed",
+  "sequence": 0
+}

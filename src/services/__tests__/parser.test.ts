@@ -8,6 +8,7 @@
 
 // Import internal functions for testing
 import {
+  bookingToEvent,
   extractBooker,
   extractRoom,
   isIgnoredEvent,
@@ -537,4 +538,79 @@ Deno.test("The Unknown room config is included in ROOMS", () => {
   const unknownRoom = ROOMS.find((room) => room.canonicalName === UNKNOWN_ROOM);
   assert(unknownRoom !== undefined, "The Unknown room should be in ROOMS");
   assertEquals(unknownRoom?.canonicalName, UNKNOWN_ROOM);
+});
+
+Deno.test("bookingToEvent serializes into the standardized format the parser reads back", () => {
+  const event = bookingToEvent({
+    room: "Kletshok 03",
+    booker: "Bèr",
+    contact: "ber@boekjehokje.test",
+    start: new Date("2026-10-28T10:00:00Z"),
+    end: new Date("2026-10-28T10:55:00Z"),
+  });
+
+  assertEquals(event.summary, "KH 03 | Bèr");
+  assertEquals(event.description, "ber@boekjehokje.test");
+  assertEquals(event.start, { dateTime: "2026-10-28T10:00:00.000Z" });
+  assertEquals(event.end, { dateTime: "2026-10-28T10:55:00.000Z" });
+
+  // Round-trip: parsing the written event yields the same room and
+  // booker (parseEvent is the inverse of bookingToEvent)
+  const parsed = parseEvent({
+    id: "event-1",
+    uid: "uid-1",
+    summary: event.summary,
+    creator: { email: "ber@boekjehokje.test" },
+    start: event.start,
+    end: event.end,
+    created: "2026-10-28T09:00:00Z",
+    updated: "2026-10-28T09:00:00Z",
+    status: "confirmed",
+    sequence: 0,
+  });
+  assertEquals(parsed.room, "Kletshok 03");
+  assertEquals(parsed.booker, "Bèr");
+  assertEquals(parsed.start, new Date("2026-10-28T10:00:00Z"));
+  assertEquals(parsed.end, new Date("2026-10-28T10:55:00Z"));
+});
+
+Deno.test("bookingToEvent round-trips every bookable room", () => {
+  for (const room of CANONICAL_ROOMS) {
+    const event = bookingToEvent({
+      room,
+      booker: "Sanne",
+      start: new Date("2026-10-28T10:00:00Z"),
+      end: new Date("2026-10-28T11:00:00Z"),
+    });
+    const parsed = parseEvent({
+      id: "event-1",
+      uid: "uid-1",
+      summary: event.summary,
+      creator: { email: "sanne@example.com" },
+      start: event.start,
+      end: event.end,
+      created: "2026-10-28T09:00:00Z",
+      updated: "2026-10-28T09:00:00Z",
+      status: "confirmed",
+      sequence: 0,
+    });
+    assertEquals(parsed.room, room, `room should round-trip for ${room}`);
+    assertEquals(
+      parsed.booker,
+      "Sanne",
+      `booker should round-trip for ${room}`,
+    );
+  }
+});
+
+Deno.test("bookingToEvent omits the description when there is no contact", () => {
+  const event = bookingToEvent({
+    room: "Stilteruimte",
+    booker: "Bèr",
+    contact: "  ",
+    start: new Date("2026-10-28T10:00:00Z"),
+    end: new Date("2026-10-28T11:00:00Z"),
+  });
+  assertEquals(event.summary, "Stilteruimte | Bèr");
+  assert(!("description" in event), "no empty description is written");
 });

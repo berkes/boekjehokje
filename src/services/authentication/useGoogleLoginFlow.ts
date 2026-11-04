@@ -14,11 +14,15 @@ import { useCallback, useRef } from "react";
 import { useGoogleLogin } from "@react-oauth/google";
 import type { GoogleOAuthResponse } from "./GoogleAuthenticationAdapter.ts";
 
-/** Google OAuth scopes for the People API and Calendar API */
+/**
+ * Google OAuth scopes for the People API and Calendar API. The Calendar
+ * scope is `calendar.events` (read/write on events, issue #14), not
+ * `calendar.readonly`: existing users must log in again to grant it.
+ */
 const GOOGLE_OAUTH_SCOPES = [
   "https://www.googleapis.com/auth/userinfo.profile",
   "https://www.googleapis.com/auth/userinfo.email",
-  "https://www.googleapis.com/auth/calendar.readonly",
+  "https://www.googleapis.com/auth/calendar.events",
 ].join(" ");
 
 /** A login attempt that has been started but not yet settled */

@@ -113,9 +113,11 @@ jobs:
 
       - name: Load the Google API stubs into the mock
         run: |
-          curl -fsS -X PUT -H 'Content-Type: text/plain' \
-            --data-binary @e2e/wiremock/__files/calendar-events.hbs \
-            http://localhost:8081/__admin/files/calendar-events.hbs
+          for file in e2e/wiremock/__files/*; do
+            curl -fsS -X PUT -H 'Content-Type: text/plain' \
+              --data-binary @"$file" \
+              "http://localhost:8081/__admin/files/$(basename "$file")"
+          done
           for mapping in e2e/wiremock/mappings/*.json; do
             curl -fsS -X POST -H 'Content-Type: application/json' \
               --data-binary @"$mapping" \

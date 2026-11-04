@@ -417,7 +417,7 @@ export function Calendar(
 
   /**
    * Confirming the booking form saves it through the calendar service and
-   * closes the sidebar; the service decides persistence (issue #14)
+   * closes the sidebar; the service persists it to the calendar source
    */
   const handleCreateBooking = useCallback(
     async (booking: NewBooking): Promise<void> => {
@@ -428,8 +428,9 @@ export function Calendar(
   );
 
   /**
-   * Editing and deleting are UI affordances until persistence lands
-   * (issue #14). Edit shows the booking in the sidebar; delete is a no-op.
+   * Editing and deleting are UI affordances until the edit UI lands
+   * (#13); the service port already persists writes (#14). Edit shows
+   * the booking in the sidebar; delete is a no-op.
    */
   const boardActions = useMemo<BoardActions>(
     () => ({
@@ -444,7 +445,8 @@ export function Calendar(
 
   /**
    * Own bookings can be moved and resized on the board, others snap back.
-   * The change is applied locally only; persistence is issue #14.
+   * The change is applied locally only; persisting the move is the edit
+   * UI's job (#13), the service port already supports the write (#14).
    * The drop lane retargets the room, the basis for cross-room moves.
    */
   const onDragEvent = (
@@ -610,11 +612,11 @@ export function CalendarView(
 
   /**
    * Saving a booking goes through the service port and refreshes the
-   * board afterwards; persistence itself is the service's job (#14)
+   * board afterwards; the service persists it to the calendar source
    */
   const createBooking = useCallback(
     async (booking: NewBooking): Promise<void> => {
-      await service.saveBooking(booking);
+      await service.createBooking(booking);
       await load();
     },
     [service, load],

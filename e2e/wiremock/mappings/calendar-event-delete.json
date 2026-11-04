@@ -1,0 +1,13 @@
+{
+  "name": "calendar-event-delete",
+  "request": {
+    "method": "DELETE",
+    "urlPathPattern": "/calendar/v3/calendars/[^/]+/events/[^/]+"
+  },
+  "response": {
+    "status": 204,
+    "headers": {
+      "Access-Control-Allow-Origin": "*"
+    }
+  }
+}

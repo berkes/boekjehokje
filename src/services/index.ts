@@ -12,6 +12,7 @@
 
 export type {
   Booking,
+  BookingUpdate,
   CalendarServicePort,
   NewBooking,
   Room,

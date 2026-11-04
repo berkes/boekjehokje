@@ -30,10 +30,12 @@ API instead (`PUT /__admin/files/...` for the response template,
   `VITE_GOOGLE_CALENDAR_API_BASE` and `VITE_GOOGLE_PEOPLE_API_BASE` and defaults
   to the real Google endpoints. The suite overrides them to
   `http://localhost:8081`.
-- **WireMock stubs** — `e2e/wiremock/` holds the mappings (calendar events,
-  People API, and a CORS preflight; the browser preflights the `Authorization`
-  header) and a Handlebars template (`__files/calendar-events.hbs`) that renders
-  the bookings. The bookings transcribe the current-week demo content of
+- **WireMock stubs** — `e2e/wiremock/` holds the mappings (calendar events read
+  plus the event write operations POST/PATCH/DELETE, the People API, and a CORS
+  preflight; the browser preflights the `Authorization` header) and the
+  Handlebars templates in `__files/` (`calendar-events.hbs` renders the
+  bookings, `calendar-event-written.hbs` echoes a written event back). The
+  bookings transcribe the current-week demo content of
   `src/services/DemoCalendarAdapter.ts`; dates are not hardcoded but templated
   relative to the Monday the app requests (`timeMin`), so week navigation in the
   UI keeps hitting the same pattern.
@@ -70,8 +72,9 @@ The conventions, in short:
 - **Assertions are reproducible.** Because the clock is fixed, every assertion
   holds the same value no matter when the suite runs. If the WireMock seeds
   change, the expected strings in the tests change with them.
-- **Booking specs are read-side only** until write flows are finalized (issue
-  #14): no creating, editing, deleting, or dragging.
+- **Booking specs cover the create write**: confirming the booking form POSTs
+  the standardized event to the mocked events endpoint (issue #14); the
+  update/delete UI flows are issue #13.
 
 `deno lint` and `deno fmt --check` cover `e2e/` together with the rest of the
 repository. Type-checking does not: `deno task build` (tsc) only covers `src`,
