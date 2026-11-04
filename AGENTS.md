@@ -193,6 +193,28 @@ If, for some reason, restarting or stopping that service is required, ensure to
 re-start it after finishing your task or at least notify the user that it was
 stopped and why it was stopped.
 
+## Landing Page Screenshots
+
+The landing page (`src/pages/Landing.tsx`) shows two screenshots of the calendar
+overview, bundled from `src/assets/overview-desktop.png` and
+`src/assets/overview-mobile.png`. On every visible change to the app, the
+screenshots must be updated — never leave stale ones behind.
+
+To retake them:
+
+1. Run `deno task dev`.
+2. Seed a fake authenticated session in the browser's localStorage under the key
+   `boekjehokje_authentication` (shape as in "Authentication Architecture"
+   above; use the mock user from `e2e/fixtures/auth.ts`: name "Bèr", email
+   ber@boekjehokje.test). Optionally fix the clock to `FIXED_NOW` from the same
+   file so the board shows a stable week.
+3. Open `/demo` (the demo board needs the seeded session) and screenshot the
+   board at 1440x900 (desktop) and at 390x844 (mobile emulation), both at device
+   scale factor 2 — e.g. with Playwright.
+4. Overwrite `src/assets/overview-desktop.png` and
+   `src/assets/overview-mobile.png`, check that the landing page (`/`) shows
+   them, and commit.
+
 ## Releasing
 
 Releases are cut from `main` as tags. A tag triggers the `build.yml` workflow,
