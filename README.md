@@ -24,7 +24,7 @@ the app's look changes, retake them:
 2. In the browser, seed a fake session in localStorage under the key
    `boekjehokje_authentication` (see AGENTS.md, "Authentication Architecture";
    user name "Bèr", email ber@boekjehokje.test, `expiresAt` in the future).
-3. Open `/demo` and screenshot the board at 1440x900 (desktop) and at 390x844
+3. Open `/demo` and screenshot the board at 1440x900 (desktop) and at 430x932
    with mobile emulation, both at device scale factor 2.
 4. Save over `src/assets/overview-desktop.png` and
    `src/assets/overview-mobile.png` and check the front page (`/`).

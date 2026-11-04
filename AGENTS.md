@@ -209,7 +209,7 @@ To retake them:
    ber@boekjehokje.test). Optionally fix the clock to `FIXED_NOW` from the same
    file so the board shows a stable week.
 3. Open `/demo` (the demo board needs the seeded session) and screenshot the
-   board at 1440x900 (desktop) and at 390x844 (mobile emulation), both at device
+   board at 1440x900 (desktop) and at 430x932 (mobile emulation), both at device
    scale factor 2 — e.g. with Playwright.
 4. Overwrite `src/assets/overview-desktop.png` and
    `src/assets/overview-mobile.png`, check that the landing page (`/`) shows
