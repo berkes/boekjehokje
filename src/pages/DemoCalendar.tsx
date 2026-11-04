@@ -16,6 +16,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Calendar } from "../components/calendar/Calendar.tsx";
 import { useUser } from "../context/useUser.ts";
 import {
+  type BookingUpdate,
   DemoCalendarAdapter,
   getThisWeek,
   type NewBooking,
@@ -73,6 +74,18 @@ export function DemoCalendar(): React.JSX.Element {
     },
     [demoAdapter],
   );
+  const updateBooking = useCallback(
+    async (booking: BookingUpdate): Promise<void> => {
+      await demoAdapter?.updateBooking(booking);
+    },
+    [demoAdapter],
+  );
+  const deleteBooking = useCallback(
+    async (_bookingId: string): Promise<void> => {
+      await demoAdapter?.deleteBooking();
+    },
+    [demoAdapter],
+  );
 
   if (isLoading) {
     return (
@@ -92,7 +105,12 @@ export function DemoCalendar(): React.JSX.Element {
 
   return (
     <Box>
-      <Calendar rooms={rooms} onCreateBooking={createBooking} />
+      <Calendar
+        rooms={rooms}
+        onCreateBooking={createBooking}
+        onUpdateBooking={updateBooking}
+        onDeleteBooking={deleteBooking}
+      />
     </Box>
   );
 }

@@ -47,6 +47,8 @@ interface BookingFormValues {
  */
 interface CalendarWrite {
   method: string;
+  /** Decoded request path, e.g. "/calendar/v3/calendars/x/events/evt-1" */
+  path: string;
   body: unknown;
 }
 
@@ -86,7 +88,11 @@ export class OverviewPage {
       } catch {
         body = null;
       }
-      this.calendarWrites.push({ method, body });
+      this.calendarWrites.push({
+        method,
+        path: decodeURIComponent(new URL(request.url()).pathname),
+        body,
+      });
     });
   }
 
@@ -361,10 +367,27 @@ export class OverviewPage {
   }
 
   /**
-   * Assert the booking form is open with the given pre-filled values.
+   * Assert the create booking form is open with the given pre-filled values.
    */
   async assertBookingFormIsOpen(values: BookingFormValues): Promise<void> {
-    await expect(this.bookingFormTitle()).toBeVisible();
+    await this.assertFormIsOpen("Nieuwe boeking", values);
+  }
+
+  /**
+   * Assert the edit form is open, prefilled with the booking's values.
+   */
+  async assertEditFormIsOpen(values: BookingFormValues): Promise<void> {
+    await this.assertFormIsOpen("Boeking bewerken", values);
+  }
+
+  /**
+   * Assert the form with the given title is open with the given values.
+   */
+  private async assertFormIsOpen(
+    title: string,
+    values: BookingFormValues,
+  ): Promise<void> {
+    await expect(this.page.getByRole("heading", { name: title })).toBeVisible();
     await expect(this.roomSelect()).toHaveText(values.room);
     await expect(this.page.getByLabel("Van")).toHaveValue(values.from);
     await expect(this.page.getByLabel("Tot")).toHaveValue(values.to);
@@ -412,10 +435,36 @@ export class OverviewPage {
   }
 
   /**
-   * Confirm the booking form.
+   * Confirm the create booking form.
    */
   async submitBookingForm(): Promise<this> {
     await this.page.getByRole("button", { name: "Boeking aanmaken" }).click();
+    return this;
+  }
+
+  /**
+   * Confirm the edit form.
+   */
+  async submitEditForm(): Promise<this> {
+    await this.page.getByRole("button", { name: "Boeking bijwerken" }).click();
+    return this;
+  }
+
+  /**
+   * Click the edit icon of a booking's bar on the board.
+   */
+  async clickEditOn(booking: string): Promise<this> {
+    await this.bookingBar(booking).getByRole("button", { name: "edit" })
+      .click();
+    return this;
+  }
+
+  /**
+   * Click the delete icon of a booking's bar on the board.
+   */
+  async clickDeleteOn(booking: string): Promise<this> {
+    await this.bookingBar(booking).getByRole("button", { name: "delete" })
+      .click();
     return this;
   }
 
@@ -581,6 +630,8 @@ export class OverviewPage {
    */
   async assertBookingWasWritten(expected: {
     method?: string;
+    /** Event id the write targets (in the request path), when known */
+    eventId?: string;
     summary: string;
     description?: string;
     start: string;
@@ -590,6 +641,10 @@ export class OverviewPage {
       () => {
         for (const write of this.calendarWrites) {
           if (expected.method && write.method !== expected.method) continue;
+          if (
+            expected.eventId &&
+            !write.path.endsWith(`/events/${expected.eventId}`)
+          ) continue;
           const event = write.body as {
             summary?: string;
             description?: string;
@@ -607,6 +662,22 @@ export class OverviewPage {
         }
         return false;
       },
+      { timeout: 5000 },
+    ).toBe(true);
+  }
+
+  /**
+   * Assert the app sent a DELETE for the given event id to the calendar
+   * API (delete carries no request body).
+   */
+  async assertBookingWasDeleted(eventId: string): Promise<void> {
+    await expect.poll(
+      () =>
+        this.calendarWrites.some(
+          (write) =>
+            write.method === "DELETE" &&
+            write.path.endsWith(`/events/${eventId}`),
+        ),
       { timeout: 5000 },
     ).toBe(true);
   }
@@ -682,10 +753,13 @@ export class OverviewPage {
   }
 
   /**
-   * The title of the booking form in the sidebar.
+   * The title of the booking form in the sidebar: "Nieuwe boeking" in
+   * create mode, "Boeking bewerken" in edit mode.
    */
   private bookingFormTitle(): Locator {
-    return this.page.getByRole("heading", { name: "Nieuwe boeking" });
+    return this.page.getByRole("heading", {
+      name: /^(Nieuwe boeking|Boeking bewerken)$/,
+    });
   }
 
   /**

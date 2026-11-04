@@ -6,7 +6,9 @@
  * and time range; the booker is the signed-in user and stays read-only.
  * The summary preview shows the event title the booking will get in the
  * calendar source. Confirming hands the booking to the calendar service,
- * which writes it to the calendar source.
+ * which writes it to the calendar source. With a `booking` prop the same
+ * form edits that booking instead (prefilled with its values, issue #14):
+ * confirming updates the existing event rather than creating one.
  */
 import Button from "@mui/material/Button";
 import FormControl from "@mui/material/FormControl";
@@ -18,7 +20,7 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import React, { useEffect, useState } from "react";
 import { useUser } from "../../context/useUser.ts";
-import { type NewBooking } from "../../services/index.ts";
+import { type Booking, type NewBooking } from "../../services/index.ts";
 import { ROOMS, UNKNOWN_ROOM } from "../../services/rooms.ts";
 import { loadBookerContact, saveBookerContact } from "./bookerContact.ts";
 import {
@@ -44,14 +46,16 @@ const BOOKABLE_ROOMS = ROOMS.filter(
 export interface BookingFormProps {
   /** All rooms with their bookings, to check the margin against (ADR-0006) */
   rooms: CalendarRoom[];
+  /** The booking being edited; when set, the form updates it instead of creating one (#14) */
+  booking?: Booking;
   /** Canonical name of the room the slot was selected in */
   initialRoom: string;
   /** Start of the selected slot */
   initialStart: Date;
   /** End of the selected slot */
   initialEnd: Date;
-  /** Save the booking through the calendar service */
-  onSubmit: (booking: NewBooking) => Promise<void>;
+  /** Save the booking through the calendar service; with the edited booking's id when editing */
+  onSubmit: (booking: NewBooking, bookingId?: string) => Promise<void>;
   /** Called whenever the draft (room/start/end) changes, so the board can preview it */
   onDraftChange?: (draft: { room: string; start: Date; end: Date }) => void;
 }
@@ -63,8 +67,15 @@ export interface BookingFormProps {
  * entered: overlaps are blocked, a zero-minute gap shows a warning
  */
 export function BookingForm(
-  { rooms, initialRoom, initialStart, initialEnd, onSubmit, onDraftChange }:
-    BookingFormProps,
+  {
+    rooms,
+    booking,
+    initialRoom,
+    initialStart,
+    initialEnd,
+    onSubmit,
+    onDraftChange,
+  }: BookingFormProps,
 ): React.JSX.Element {
   const { user } = useUser();
   const booker = user?.name ?? "";
@@ -79,8 +90,9 @@ export function BookingForm(
   const roomConfig = BOOKABLE_ROOMS.find((r) => r.canonicalName === room);
   const preview = summaryPreview(roomConfig?.shortName ?? room, booker);
 
-  const roomBookings = rooms.find((r) => r.canonicalName === room)?.bookings ??
-    [];
+  // The booking being edited never counts as an overlap with itself
+  const roomBookings = rooms.find((r) => r.canonicalName === room)?.bookings
+    .filter((b) => b.id !== booking?.id) ?? [];
   const margin = checkMargin(roomBookings, new Date(from), new Date(to));
   const longBooking = isLongBooking(new Date(from), new Date(to));
   const invertedRange = isInvertedRange(new Date(from), new Date(to));
@@ -103,13 +115,16 @@ export function BookingForm(
     setIsSubmitting(true);
     try {
       const trimmedContact = contact.trim();
-      await onSubmit({
-        room,
-        booker,
-        contact: trimmedContact,
-        start: new Date(from),
-        end: new Date(to),
-      });
+      await onSubmit(
+        {
+          room,
+          booker,
+          contact: trimmedContact,
+          start: new Date(from),
+          end: new Date(to),
+        },
+        booking?.id,
+      );
       saveBookerContact(trimmedContact);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -203,7 +218,7 @@ export function BookingForm(
         disabled={isSubmitting || margin.overlappingBooking !== null ||
           invertedRange}
       >
-        Boeking aanmaken
+        {booking ? "Boeking bijwerken" : "Boeking aanmaken"}
       </Button>
     </Stack>
   );

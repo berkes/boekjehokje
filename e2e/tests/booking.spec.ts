@@ -2,8 +2,9 @@ import { test } from "../fixtures/auth.ts";
 import { OverviewPage } from "../pages/OverviewPage.ts";
 
 /**
- * Booking specs: read-side only. Creating, editing and deleting are not
- * finalized (issue #14) and are deliberately not tested here.
+ * Booking details and editability specs: read-side. The write flows
+ * (creating in create-booking.spec.ts, editing and deleting in
+ * edit-booking.spec.ts) are covered there against the WireMock mock.
  */
 
 /**
