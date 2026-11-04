@@ -6,6 +6,8 @@ import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
 import Link from "@mui/material/Link";
+import Alert from "@mui/material/Alert";
+import AlertTitle from "@mui/material/AlertTitle";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 import { Link as RouterLink } from "react-router-dom";
@@ -62,6 +64,16 @@ export function Landing(): React.JSX.Element {
             <ListItemText primary="Boek je ruimte moeiteloos: zonder conflicten en met alle informatie in het juiste formaat." />
           </ListItem>
         </List>
+        <Alert severity="warning" sx={{ mt: 3 }}>
+          <AlertTitle>boekjehokje is in testmodus</AlertTitle>
+          Inloggen met Google werkt alleen voor accounts die daarvoor zijn
+          vrijgegeven. Stuur het e-mailadres van je Google-account via Signal
+          naar{" "}
+          <Link href="https://signal.me/#eu/9ExllGhqYUgGR5fsZy0lnjIhXRgS-Of1A4oA4mTYJz7HI0Th6OZOfYfLlQ1L6iI9">
+            @berkes.69
+          </Link>{" "}
+          — dan whitelist ik je.
+        </Alert>
         <Stack
           direction="row"
           spacing={3}
