@@ -92,10 +92,14 @@ export function Faq(): React.JSX.Element {
     },
     {
       vraag: "Wie heeft dit gebouwd?",
-      antwoord: <>
-        <Link href="https://berk.es">Bèr Kessels</Link> uit unit 65/63.
-        Met <Link href="https://chat.mistral.ai">Mistral Vibe</Link>: Goede, Open Source, Europese AI.
-      </>,
+      antwoord: (
+        <>
+          <Link href="https://berk.es">Bèr Kessels</Link> uit unit 65/63. Met
+          {" "}
+          <Link href="https://chat.mistral.ai">Mistral Vibe</Link>: Goede, Open
+          Source, Europese AI.
+        </>
+      ),
     },
     {
       vraag: "Ik zie een bug.",
