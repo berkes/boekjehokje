@@ -93,3 +93,22 @@ tested, and for the remaining `console.log`s to go:
 - No conflict handling or local queue: Google Calendar is the source of truth
   (ADR-0003); a failed write surfaces as an error in the form and the board
   simply re-fetches on the next load.
+
+## Finalize sweep
+
+Boy-scout pass over the branch after the review round:
+
+- No TODOs left in code or docs; the one stale doc reference (issue-15 task doc
+  still describing the log-only `saveBooking`) now points at this file.
+- `GoogleCalendarApiClient` no longer duplicates the HTTP/error handling:
+  `fetchEvents` and `listCalendars` go through the same private `request` helper
+  as the write operations.
+- Follow-up issues filed for what this PR deliberately left open:
+  [#37](https://github.com/berkes/boekjehokje/issues/37) prompt re-login when
+  the stored session lacks the `calendar.events` scope,
+  [#38](https://github.com/berkes/boekjehokje/issues/38) rename `GoogleAuth.tsx`
+  to the "authentication" terminology,
+  [#39](https://github.com/berkes/boekjehokje/issues/39) read the contact back
+  from the event description when editing,
+  [#40](https://github.com/berkes/boekjehokje/issues/40) persist drag-to-move of
+  own bookings via `updateBooking`.

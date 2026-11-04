@@ -132,53 +132,10 @@ export class GoogleCalendarApiClient implements CalendarApiClient {
       encodeURIComponent(calendarId)
     }/events?${params}`;
 
-    try {
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${this.accessToken}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        let errorMessage =
-          `Google Calendar API request failed: ${response.status} ${response.statusText}`;
-
-        try {
-          const errorData = await response.json() as {
-            error?: { message?: string };
-          };
-          if (errorData?.error?.message) {
-            errorMessage += ` - ${errorData.error.message}`;
-          }
-        } catch {
-          // Failed to parse error response
-        }
-
-        throw new CalendarApiError(errorMessage, response.status);
-      }
-
-      const data = await response.json();
-      return parseCalendarEvents(data);
-    } catch (error) {
-      if (error instanceof CalendarApiError) {
-        throw error;
-      }
-
-      if (error instanceof Error) {
-        throw new CalendarApiError(
-          `Failed to fetch calendar events: ${error.message}`,
-          undefined,
-          error,
-        );
-      }
-
-      throw new CalendarApiError(
-        "Failed to fetch calendar events: Unknown error",
-        undefined,
-        new Error(String(error)),
-      );
-    }
+    const data = await this.request(url, "fetch calendar events", {
+      method: "GET",
+    });
+    return parseCalendarEvents(data);
   }
 
   /**
@@ -226,65 +183,32 @@ export class GoogleCalendarApiClient implements CalendarApiClient {
   async listCalendars(): Promise<CalendarListEntry[]> {
     const url = `${CALENDAR_API_BASE}/users/me/calendarList`;
 
-    try {
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${this.accessToken}`,
-          "Content-Type": "application/json",
-        },
-      });
+    const data = await this.request(url, "list calendars", { method: "GET" });
+    const items = (data as { items?: unknown } | null)?.items;
 
-      if (!response.ok) {
-        throw new CalendarApiError(
-          `Failed to list calendars: ${response.status} ${response.statusText}`,
-          response.status,
-        );
-      }
-
-      const data = await response.json();
-
-      if (!Array.isArray(data?.items)) {
-        return [];
-      }
-
-      return data.items.map((item: unknown) => {
-        if (!item || typeof item !== "object") {
-          return { id: "", summary: "" };
-        }
-
-        const calendar = item as {
-          id?: string;
-          summary?: string;
-          description?: string;
-          primary?: boolean;
-        };
-
-        return {
-          id: calendar.id || "",
-          summary: calendar.summary || "",
-          description: calendar.description,
-          primary: calendar.primary,
-        };
-      });
-    } catch (error) {
-      if (error instanceof CalendarApiError) {
-        throw error;
-      }
-
-      if (error instanceof Error) {
-        throw new CalendarApiError(
-          `Failed to list calendars: ${error.message}`,
-          undefined,
-          error,
-        );
-      }
-
-      throw new CalendarApiError(
-        "Failed to list calendars: Unknown error",
-        undefined,
-        new Error(String(error)),
-      );
+    if (!Array.isArray(items)) {
+      return [];
     }
+
+    return items.map((item: unknown) => {
+      if (!item || typeof item !== "object") {
+        return { id: "", summary: "" };
+      }
+
+      const calendar = item as {
+        id?: string;
+        summary?: string;
+        description?: string;
+        primary?: boolean;
+      };
+
+      return {
+        id: calendar.id || "",
+        summary: calendar.summary || "",
+        description: calendar.description,
+        primary: calendar.primary,
+      };
+    });
   }
 
   /**

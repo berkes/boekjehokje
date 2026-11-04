@@ -13,6 +13,10 @@ Implemented on branch `vibe/booking-form-966b3d`, on top of the sidebar shell
 refactor (`vibe/sidebar-shell-966b3d`, PR #29). The five-minute margin rule is
 ADR-0006 (PR #28).
 
+Update: the write API this task deferred to issue #14 has since landed (PR #35)
+— `saveBooking` is now `createBooking` and really writes to Google Calendar; see
+[issue-14-write-operations.md](./issue-14-write-operations.md).
+
 ## What was built
 
 - Slot selection on the board: `onPressCell` (click) and `onCreateEvent` (drag)
@@ -62,8 +66,9 @@ ADR-0006 (PR #28).
 
 ## Deliberately out of scope (per the issue)
 
-- No real Google Calendar write yet: `saveBooking` only logs until #14 lands (no
-  `calendar.events` scope change on this branch), so against the real API the
-  create call would 403 — the e2e mock doesn't care.
+- No real Google Calendar write on this branch: `saveBooking` only logged until
+  #14 landed (no `calendar.events` scope change on this branch), so against the
+  real API the create call would have 403'd — the e2e mock didn't care. Since PR
+  #35 the write is real (see the status note above).
 - No description field: the summary preview `[short] | [booker]` and the contact
   field carry the standardized format instead.
