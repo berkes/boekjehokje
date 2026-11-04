@@ -5,11 +5,7 @@ import Container from "@mui/material/Container";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
-import {
-  CalendarView,
-  GoogleAuthButton,
-  GoogleAuthWrapper,
-} from "./components/index.ts";
+import { CalendarView, GoogleAuthWrapper } from "./components/index.ts";
 import { UserProvider } from "./context/UserContext.tsx";
 import { useUser } from "./context/useUser.ts";
 import { ProfileMenu } from "./components/ProfileMenu.tsx";
@@ -18,7 +14,7 @@ import Toolbar from "@mui/material/Toolbar";
 import Button from "@mui/material/Button";
 import HelpIcon from "@mui/icons-material/Help";
 import { BrowserRouter as Router, Link, Route, Routes } from "react-router-dom";
-import { DemoCalendar, Faq, Settings } from "./pages/index.ts";
+import { DemoCalendar, Faq, Landing, Settings } from "./pages/index.ts";
 import { ProtectedRoute } from "./components/ProtectedRoute.tsx";
 import { GoogleCalendarAdapter } from "./services/GoogleCalendarAdapter.ts";
 import {
@@ -122,25 +118,8 @@ function AppContent(): React.JSX.Element {
       </Box>
 
       <Box component="main">
-        {isLoggedIn ? <MainContent /> : <LandingPage />}
+        {isLoggedIn ? <MainContent /> : <Landing />}
       </Box>
-    </Box>
-  );
-}
-
-/**
- * Landing page shown when user is not authenticated
- */
-function LandingPage(): React.JSX.Element {
-  return (
-    <Box sx={{ textAlign: "center", py: 8 }}>
-      <Typography variant="subtitle1">
-        Ruimte boeken voor de NYMA Makersplaats
-      </Typography>
-      <Typography variant="body1" sx={{ mt: 2, mb: 4 }}>
-        Log in om ruimtes te boeken
-      </Typography>
-      <GoogleAuthButton />
     </Box>
   );
 }
