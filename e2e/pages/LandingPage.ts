@@ -76,6 +76,21 @@ export class LandingPage {
   }
 
   /**
+   * Assert the testing-mode warning is shown, with its link (name and href).
+   */
+  async assertShowsTestingModeWarning(
+    title: string,
+    linkName: string,
+    linkHref: string,
+  ): Promise<void> {
+    await expect(this.page.getByRole("alert")).toBeVisible();
+    await expect(this.page.getByText(title)).toBeVisible();
+    const link = this.page.getByRole("link", { name: linkName });
+    await expect(link).toBeVisible();
+    await expect(link).toHaveAttribute("href", linkHref);
+  }
+
+  /**
    * Assert the visit landed on the home page.
    */
   async assertIsOnHomePage(): Promise<void> {

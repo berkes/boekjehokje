@@ -19,11 +19,18 @@ const DESKTOP_ALT =
 const MOBILE_ALT =
   "Het ruimte-overzicht op mobiel: dezelfde kolommen, horizontaal te swipen";
 
+/** The testing-mode warning and its Signal contact link. */
+const TESTING_MODE_TITLE = "boekjehokje is in testmodus";
+const SIGNAL_LINK_NAME = "@berkes.69";
+const SIGNAL_LINK_HREF =
+  "https://signal.me/#eu/9ExllGhqYUgGR5fsZy0lnjIhXRgS-Of1A4oA4mTYJz7HI0Th6OZOfYfLlQ1L6iI9";
+
 /**
  * Given I am a visitor who is not signed in
  * When I open the home page
  * Then I see what boekjehokje is, the three steps, both screenshots of the
- * overview and the sign-in button with links to the FAQ
+ * overview, the sign-in button with links to the FAQ, and a warning that the
+ * app is in testing mode and how to get whitelisted
  * So that I understand what the app does and what I need before I log in.
  */
 test("Visitor sees the landing page with steps, screenshots and sign-in", async ({ page }) => {
@@ -31,6 +38,11 @@ test("Visitor sees the landing page with steps, screenshots and sign-in", async 
 
   await landing.assertShowsSignInInvitation();
   await landing.assertShowsSteps(STEPS);
+  await landing.assertShowsTestingModeWarning(
+    TESTING_MODE_TITLE,
+    SIGNAL_LINK_NAME,
+    SIGNAL_LINK_HREF,
+  );
   await landing.assertShowsScreenshots([DESKTOP_ALT, MOBILE_ALT]);
   await landing.assertLinksToFaq("Waarom?");
   await landing.assertLinksToFaq("Veelgestelde vragen");

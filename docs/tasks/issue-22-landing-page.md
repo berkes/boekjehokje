@@ -27,6 +27,10 @@ Implemented on branch `vibe/landing-page-a13031`, PR against `main`.
     in het juiste formaat."
   - The existing `GoogleAuthButton` as the primary call to action, placed with
     the steps, next to a "Veelgestelde vragen" link to `/faq`.
+  - A `severity="warning"` MUI `Alert` between the steps and the sign-in button:
+    boekjehokje is in testing mode, Google sign-in only works for whitelisted
+    accounts, and users send their Google account email via Signal to @berkes.69
+    to get whitelisted.
   - Screenshots of the current calendar overview, desktop and mobile, with Dutch
     alt texts. They stack responsively via `Stack` +
     `useMediaQuery(theme.breakpoints.down("md"))`: side by side on desktop
@@ -35,22 +39,24 @@ Implemented on branch `vibe/landing-page-a13031`, PR against `main`.
   `src/assets/overview-mobile.png`, imported so Vite bundles them. Taken with
   headless Chromium (Playwright) against the `/demo` board with a seeded fake
   session (the mock user "Bèr" from `e2e/fixtures/auth.ts`) and the fixed clock
-  (Wednesday 28 October 2026, UTC), viewports 1440x900 and 390x844 at 2x. How to
+  (Wednesday 28 October 2026, UTC), viewports 1440x900 and 430x932 at 2x. How to
   retake them is documented in AGENTS.md ("Landing Page Screenshots") and
   README.md.
 - **E2E**: `e2e/pages/LandingPage.ts` now speaks the new page (heading, sign-in
-  button, steps, screenshot alt texts, FAQ links); new
-  `e2e/tests/landing.spec.ts` covers the desktop and the small-screen landing
-  page. `navigation.spec.ts` and `settings.spec.ts` keep working through the
-  updated `assertShowsSignInInvitation` (the sign-in button).
+  button, steps, testing-mode alert with its Signal link, screenshot alt texts,
+  FAQ links); new `e2e/tests/landing.spec.ts` covers the desktop and the
+  small-screen landing page. `navigation.spec.ts` and `settings.spec.ts` keep
+  working through the updated `assertShowsSignInInvitation` (the sign-in
+  button).
 
 ## Tests
 
 - E2E (`deno task test:e2e`, no WireMock needed for these): `landing.spec.ts`
   asserts the three steps in order, both screenshots by alt text, the "Waarom?"
   and "Veelgestelde vragen" links pointing at `/faq`, and the sign-in button, on
-  a 1440px and on a 390px viewport; `navigation.spec.ts`/`settings.spec.ts`
-  still pass with the updated page object.
+  a 1440px and on a small-screen viewport;
+  `navigation.spec.ts`/`settings.spec.ts` still pass with the updated page
+  object.
 - `deno fmt --check`, `deno lint`, `deno check` (incl. `e2e/`) and
   `deno task build` all pass.
 
