@@ -151,13 +151,14 @@ sequenceDiagram
 ## Sequence: how a booking is updated or deleted
 
 Update and delete share the whole write path and differ only in the verb and the
-service method, so they are folded into one diagram (the edit/delete UI itself
-is issue #13; the write API is issue #14).
+service method, so they are folded into one diagram. The edit UI (the same
+booking form, prefilled) and the delete icon are wired in issue #14's PR; the
+timed undo toast is issue #36.
 
 ```mermaid
 sequenceDiagram
   actor User
-  participant UI as Edit UI / board actions (issue #13)
+  participant UI as Edit form / delete icon (board actions)
   participant Service as CalendarServicePort
   participant Adapter as GoogleCalendarAdapter
   participant Parser as parser.ts (bookingToEvent)

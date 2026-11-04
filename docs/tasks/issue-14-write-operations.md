@@ -48,8 +48,9 @@ first to add the architecture-diagram deliverable to its scope.
   `src/components/GoogleAuth.tsx`, but since issue #12 the scopes live in the
   authentication module. **Users must log in again to grant the new scope**;
   existing sessions keep the read-only token until they re-authenticate.
-- **Call sites**: `Calendar.tsx` and `DemoCalendar.tsx` now call
-  `createBooking`; no UI changes (the edit/delete UI is issue #13).
+- **Call sites**: `Calendar.tsx` and `DemoCalendar.tsx` call the write
+  operations of the port (create, and in the review round also update and
+  delete; see below).
 
 ## Tests
 
@@ -61,15 +62,34 @@ first to add the architecture-diagram deliverable to its scope.
 - E2E: new WireMock mappings stub the write endpoints (`POST .../events`,
   `PATCH .../events/{id}`, `DELETE .../events/{id}`, echoing the written event
   via `__files/calendar-event-written.hbs`; CI now uploads all of `__files/`).
-  The two create-booking specs in `e2e/tests/create-booking.spec.ts` assert the
-  POST the app sends (`assertBookingWasWritten` on the `OverviewPage` page
-  object) instead of the old console log.
+  The create-booking specs in `e2e/tests/create-booking.spec.ts` assert the POST
+  the app sends, and `e2e/tests/edit-booking.spec.ts` covers the update and
+  delete flows (PATCH body, DELETE target) — all via `assertBookingWasWritten` /
+  `assertBookingWasDeleted` on the `OverviewPage` page object, which captures
+  the write requests instead of console output.
 
-## Deliberately out of scope (per the issue)
+## Review round (PR #35 review)
 
-- No UI changes: the booking form's confirm now really writes (it used to log
-  only), but editing and deleting from the board remain UI affordances until
-  issue #13 wires them to `updateBooking`/`deleteBooking`.
+The PR review asked for the update/delete flows to be usable in the app and
+tested, and for the remaining `console.log`s to go:
+
+- The **edit icon** on an own booking now opens the same `BookingForm`,
+  prefilled with the booking's room, start and end (title "Boeking bewerken",
+  confirm button "Boeking bijwerken"); confirming calls `updateBooking`
+  (`BookingUpdate` = `NewBooking` + id) and closes the form.
+- The **delete icon** deletes immediately, without confirmation, via
+  `deleteBooking(id)`. The timed undo toast is issue #36 and deliberately not
+  here.
+- `CalendarView` and the demo page wire all three writes through the service
+  port and refresh the board afterwards (`useCalendar`'s `load()`).
+- All `console.log`/`console.info` calls are gone: the demo adapter resolves
+  silently, and the delete path logs failures with `console.error` only.
+- New e2e specs: `e2e/tests/edit-booking.spec.ts` (edit form prefilled, PATCH
+  sent with the standardized body, DELETE sent without confirmation).
+
+## Deliberately out of scope
+
+- No timed undo for create/update/delete: issue #36.
 - No conflict handling or local queue: Google Calendar is the source of truth
   (ADR-0003); a failed write surfaces as an error in the form and the board
   simply re-fetches on the next load.

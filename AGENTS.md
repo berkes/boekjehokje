@@ -169,8 +169,8 @@ The Playwright suite in `e2e/` runs against the WireMock-mocked Google APIs; see
   expect (bookings, bookers, durations, day labels), made stable by the fixed
   clock in `e2e/fixtures/auth.ts` (`FIXED_NOW`). Never parse page content and
   assert against the parsed value, and never depend on the real run date.
-- Booking specs cover the create write (POST to the mocked events endpoint,
-  issue #14); the update/delete UI flows are tracked separately (issue #13).
+- Booking specs cover the create, update and delete writes (POST/PATCH/DELETE to
+  the mocked events endpoint, issue #14); the timed undo toast is issue #36.
 - `deno lint` and `deno fmt --check` cover `e2e/` with the rest of the repo; the
   suite is type-checked by `deno check` (CI runs it on `e2e/`, since
   `deno task build` only covers `src`).

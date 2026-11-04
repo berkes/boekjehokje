@@ -32,6 +32,7 @@ import React, {
 import { useCalendar } from "../../hooks/useCalendar.ts";
 import type {
   Booking,
+  BookingUpdate,
   CalendarServicePort,
   NewBooking,
 } from "../../services/index.ts";
@@ -86,6 +87,10 @@ export interface CalendarProps {
   rooms: CalendarRoom[];
   /** Save a new booking through the calendar service (issue #15) */
   onCreateBooking: (booking: NewBooking) => Promise<void>;
+  /** Save changes to an existing booking through the calendar service (#14) */
+  onUpdateBooking: (booking: BookingUpdate) => Promise<void>;
+  /** Delete a booking through the calendar service (#14); undo is #36 */
+  onDeleteBooking: (bookingId: string) => Promise<void>;
 }
 
 /**
@@ -103,6 +108,14 @@ type SidebarState = {
   end: Date;
   /** The free-slot block that was originally selected (room included), highlighted on the board */
   slot: { room: string; start: Date; end: Date };
+} | {
+  mode: "edit";
+  /** The booking being edited; the form is prefilled from it */
+  booking: Booking;
+  /** Current draft values, edited in the form */
+  room: string;
+  start: Date;
+  end: Date;
 } | null;
 
 /**
@@ -111,9 +124,9 @@ type SidebarState = {
 interface BoardActions {
   /** Show the booking details in the sidebar */
   openSidebar: (bookingId: string) => void;
-  /** Start editing a booking (UI affordance until issue #14) */
+  /** Open the booking form prefilled with the booking's values (#14) */
   editBooking: (booking: Booking) => void;
-  /** Delete a booking (UI affordance until issue #14) */
+  /** Delete a booking immediately, no confirmation (undo is #36) */
   deleteBooking: (booking: Booking) => void;
 }
 
@@ -271,11 +284,11 @@ function FreeSlotBar(
  * paints every bookable free slot as a green block (ADR-0006). Pressing a
  * booking opens its details in the sidebar; pressing a free-slot block, or
  * pressing or dragging empty lane space, opens the booking form in the same
- * sidebar (issue #15); own bookings can be dragged and resized (UI-only,
- * persistence is #14).
+ * sidebar (issue #15); the edit icon opens the same form prefilled with
+ * the booking's values and the delete icon deletes immediately (#14).
  */
 export function Calendar(
-  { rooms, onCreateBooking }: CalendarProps,
+  { rooms, onCreateBooking, onUpdateBooking, onDeleteBooking }: CalendarProps,
 ): React.JSX.Element {
   const [selectedDate, setSelectedDate] = useState(() => systemClock.now());
   const [sidebarState, setSidebarState] = useState<SidebarState>(null);
@@ -295,6 +308,8 @@ export function Calendar(
 
   const resources = useMemo(() => toResources(visibleRooms), [visibleRooms]);
   const domTheme = useMemo(() => toDomTheme(theme.palette), [theme.palette]);
+  const formOpen = sidebarState?.mode === "create" ||
+    sidebarState?.mode === "edit";
   const selectedSlot = sidebarState?.mode === "create"
     ? sidebarState.slot
     : null;
@@ -309,7 +324,6 @@ export function Calendar(
       selectedSlot,
     )
     : null;
-  const formOpen = sidebarState?.mode === "create";
   const events = useMemo(
     () => [
       ...applyMovedEvents(toEvents(visibleRooms), moved),
@@ -344,7 +358,7 @@ export function Calendar(
   const onPressBoardEvent = useCallback(
     (event: BoardEvent): void => {
       // Free-slot blocks are disabled while the booking form is open
-      if (event.freeSlot && sidebarState?.mode === "create") return;
+      if (event.freeSlot && formOpen) return;
       if (event.freeSlot) {
         setSidebarState({
           mode: "create",
@@ -357,7 +371,7 @@ export function Calendar(
         openSidebar(event.booking.id);
       }
     },
-    [openSidebar, sidebarState],
+    [openSidebar, formOpen],
   );
 
   /**
@@ -370,7 +384,7 @@ export function Calendar(
     (at: Date, resource: Resource): void => {
       // While the booking form is open, clicks on the board do nothing:
       // the form keeps the user's edits
-      if (sidebarState?.mode === "create") return;
+      if (formOpen) return;
       const roomBookings =
         rooms.find((room) => room.canonicalName === resource.id)?.bookings ??
           [];
@@ -383,12 +397,12 @@ export function Calendar(
         slot: { room: resource.id, start: slot.start, end: slot.end },
       });
     },
-    [rooms, sidebarState],
+    [rooms, formOpen],
   );
 
   const onCreateEvent = useCallback(
     (start: Date, end: Date, resource: Resource): void => {
-      if (sidebarState?.mode === "create") return;
+      if (formOpen) return;
       setSidebarState({
         mode: "create",
         room: resource.id,
@@ -397,17 +411,17 @@ export function Calendar(
         slot: { room: resource.id, start, end },
       });
     },
-    [sidebarState],
+    [formOpen],
   );
 
   /**
-   * The booking form's draft changed: update the create state, so the
+   * The booking form's draft changed: update the form state, so the
    * board can highlight the selected slot and preview the draft
    */
   const handleDraftChange = useCallback(
     (draft: { room: string; start: Date; end: Date }): void => {
       setSidebarState((prev) =>
-        prev?.mode === "create"
+        prev?.mode === "create" || prev?.mode === "edit"
           ? { ...prev, room: draft.room, start: draft.start, end: draft.end }
           : prev
       );
@@ -417,37 +431,57 @@ export function Calendar(
 
   /**
    * Confirming the booking form saves it through the calendar service and
-   * closes the sidebar; the service persists it to the calendar source
+   * closes the sidebar; the service persists it to the calendar source.
+   * With a booking id the form edits that booking, without it creates one.
    */
-  const handleCreateBooking = useCallback(
-    async (booking: NewBooking): Promise<void> => {
-      await onCreateBooking(booking);
+  const handleFormSubmit = useCallback(
+    async (booking: NewBooking, bookingId?: string): Promise<void> => {
+      if (bookingId === undefined) {
+        await onCreateBooking(booking);
+      } else {
+        await onUpdateBooking({ ...booking, id: bookingId });
+      }
       setSidebarState(null);
     },
-    [onCreateBooking],
+    [onCreateBooking, onUpdateBooking],
   );
 
   /**
-   * Editing and deleting are UI affordances until the edit UI lands
-   * (#13); the service port already persists writes (#14). Edit shows
-   * the booking in the sidebar; delete is a no-op.
+   * The edit icon opens the same form as create, prefilled with the
+   * booking's values; the delete icon deletes immediately, without
+   * confirmation (a timed undo is issue #36)
    */
   const boardActions = useMemo<BoardActions>(
     () => ({
       openSidebar,
-      editBooking: (booking: Booking) => openSidebar(booking.id),
+      editBooking: (booking: Booking) => {
+        setSidebarState({
+          mode: "edit",
+          booking,
+          room: booking.room,
+          start: booking.start,
+          end: booking.end,
+        });
+      },
       deleteBooking: (booking: Booking) => {
-        console.info("Verwijderen is nog niet beschikbaar.", booking.id);
+        onDeleteBooking(booking.id)
+          .catch((err: unknown) => console.error("Verwijderen mislukt:", err))
+          .then(() =>
+            setSidebarState((prev) =>
+              prev?.mode === "details" && prev.booking.id === booking.id
+                ? null
+                : prev
+            )
+          );
       },
     }),
-    [openSidebar],
+    [openSidebar, onDeleteBooking],
   );
 
   /**
    * Own bookings can be moved and resized on the board, others snap back.
-   * The change is applied locally only; persisting the move is the edit
-   * UI's job (#13), the service port already supports the write (#14).
-   * The drop lane retargets the room, the basis for cross-room moves.
+   * The change is applied locally only for now; the drop lane retargets
+   * the room, the basis for cross-room moves.
    */
   const onDragEvent = (
     event: BoardEvent,
@@ -514,11 +548,14 @@ export function Calendar(
     : (
       <BookingForm
         rooms={rooms}
+        booking={sidebarState.mode === "edit"
+          ? sidebarState.booking
+          : undefined}
         initialRoom={sidebarState.room}
         initialStart={sidebarState.start}
         initialEnd={sidebarState.end}
         onDraftChange={handleDraftChange}
-        onSubmit={handleCreateBooking}
+        onSubmit={handleFormSubmit}
       />
     );
 
@@ -528,6 +565,8 @@ export function Calendar(
     ? `${
       sidebarState.booking.booker || sidebarState.booking.summary
     } — ${sidebarState.booking.room}`
+    : sidebarState.mode === "edit"
+    ? "Boeking bewerken"
     : "Nieuwe boeking";
 
   const closeSidebar = (): void => setSidebarState(null);
@@ -611,12 +650,29 @@ export function CalendarView(
   }, [load]);
 
   /**
-   * Saving a booking goes through the service port and refreshes the
-   * board afterwards; the service persists it to the calendar source
+   * Saving, updating or deleting a booking goes through the service port
+   * and refreshes the board afterwards; the service persists it to the
+   * calendar source
    */
   const createBooking = useCallback(
     async (booking: NewBooking): Promise<void> => {
       await service.createBooking(booking);
+      await load();
+    },
+    [service, load],
+  );
+
+  const updateBooking = useCallback(
+    async (booking: BookingUpdate): Promise<void> => {
+      await service.updateBooking(booking);
+      await load();
+    },
+    [service, load],
+  );
+
+  const deleteBooking = useCallback(
+    async (bookingId: string): Promise<void> => {
+      await service.deleteBooking(bookingId);
       await load();
     },
     [service, load],
@@ -670,7 +726,12 @@ export function CalendarView(
 
   return (
     <Box>
-      <Calendar rooms={rooms} onCreateBooking={createBooking} />
+      <Calendar
+        rooms={rooms}
+        onCreateBooking={createBooking}
+        onUpdateBooking={updateBooking}
+        onDeleteBooking={deleteBooking}
+      />
     </Box>
   );
 }

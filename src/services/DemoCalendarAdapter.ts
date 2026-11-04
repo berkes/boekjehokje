@@ -368,28 +368,25 @@ export class DemoCalendarAdapter implements CalendarServicePort {
 
   /**
    * Create a new booking. The demo adapter never touches a calendar
-   * source: it only logs the event and returns it as a booking, like the
-   * Google adapter would after its write.
+   * source: it just returns the event as a booking, like the Google
+   * adapter would after its write.
    */
   createBooking(booking: NewBooking): Promise<Booking> {
-    console.log("Nieuwe boeking (demo: wordt niet opgeslagen):", booking);
     return Promise.resolve(this.asBooking(booking, `demo-created-${this.bookings.length}`));
   }
 
   /**
-   * Update a booking. Like create, only logged: the demo calendar has no
-   * calendar source to write to.
+   * Update a booking. Like create, the demo calendar has no calendar
+   * source to write to.
    */
   updateBooking(booking: BookingUpdate): Promise<Booking> {
-    console.log("Boeking bijgewerkt (demo: wordt niet opgeslagen):", booking);
     return Promise.resolve(this.asBooking(booking, booking.id));
   }
 
   /**
-   * Delete a booking. Only logged, for the same reason.
+   * Delete a booking. Same: nothing is persisted in the demo.
    */
-  deleteBooking(bookingId: string): Promise<void> {
-    console.log("Boeking verwijderd (demo: wordt niet opgeslagen):", bookingId);
+  deleteBooking(): Promise<void> {
     return Promise.resolve();
   }
 
