@@ -34,8 +34,10 @@ Implemented on branch `vibe/landing-page-a13031`, PR against `main`.
 - **Screenshots** in `src/assets/overview-desktop.png` and
   `src/assets/overview-mobile.png`, imported so Vite bundles them. Taken with
   headless Chromium (Playwright) against the `/demo` board with a seeded fake
-  session and the fixed clock (Wednesday 28 October 2026, UTC), viewports
-  1440x900 and 390x844 at 2x.
+  session (the mock user "Bèr" from `e2e/fixtures/auth.ts`) and the fixed clock
+  (Wednesday 28 October 2026, UTC), viewports 1440x900 and 390x844 at 2x. How to
+  retake them is documented in AGENTS.md ("Landing Page Screenshots") and
+  README.md.
 - **E2E**: `e2e/pages/LandingPage.ts` now speaks the new page (heading, sign-in
   button, steps, screenshot alt texts, FAQ links); new
   `e2e/tests/landing.spec.ts` covers the desktop and the small-screen landing
