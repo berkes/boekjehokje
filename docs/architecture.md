@@ -21,8 +21,9 @@ Layers, top to bottom:
   `AuthenticationServicePort`) define the domain language (`Room`, `Booking`,
   `NewBooking`, `BookingUpdate`, create/update/delete operations);
   `GoogleCalendarAdapter` and `DemoCalendarAdapter` implement the calendar port;
-  `parser.ts` holds both directions of the standardized event format
-  (`parseEvent` reads, `bookingToEvent` writes).
+  `parser.ts` reads the standardized event format (`extractRoom`,
+  `extractBooker`, `parseEvent`); `CalendarServicePort.ts` owns the write side
+  (`bookingToEvent`, the inverse of `parseEvent`).
 - **Adapters/clients** (`src/utils/calendar/`) — `CalendarApiClient` is the
   injected port; `GoogleCalendarApiClient` implements it with the REST calls
   (`GET/POST/PATCH/DELETE .../calendars/{id}/events`) against `CALENDAR_ID`.
@@ -50,7 +51,7 @@ flowchart TB
     calPort["CalendarServicePort (port)<br/>Room, Booking, NewBooking, BookingUpdate<br/>getRoomsWithBookings, createBooking, updateBooking, deleteBooking"]
     googleAdapter["GoogleCalendarAdapter"]
     demoAdapter["DemoCalendarAdapter"]
-    parser["parser.ts<br/>parseEvent / bookingToEvent (serializer)"]
+    parser["parser.ts<br/>extractRoom / extractBooker / parseEvent"]
   end
 
   subgraph clients["API clients (src/utils/calendar)"]
@@ -107,9 +108,9 @@ sequenceDiagram
   GClient->>API: GET /calendars/&lt;id&gt;/events?timeMin=...&amp;timeMax=...
   API-->>GClient: events (JSON)
   GClient-->>Adapter: CalendarEvent[]
-  Adapter->>Parser: parseAndGroupEvents(events)
-  Parser-->>Adapter: room groups (room + booker from the summary)
-  Adapter-->>Service: Room[] with editable flags (ADR-0004)
+  Adapter->>Parser: parseEvent(event) per event
+  Parser-->>Adapter: parsed events (room + booker from the summary)
+  Adapter-->>Service: Room[] grouped by room, with editable flags (ADR-0004)
   Service-->>Hook: rooms
   Hook-->>Board: rooms state
   Board-->>User: render room columns, bookings and free slots
@@ -124,7 +125,7 @@ sequenceDiagram
   participant Board as CalendarView (Calendar.tsx)
   participant Service as CalendarServicePort
   participant Adapter as GoogleCalendarAdapter
-  participant Parser as parser.ts (bookingToEvent)
+  participant Port as CalendarServicePort.ts (bookingToEvent)
   participant Client as CalendarApiClient
   participant GClient as GoogleCalendarApiClient
   participant API as Google Calendar API
@@ -133,15 +134,15 @@ sequenceDiagram
   Form->>Board: onSubmit(NewBooking)
   Board->>Service: createBooking(NewBooking)
   Service->>Adapter: createBooking(booking)
-  Adapter->>Parser: bookingToEvent(booking)
-  Parser-->>Adapter: CalendarEventDraft (summary "KH 03 | Bèr", description = contact)
+  Adapter->>Port: bookingToEvent(booking)
+  Port-->>Adapter: CalendarEventDraft (summary "KH 03 | Bèr", description = contact)
   Adapter->>Client: createEvent(CALENDAR_ID, draft)
   Client->>GClient: createEvent(...)
   GClient->>API: POST /calendars/&lt;id&gt;/events
   API-->>GClient: created event
   GClient-->>Adapter: CalendarEvent
   Adapter->>Parser: parseEvent(event) — round-trip back to domain
-  Parser-->>Adapter: Booking
+  Parser-->>Adapter: parsed event
   Adapter-->>Board: created Booking
   Board->>Service: getRoomsWithBookings() (refresh board)
   Service-->>Board: updated rooms
@@ -161,7 +162,7 @@ sequenceDiagram
   participant UI as Edit form / delete icon (board actions)
   participant Service as CalendarServicePort
   participant Adapter as GoogleCalendarAdapter
-  participant Parser as parser.ts (bookingToEvent)
+  participant Port as CalendarServicePort.ts (bookingToEvent)
   participant Client as CalendarApiClient
   participant GClient as GoogleCalendarApiClient
   participant API as Google Calendar API
@@ -170,8 +171,8 @@ sequenceDiagram
   alt update
     UI->>Service: updateBooking(BookingUpdate with id)
     Service->>Adapter: updateBooking(booking)
-    Adapter->>Parser: bookingToEvent(booking)
-    Parser-->>Adapter: CalendarEventDraft
+    Adapter->>Port: bookingToEvent(booking)
+    Port-->>Adapter: CalendarEventDraft
     Adapter->>Client: updateEvent(CALENDAR_ID, id, draft)
     Client->>GClient: updateEvent(...)
     GClient->>API: PATCH /calendars/&lt;id&gt;/events/&lt;eventId&gt;
@@ -192,7 +193,8 @@ sequenceDiagram
 
 ## The standardized event format
 
-Writes and reads meet in one format, defined by `src/services/parser.ts`:
+Writes and reads meet in one format, defined by `src/services/parser.ts` (reads)
+and `src/services/CalendarServicePort.ts` (writes):
 
 - **summary**: `<room short name> | <booker>`, e.g. `KH 03 | Bèr` —
   `bookingToEvent` (serializer) produces it, `parseEvent` reads the room and

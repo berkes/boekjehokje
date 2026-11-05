@@ -1,23 +1,16 @@
 /**
- * Unit tests for room parser
+ * Unit tests for the room parser
  *
- * Tests the internal parsing functions directly.
- * These tests import specific functions from parser.ts that aren't
- * necessarily exported from the public API.
+ * Tests the public interface of parser.ts: extractRoom, extractBooker
+ * and parseEvent. The serializer bookingToEvent (the inverse of
+ * parseEvent) lives in CalendarServicePort.ts and is round-trip tested
+ * here. Grouping and ignore-list behavior is covered through the
+ * GoogleCalendarAdapter in CalendarService.test.ts.
  */
 
-// Import internal functions for testing
-import {
-  bookingToEvent,
-  extractBooker,
-  extractRoom,
-  isIgnoredEvent,
-  isPersonName,
-  normalizeRoomName,
-  parseAndGroupEvents,
-  parseEvent,
-} from "../parser.ts";
-import { CANONICAL_ROOMS, ROOMS, UNKNOWN_ROOM } from "../rooms.ts";
+import { bookingToEvent } from "../CalendarServicePort.ts";
+import { extractBooker, extractRoom, parseEvent } from "../parser.ts";
+import { ROOMS, UNKNOWN_ROOM } from "../rooms.ts";
 import type { CalendarEvent } from "../../utils/types.ts";
 
 import { assert, assertEquals } from "@std/assert";
@@ -32,14 +25,6 @@ Deno.test.each(
     // Aliases with different formats
     {
       input: "05 Kletshok",
-      expected: "Kletshok 05",
-    },
-    {
-      input: "05",
-      expected: "Kletshok 05",
-    },
-    {
-      input: "5",
       expected: "Kletshok 05",
     },
     {
@@ -162,6 +147,7 @@ Deno.test.each(
       input: "c3 vergader",
       expected: "Vergaderruimte C3",
     },
+
     // Unknown: "c3" alone does not name the Vergaderruimte
     {
       input: "c3",
@@ -176,14 +162,8 @@ Deno.test.each(
       input: "",
       expected: UNKNOWN_ROOM,
     },
-  ],
-)("normalizeRoomName($input) == $expected", ({ input, expected }) => {
-  const output = normalizeRoomName(input);
-  assertEquals(output, expected);
-});
 
-Deno.test.each(
-  [
+    // Summaries with a booker appended
     {
       input: "05 kletshok - Peter",
       expected: "Kletshok 05",
@@ -221,16 +201,16 @@ Deno.test.each(
       expected: "Tuinkamer",
     },
     {
-      input: "Kletskubus 4",
-      expected: "Kletshok 04",
-    },
-    {
       input: "04 kletshok| klets kevin",
       expected: "Kletshok 04",
     },
     {
       input: "02 stilte ruimte| studio s",
       expected: "Stilteruimte",
+    },
+    {
+      input: "Torenkamer WT-04 I EV's NYMA",
+      expected: UNKNOWN_ROOM,
     },
     {
       input: "Team Meeting",
@@ -245,24 +225,14 @@ Deno.test.each(
 Deno.test.each(
   [
     {
-      name: "Dash separator: 05 kletshok - Peter",
+      name: "Room and dash removed: 05 kletshok - Peter",
       input: "05 kletshok - Peter",
       expected: "Peter",
     },
     {
-      name: "Pipe separator: 04 Kletshok | Vincent unit 59",
+      name: "Exclusion word removed: 04 Kletshok | Vincent unit 59",
       input: "04 Kletshok | Vincent unit 59",
-      expected: "Vincent",
-    },
-    {
-      name: "Simple: 05 kletshok - Peter",
-      input: "05 kletshok - Peter",
-      expected: "Peter",
-    },
-    {
-      name: "Pipe separator duplicate: 04 Kletshok | Vincent unit 59",
-      input: "04 Kletshok | Vincent unit 59",
-      expected: "Vincent",
+      expected: "Vincent 59",
     },
     {
       name: "Room prefix without separator: C3 vergaderruimte TABULA",
@@ -274,49 +244,24 @@ Deno.test.each(
       input: "C3 Vergaderruimte / Club Goud",
       expected: "Club Goud",
     },
+    {
+      name: "Multi-word booker: Tuinkamer - Vincent van Gogh",
+      input: "Tuinkamer - Vincent van Gogh",
+      expected: "Vincent van Gogh",
+    },
+    {
+      name: "Unknown room: the leftover summary is the name",
+      input: "Werkplaats overleg - Griet",
+      expected: "Werkplaats overleg - Griet",
+    },
+    {
+      name: "Only a room: no name left",
+      input: "KH 03",
+      expected: null,
+    },
   ],
 )("extractBooker($input) -> $expected", ({ input, expected }) => {
   const result = extractBooker(input);
-  assertEquals(result, expected);
-});
-
-Deno.test.each(
-  [
-    {
-      input: "C3 workshopruimte Team NYMA makersplaats",
-      expected: true,
-    },
-    {
-      input: "Inloopuurtje huurders",
-      expected: true,
-    },
-    {
-      input: "  Inloopuurtje huurders  ",
-      expected: true,
-    },
-    {
-      input: "bakwagen",
-      expected: true,
-    },
-    {
-      input: "De Bakwagen",
-      expected: true,
-    },
-    {
-      input: "BAKWAGEN bezet",
-      expected: true,
-    },
-    {
-      input: "05 kletshok - Peter",
-      expected: false,
-    },
-    {
-      input: "Inloopuurtje",
-      expected: false,
-    },
-  ],
-)("isIgnoredEvent($input) -> $expected", ({ input, expected }) => {
-  const result = isIgnoredEvent(input);
   assertEquals(result, expected);
 });
 
@@ -359,143 +304,13 @@ Deno.test("parseEvent", () => {
   );
 });
 
-Deno.test.each(
-  [
-    {
-      name: "Valid: Peter",
-      input: "Peter",
-      expected: true,
-    },
-    {
-      name: "Valid: Vincent van Gogh",
-      input: "Vincent van Gogh",
-      expected: true,
-    },
-    {
-      name: "Invalid: unit",
-      input: "unit",
-      expected: false,
-    },
-    {
-      name: "Invalid: 05",
-      input: "05",
-      expected: false,
-    },
-    {
-      name: "Invalid: kletshok",
-      input: "kletshok",
-      expected: false,
-    },
-    {
-      name: "Invalid: empty",
-      input: "",
-      expected: false,
-    },
-    {
-      name: "Invalid: unit 59",
-      input: "unit 59",
-      expected: false,
-    },
-  ],
-)("isPersonName($input) -> $expected", ({ input, expected }) => {
-  const output = isPersonName(input);
-  assertEquals(output, expected);
-});
-
 Deno.test("Workshopruimte is no longer a known room", () => {
-  assert(
-    !Array.from(CANONICAL_ROOMS).includes("Workshopruimte C3"),
-    "Workshopruimte C3 should not be a canonical room",
-  );
   assert(
     !ROOMS.some((room) => room.canonicalName === "Workshopruimte C3"),
     "No room should match the workshop identifiers",
   );
-  assertEquals(normalizeRoomName("workshop c3"), UNKNOWN_ROOM);
-  assertEquals(normalizeRoomName("workshopruimte c3"), UNKNOWN_ROOM);
-});
-
-Deno.test("parseAndGroupEvents ignores events on the ignore list", () => {
-  const blockingEvent: CalendarEvent = {
-    id: "blocking-1",
-    uid: "blocking-uid-1",
-    summary: "C3 workshopruimte Team NYMA makersplaats",
-    creator: { email: "team@example.com" },
-    start: { dateTime: "2026-10-06T09:00:00Z" },
-    end: { dateTime: "2026-10-06T17:00:00Z" },
-    created: "2026-10-01T09:00:00Z",
-    updated: "2026-10-01T09:00:00Z",
-    status: "confirmed",
-    sequence: 0,
-  };
-
-  const normalEvent: CalendarEvent = {
-    id: "event-1",
-    uid: "uid-1",
-    summary: "05 kletshok - Peter",
-    creator: { email: "peter@example.com" },
-    start: { dateTime: "2026-10-06T10:00:00Z" },
-    end: { dateTime: "2026-10-06T11:00:00Z" },
-    created: "2026-10-05T09:00:00Z",
-    updated: "2026-10-05T09:00:00Z",
-    status: "confirmed",
-    sequence: 0,
-  };
-
-  const result = parseAndGroupEvents([blockingEvent, normalEvent]);
-
-  assertEquals(result.length, 1, "Only the normal event should remain");
-  assertEquals(result[0].room.canonicalName, "Kletshok 05");
-  assertEquals(result[0].bookings.length, 1);
-  assertEquals(result[0].bookings[0].id, "event-1");
-});
-
-Deno.test("parseAndGroupEvents ignores the new ignore list entries", () => {
-  const ignoredEvents: CalendarEvent[] = [
-    {
-      id: "inloop-1",
-      uid: "inloop-uid-1",
-      summary: "Inloopuurtje huurders",
-      creator: { email: "team@example.com" },
-      start: { dateTime: "2026-10-06T09:00:00Z" },
-      end: { dateTime: "2026-10-06T17:00:00Z" },
-      created: "2026-10-01T09:00:00Z",
-      updated: "2026-10-01T09:00:00Z",
-      status: "confirmed",
-      sequence: 0,
-    },
-    {
-      id: "bakwagen-1",
-      uid: "bakwagen-uid-1",
-      summary: "Bakwagen C3 bezet",
-      creator: { email: "team@example.com" },
-      start: { dateTime: "2026-10-06T09:00:00Z" },
-      end: { dateTime: "2026-10-06T17:00:00Z" },
-      created: "2026-10-01T09:00:00Z",
-      updated: "2026-10-01T09:00:00Z",
-      status: "confirmed",
-      sequence: 0,
-    },
-  ];
-
-  const normalEvent: CalendarEvent = {
-    id: "event-1",
-    uid: "uid-1",
-    summary: "05 kletshok - Peter",
-    creator: { email: "peter@example.com" },
-    start: { dateTime: "2026-10-06T10:00:00Z" },
-    end: { dateTime: "2026-10-06T11:00:00Z" },
-    created: "2026-10-05T09:00:00Z",
-    updated: "2026-10-05T09:00:00Z",
-    status: "confirmed",
-    sequence: 0,
-  };
-
-  const result = parseAndGroupEvents([...ignoredEvents, normalEvent]);
-
-  assertEquals(result.length, 1, "Only the normal event should remain");
-  assertEquals(result[0].room.canonicalName, "Kletshok 05");
-  assertEquals(result[0].bookings.length, 1);
+  assertEquals(extractRoom("workshop c3"), UNKNOWN_ROOM);
+  assertEquals(extractRoom("workshopruimte c3"), UNKNOWN_ROOM);
 });
 
 Deno.test("Room objects have correct structure", () => {
@@ -520,18 +335,6 @@ Deno.test("Room objects have correct structure", () => {
       assert(typeof alias === "string", "All aliases should be strings");
     }
   }
-});
-
-Deno.test("CANONICAL_ROOMS contains all canonical names", () => {
-  // CANONICAL_ROOMS excludes the Unknown room, so we filter it out
-  const expectedCanonicalNames = ROOMS
-    .filter((room) => room.canonicalName !== UNKNOWN_ROOM)
-    .map((room) => room.canonicalName);
-  assertEquals(
-    Array.from(CANONICAL_ROOMS),
-    expectedCanonicalNames,
-    "CANONICAL_ROOMS should match all room canonical names (excluding Unknown)",
-  );
 });
 
 Deno.test("The Unknown room config is included in ROOMS", () => {
@@ -575,7 +378,11 @@ Deno.test("bookingToEvent serializes into the standardized format the parser rea
 });
 
 Deno.test("bookingToEvent round-trips every bookable room", () => {
-  for (const room of CANONICAL_ROOMS) {
+  const bookableRooms = ROOMS
+    .filter((room) => room.canonicalName !== UNKNOWN_ROOM)
+    .map((room) => room.canonicalName);
+
+  for (const room of bookableRooms) {
     const event = bookingToEvent({
       room,
       booker: "Sanne",

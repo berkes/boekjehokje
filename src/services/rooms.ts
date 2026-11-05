@@ -10,10 +10,16 @@
 /**
  * The configuration of one room
  */
-export interface RoomConfig {
-  canonicalName: string;
-  shortName: string;
-  aliases: string[];
+export class RoomConfig {
+  readonly canonicalName: string;
+  readonly shortName: string;
+  readonly aliases: string[];
+
+  constructor(canonicalName: string, shortName: string, aliases: string[]) {
+    this.canonicalName = canonicalName;
+    this.shortName = shortName;
+    this.aliases = aliases;
+  }
 }
 
 /**
@@ -28,18 +34,13 @@ export const UNKNOWN_ROOM_DESCRIPTION =
   "Boekingen die we niet konden koppelen, bijvoorbeeld door een typefout";
 
 /**
- * Type for all possible room names (canonical names + unknown)
- */
-export type RoomName = string;
-
-/**
  * The special Unknown room instance for events that couldn't be matched
  */
-export const UNKNOWN_ROOM_CONFIG: RoomConfig = {
-  canonicalName: UNKNOWN_ROOM,
-  shortName: UNKNOWN_ROOM,
-  aliases: [],
-};
+const UNKNOWN_ROOM_CONFIG: RoomConfig = new RoomConfig(
+  UNKNOWN_ROOM,
+  UNKNOWN_ROOM,
+  [],
+);
 
 /**
  * All defined rooms with their canonical names, short names, and aliases
@@ -59,12 +60,12 @@ const ROOM_CONFIGS: {
       "3 kletshok",
       "kletshok03",
       "kletshok3",
-      "03",
-      "3",
       "kh 03",
       "kh 3",
       "kh03",
       "kh3",
+      "03 kletskubus",
+      "3 kletskubus",
       "kletskubus 03",
       "kletskubus 3",
       "klets hok 03",
@@ -81,12 +82,12 @@ const ROOM_CONFIGS: {
       "4 kletshok",
       "kletshok04",
       "kletshok4",
-      "04",
-      "4",
       "kh 04",
       "kh 4",
       "kh04",
       "kh4",
+      "04 kletskubus",
+      "4 kletskubus",
       "kletskubus 04",
       "kletskubus 4",
       "klets hok 04",
@@ -103,12 +104,12 @@ const ROOM_CONFIGS: {
       "5 kletshok",
       "kletshok05",
       "kletshok5",
-      "05",
-      "5",
       "kh 05",
       "kh 5",
       "kh05",
       "kh5",
+      "05 kletskubus",
+      "5 kletskubus",
       "kletskubus 05",
       "kletskubus 5",
       "klets hok 05",
@@ -164,98 +165,9 @@ const ROOM_CONFIGS: {
  * All rooms, the Unknown room included
  */
 export const ROOMS: RoomConfig[] = [
-  ...ROOM_CONFIGS.map((config) => ({
-    canonicalName: config.canonicalName,
-    shortName: config.shortName,
-    aliases: [...config.aliases],
-  })),
+  ...ROOM_CONFIGS.map(
+    ({ canonicalName, shortName, aliases }) =>
+      new RoomConfig(canonicalName, shortName, aliases),
+  ),
   UNKNOWN_ROOM_CONFIG,
 ];
-
-/**
- * Get all canonical room names (excluding Unknown)
- */
-export const CANONICAL_ROOMS = ROOM_CONFIGS.map((config) =>
-  config.canonicalName
-) as readonly string[];
-
-/**
- * Create a mapping from lowercase alias to Room instance
- * This is used for fast lookup during parsing
- */
-export function createRoomAliasMap(
-  rooms: RoomConfig[],
-): Map<string, RoomConfig> {
-  const aliasMap = new Map<string, RoomConfig>();
-
-  for (const room of rooms) {
-    // Add canonical name (lowercase)
-    aliasMap.set(room.canonicalName.toLowerCase(), room);
-
-    // Add short name (lowercase)
-    aliasMap.set(room.shortName.toLowerCase(), room);
-
-    // Add all aliases (lowercase)
-    for (const alias of room.aliases) {
-      aliasMap.set(alias.toLowerCase().trim(), room);
-    }
-  }
-
-  return aliasMap;
-}
-
-/**
- * Pre-computed room alias map for fast lookups
- */
-export const ROOM_ALIAS_MAP = createRoomAliasMap(ROOMS);
-
-/**
- * Words and patterns to exclude from booker extraction
- */
-export const BOOKER_EXCLUSIONS = [
-  "unit",
-  "nyma",
-  "makersplaats",
-  "team",
-  "streek",
-  "bakker",
-  "info",
-  "test",
-  "workshop",
-  "cursus",
-  "vergader",
-  "ruimte",
-  "kletshok",
-  "kletskubus",
-  "stilteruimte",
-  "stilte",
-  "ruimte",
-  "tuinkamer",
-  "c3",
-  "kh",
-  "brn",
-  "ev",
-  "wt",
-] as const;
-
-/**
- * Get a room by its canonical name
- */
-export function getRoomByCanonicalName(
-  canonicalName: string,
-): RoomConfig | null {
-  for (const room of ROOMS) {
-    if (room.canonicalName === canonicalName) {
-      return room;
-    }
-  }
-  return null;
-}
-
-/**
- * Get a room by any of its identifiers (canonical name, short name, or alias)
- */
-export function getRoomByIdentifier(identifier: string): RoomConfig | null {
-  const normalized = identifier.toLowerCase().trim();
-  return ROOM_ALIAS_MAP.get(normalized) || null;
-}

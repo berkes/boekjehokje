@@ -16,14 +16,13 @@ import type { AuthenticatedUser } from "./authentication/AuthenticationServicePo
 import {
   type Booking,
   type BookingUpdate,
+  bookingToEvent,
   type CalendarServicePort,
   getThisWeek,
   type NewBooking,
   type Room,
   type WeekRange,
 } from "./CalendarServicePort.ts";
-
-import { bookingToEvent } from "./parser.ts";
 import { ROOMS } from "./rooms.ts";
 
 /**

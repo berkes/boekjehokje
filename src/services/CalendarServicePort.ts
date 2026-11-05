@@ -7,7 +7,13 @@
  * this port (ports and adapters): GoogleCalendarAdapter fetches real
  * data, DemoCalendarAdapter produces demo data. The rest of the
  * application only depends on this module, never on an adapter.
+ *
+ * The module also owns the write side of the standardized calendar event
+ * format (bookingToEvent), the inverse of the parser's parseEvent.
  */
+
+import { ROOMS } from "./rooms.ts";
+import type { CalendarEventDraft } from "../utils/types.ts";
 
 /**
  * A booking represents a room reservation. Editability is decided by
@@ -41,18 +47,28 @@ export interface Room {
 }
 
 /**
- * A new booking in domain language: the event as the service knows it.
- * Persisting it to the calendar source is the service's job.
+ * The fields of a booking that the serializer needs: the room (canonical
+ * name), the booker, the optional contact, and the time range. NewBooking
+ * and BookingUpdate both carry them.
  */
-export interface NewBooking {
+export interface BookingEventSource {
   /** Canonical room name */
   room: string;
   /** Booker's name */
   booker: string;
   /** Booker's contact details */
-  contact: string;
+  contact?: string;
   start: Date;
   end: Date;
+}
+
+/**
+ * A new booking in domain language: the event as the service knows it.
+ * Persisting it to the calendar source is the service's job.
+ */
+export interface NewBooking extends BookingEventSource {
+  /** Booker's contact details */
+  contact: string;
 }
 
 /**
@@ -62,6 +78,34 @@ export interface NewBooking {
 export interface BookingUpdate extends NewBooking {
   /** Id of the booking event on the calendar source */
   id: string;
+}
+
+/**
+ * Serialize a booking into the standardized calendar event format: the
+ * inverse of the parser's parseEvent. The summary is "room short name |
+ * booker" (the same format the booking form previews), so parsing the
+ * written event yields the same room and booker; the contact goes into
+ * the description.
+ */
+export function bookingToEvent(
+  booking: BookingEventSource,
+): CalendarEventDraft {
+  const room = ROOMS.find((r) => r.canonicalName === booking.room);
+  const shortName = room?.shortName ?? booking.room;
+  const summary = `${shortName} | ${booking.booker}`;
+
+  const event: CalendarEventDraft = {
+    summary,
+    start: { dateTime: booking.start.toISOString() },
+    end: { dateTime: booking.end.toISOString() },
+  };
+
+  const contact = booking.contact?.trim();
+  if (contact) {
+    event.description = contact;
+  }
+
+  return event;
 }
 
 /**

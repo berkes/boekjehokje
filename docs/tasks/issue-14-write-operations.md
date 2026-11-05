@@ -26,12 +26,12 @@ first to add the architecture-diagram deliverable to its scope.
   `request` helper that wraps failures in `CalendarApiError` (DELETE's 204 has
   no body to parse). Single-event responses share `parseCalendarEvent` with the
   list parsing.
-- **Serializer** (`src/services/parser.ts`): `bookingToEvent` is the inverse of
-  `parseEvent`. It writes the standardized event format the parser reads:
-  summary `<room short name> | <booker>` (the same string the booking form
-  previews), the booker's contact in the `description`, and RFC 3339 start/end.
-  Round-trip (serialize → parse → same room/booker/times) is unit tested, for
-  one room and for every bookable room.
+- **Serializer** (`src/services/CalendarServicePort.ts`): `bookingToEvent` is
+  the inverse of the parser's `parseEvent`. It writes the standardized event
+  format the parser reads: summary `<room short name> | <booker>` (the same
+  string the booking form previews), the booker's contact in the `description`,
+  and RFC 3339 start/end. Round-trip (serialize → parse → same
+  room/booker/times) is unit tested, for one room and for every bookable room.
 - **Service port** (`src/services/CalendarServicePort.ts`): `saveBooking` is
   replaced by three operations in domain language — `createBooking(NewBooking)`,
   `updateBooking(BookingUpdate)` (NewBooking + id) and `deleteBooking(id)`.

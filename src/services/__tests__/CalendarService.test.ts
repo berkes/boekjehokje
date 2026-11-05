@@ -238,6 +238,121 @@ Deno.test("getRoomsWithBookings marks all bookings read-only without a profile",
   assertEquals(bookings.length, 1);
   assert(!bookings[0].editable, "without a profile nothing is editable");
 });
+Deno.test("getRoomsWithBookings skips events on the ignore list", async () => {
+  const mockEvents: CalendarEvent[] = [
+    createMockEvent(
+      "blocking-1",
+      "blocking-uid-1",
+      "C3 workshopruimte Team NYMA makersplaats",
+      "2026-10-06T09:00:00Z",
+      "2026-10-06T17:00:00Z",
+    ),
+    createMockEvent(
+      "event-1",
+      "uid-1",
+      "05 kletshok - Peter",
+      "2026-10-06T10:00:00Z",
+      "2026-10-06T11:00:00Z",
+    ),
+  ];
+
+  const mockClient = {
+    fetchEvents: () => Promise.resolve(mockEvents),
+    ...writeOps(),
+    listCalendars: () => Promise.resolve([]),
+  };
+
+  const service = new GoogleCalendarAdapter(mockClient, CALENDAR_ID, null);
+  const rooms = await service.getRoomsWithBookings();
+
+  assertEquals(rooms.length, 1, "Only the normal event should remain");
+  assertEquals(rooms[0].canonicalName, "Kletshok 05");
+  assertEquals(rooms[0].bookings.length, 1);
+  assertEquals(rooms[0].bookings[0].id, "event-1");
+});
+
+Deno.test("getRoomsWithBookings ignores inloopuurtje and bakwagen events", async () => {
+  const mockEvents: CalendarEvent[] = [
+    createMockEvent(
+      "inloop-1",
+      "inloop-uid-1",
+      "Inloopuurtje huurders",
+      "2026-10-06T09:00:00Z",
+      "2026-10-06T17:00:00Z",
+    ),
+    createMockEvent(
+      "bakwagen-1",
+      "bakwagen-uid-1",
+      "Bakwagen C3 bezet",
+      "2026-10-06T09:00:00Z",
+      "2026-10-06T17:00:00Z",
+    ),
+    createMockEvent(
+      "event-1",
+      "uid-1",
+      "05 kletshok - Peter",
+      "2026-10-06T10:00:00Z",
+      "2026-10-06T11:00:00Z",
+    ),
+  ];
+
+  const mockClient = {
+    fetchEvents: () => Promise.resolve(mockEvents),
+    ...writeOps(),
+    listCalendars: () => Promise.resolve([]),
+  };
+
+  const service = new GoogleCalendarAdapter(mockClient, CALENDAR_ID, null);
+  const rooms = await service.getRoomsWithBookings();
+
+  assertEquals(rooms.length, 1, "Only the normal event should remain");
+  assertEquals(rooms[0].canonicalName, "Kletshok 05");
+  assertEquals(rooms[0].bookings.length, 1);
+});
+
+Deno.test("getRoomsWithBookings groups events per room and routes unmatched ones to Unknown", async () => {
+  const mockEvents: CalendarEvent[] = [
+    createMockEvent(
+      "event-1",
+      "uid-1",
+      "05 kletshok - Peter",
+      "2026-10-06T10:00:00Z",
+      "2026-10-06T11:00:00Z",
+    ),
+    createMockEvent(
+      "event-2",
+      "uid-2",
+      "Tuinkamer - Sanne",
+      "2026-10-06T12:00:00Z",
+      "2026-10-06T13:00:00Z",
+    ),
+    createMockEvent(
+      "event-3",
+      "uid-3",
+      "Werkplaats overleg - Griet",
+      "2026-10-06T14:00:00Z",
+      "2026-10-06T15:00:00Z",
+    ),
+  ];
+
+  const mockClient = {
+    fetchEvents: () => Promise.resolve(mockEvents),
+    ...writeOps(),
+    listCalendars: () => Promise.resolve([]),
+  };
+
+  const service = new GoogleCalendarAdapter(mockClient, CALENDAR_ID, null);
+  const rooms = await service.getRoomsWithBookings();
+
+  // Rooms without bookings are left out; the rest sort by canonical name
+  assertEquals(
+    rooms.map((room) => room.canonicalName),
+    ["Kletshok 05", "Tuinkamer", "Unknown"],
+  );
+  assertEquals(rooms[0].shortName, "KH 05");
+  assertEquals(rooms[2].bookings[0].booker, "Werkplaats overleg - Griet");
+});
+
 Deno.test("createBooking writes the standardized event format to the calendar", async () => {
   const ops = writeOps("ber@berkes.nl");
   const mockClient = {

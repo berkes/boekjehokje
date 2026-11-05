@@ -3,9 +3,9 @@
  *
  * The adapter that fulfils the CalendarServicePort with real data: it
  * fetches events from the NYMA calendar through a CalendarApiClient,
- * has them parsed into room groups, and builds the domain rooms from
- * those; bookings are written back through the same client, serialized
- * into the standardized event format. Editability (ADR-0004) is decided
+ * parses them with the parser and groups them into the domain rooms;
+ * bookings are written back through the same client, serialized into
+ * the standardized event format. Editability (ADR-0004) is decided
  * here, by creator email vs. the profile email of the user this
  * calendar is served for.
  */
@@ -17,6 +17,7 @@ import type { CalendarEvent } from "../utils/types.ts";
 
 import {
   type Booking,
+  bookingToEvent,
   type BookingUpdate,
   type CalendarServicePort,
   getThisWeek,
@@ -24,17 +25,48 @@ import {
   type Room,
   type WeekRange,
 } from "./CalendarServicePort.ts";
-import {
-  bookingToEvent,
-  parseAndGroupEvents,
-  type ParsedBooking,
-  parseEvent,
-  type RoomGroup,
-  toBooking,
-} from "./parser.ts";
+import { type ParsedEvent, parseEvent } from "./parser.ts";
+import { ROOMS } from "./rooms.ts";
 
 // Re-export CalendarApiError for use by other modules
 export { CalendarApiError };
+
+/**
+ * Names of calendar events that must be ignored entirely, for example
+ * placeholder bookings the source calendar uses to block a room from being
+ * booked. Matched against the event summary (trimmed, exact).
+ */
+const IGNORED_EVENT_SUMMARIES = [
+  "C3 workshopruimte Team NYMA makersplaats",
+  "Inloopuurtje huurders",
+] as const;
+
+/**
+ * Substrings that hide an event entirely, regardless of the rest of the
+ * summary (e.g. anything with "bakwagen" in the name). Matched against the
+ * event summary (trimmed, case-insensitive).
+ */
+const IGNORED_EVENT_SUMMARY_SUBSTRINGS = [
+  "bakwagen",
+  "workshopruimte",
+  "torenkamer",
+] as const;
+
+/**
+ * Check if an event summary is on the ignore list
+ */
+function isIgnoredEvent(summary: string): boolean {
+  const trimmed = summary.trim();
+
+  if (IGNORED_EVENT_SUMMARIES.some((name) => name === trimmed)) {
+    return true;
+  }
+
+  const lowered = trimmed.toLowerCase();
+  return IGNORED_EVENT_SUMMARY_SUBSTRINGS.some((fragment) =>
+    lowered.includes(fragment)
+  );
+}
 
 /**
  * Google Calendar adapter
@@ -80,8 +112,7 @@ export class GoogleCalendarAdapter implements CalendarServicePort {
       week.end,
     );
 
-    const groups = parseAndGroupEvents(events as CalendarEvent[]);
-    return this.buildRooms(groups);
+    return this.buildRooms(events as CalendarEvent[]);
   }
 
   /**
@@ -120,20 +151,35 @@ export class GoogleCalendarAdapter implements CalendarServicePort {
   }
 
   /**
-   * Build the domain rooms from the parsed room groups. One step in
-   * building the list is deciding editability: this is the only place
-   * where that rule lives, regardless of what the API client or parser
-   * produced.
+   * Build the domain rooms from the fetched events: ignored events are
+   * skipped, the rest are parsed and grouped under their room, and rooms
+   * without bookings are left out. One step in building the list is
+   * deciding editability: this is the only place where that rule lives,
+   * regardless of what the API client or parser produced.
    */
-  private buildRooms(groups: RoomGroup[]): Room[] {
-    return groups.map(({ room, bookings }) => ({
-      canonicalName: room.canonicalName,
-      shortName: room.shortName,
-      bookings: bookings.map((booking) => ({
-        ...booking,
-        editable: this.can("edit", booking),
-      })),
-    }));
+  private buildRooms(events: CalendarEvent[]): Room[] {
+    const eventsByRoom = new Map<string, ParsedEvent[]>();
+    for (const room of ROOMS) {
+      eventsByRoom.set(room.canonicalName, []);
+    }
+    for (const event of events) {
+      if (isIgnoredEvent(event.summary)) continue;
+      const parsed = parseEvent(event);
+      eventsByRoom.get(parsed.room)?.push(parsed);
+    }
+
+    const rooms: Room[] = [];
+    for (const [canonicalName, parsedEvents] of eventsByRoom) {
+      if (parsedEvents.length === 0) continue;
+      const room = ROOMS.find((r) => r.canonicalName === canonicalName);
+      rooms.push({
+        canonicalName,
+        shortName: room?.shortName ?? canonicalName,
+        bookings: parsedEvents.map((parsed) => this.toBooking(parsed)),
+      });
+    }
+    rooms.sort((a, b) => a.canonicalName.localeCompare(b.canonicalName));
+    return rooms;
   }
 
   /**
@@ -141,20 +187,38 @@ export class GoogleCalendarAdapter implements CalendarServicePort {
    * deciding editability the same way as for fetched bookings
    */
   private toDomainBooking(event: CalendarEvent): Booking {
-    const parsed = toBooking(parseEvent(event));
-    return { ...parsed, editable: this.can("edit", parsed) };
+    return this.toBooking(parseEvent(event));
   }
 
   /**
-   * Whether the user this calendar is served for may perform the given
-   * action on the given booking. Emails compare case-insensitively,
-   * since email addresses are case-insensitive for the domain part and
-   * Google treats them as case-insensitive identifiers.
+   * A parsed event as a domain booking, with editability decided here
    */
-  private can(action: "edit", booking: ParsedBooking): boolean {
+  private toBooking(parsed: ParsedEvent): Booking {
+    return {
+      id: parsed.id,
+      uid: parsed.uid,
+      summary: parsed.summary,
+      room: parsed.room,
+      booker: parsed.booker,
+      editable: this.canEdit(parsed.creatorEmail),
+      details: {
+        originalName: parsed.summary,
+        author: parsed.creatorEmail,
+      },
+      start: parsed.start,
+      end: parsed.end,
+    };
+  }
+
+  /**
+   * Whether the user this calendar is served for may edit a booking by
+   * the given author. Emails compare case-insensitively, since email
+   * addresses are case-insensitive for the domain part and Google
+   * treats them as case-insensitive identifiers.
+   */
+  private canEdit(author: string): boolean {
     if (!this.profile?.email) return false;
-    if (action !== "edit") return false;
-    return booking.details.author.trim().toLowerCase() ===
+    return author.trim().toLowerCase() ===
       this.profile.email.trim().toLowerCase();
   }
 }
