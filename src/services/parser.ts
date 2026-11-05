@@ -1,8 +1,8 @@
 /**
  * Room parser for the calendar service adapters
  *
- * Parses event summaries to extract room and booker information, and
- * turns raw calendar events into parsed events. Uses the room
+ * Turns raw calendar events into parsed events (parseEvent), extracting
+ * the room and booker from the event summary internally. Uses the room
  * configuration from rooms.ts. The write side of the standardized event
  * format (bookingToEvent) lives in CalendarServicePort.ts.
  */
@@ -30,7 +30,7 @@ export interface ParsedEvent {
 /**
  * Extract room name from event summary
  */
-export function extractRoom(summary: string): string {
+function extractRoom(summary: string): string {
   const [begin, end] = containsRoom(summary);
   if (begin !== -1 && end !== -1) {
     const roomPart = summary.substring(begin, end);
@@ -45,7 +45,7 @@ export function extractRoom(summary: string): string {
  * mention and every exclusion word, then trim spaces and non-word chars
  * on both sides of the leftover — that is the name
  */
-export function extractBooker(summary: string): string | null {
+function extractBooker(summary: string): string | null {
   let text = summary;
 
   // Remove every room mention (canonical name, short name or alias)

@@ -1,19 +1,40 @@
 /**
  * Unit tests for the room parser
  *
- * Tests the public interface of parser.ts: extractRoom, extractBooker
- * and parseEvent. The serializer bookingToEvent (the inverse of
- * parseEvent) lives in CalendarServicePort.ts and is round-trip tested
- * here. Grouping and ignore-list behavior is covered through the
- * GoogleCalendarAdapter in CalendarService.test.ts.
+ * Tests the public interface of parser.ts: parseEvent. The room and
+ * booker extraction tables drive parseEvent with full event summaries
+ * and assert on the ParsedEvent attributes. The serializer
+ * bookingToEvent (the inverse of parseEvent) lives in
+ * CalendarServicePort.ts and is round-trip tested here. Grouping and
+ * ignore-list behavior is covered through the GoogleCalendarAdapter in
+ * CalendarService.test.ts.
  */
 
 import { bookingToEvent } from "../CalendarServicePort.ts";
-import { extractBooker, extractRoom, parseEvent } from "../parser.ts";
+import { parseEvent } from "../parser.ts";
 import { ROOMS, UNKNOWN_ROOM } from "../rooms.ts";
 import type { CalendarEvent } from "../../utils/types.ts";
 
 import { assert, assertEquals } from "@std/assert";
+
+/**
+ * A minimal calendar event carrying the given summary, for driving
+ * parseEvent in the extraction tables
+ */
+function eventWithSummary(summary: string): CalendarEvent {
+  return {
+    id: "event-1",
+    uid: "uid-1",
+    summary,
+    creator: { email: "booker@example.com" },
+    start: { dateTime: "2026-10-06T10:00:00Z" },
+    end: { dateTime: "2026-10-06T11:00:00Z" },
+    created: "2026-10-05T09:00:00Z",
+    updated: "2026-10-05T09:00:00Z",
+    status: "confirmed",
+    sequence: 0,
+  };
+}
 
 Deno.test.each(
   [
@@ -217,9 +238,8 @@ Deno.test.each(
       expected: UNKNOWN_ROOM,
     },
   ],
-)("extractRoom($input) -> $expected", ({ input, expected }) => {
-  const result = extractRoom(input);
-  assertEquals(result, expected);
+)("parseEvent($input).room -> $expected", ({ input, expected }) => {
+  assertEquals(parseEvent(eventWithSummary(input)).room, expected);
 });
 
 Deno.test.each(
@@ -260,9 +280,8 @@ Deno.test.each(
       expected: null,
     },
   ],
-)("extractBooker($input) -> $expected", ({ input, expected }) => {
-  const result = extractBooker(input);
-  assertEquals(result, expected);
+)("parseEvent($input).booker -> $expected", ({ input, expected }) => {
+  assertEquals(parseEvent(eventWithSummary(input)).booker, expected);
 });
 
 Deno.test("parseEvent", () => {
@@ -309,8 +328,11 @@ Deno.test("Workshopruimte is no longer a known room", () => {
     !ROOMS.some((room) => room.canonicalName === "Workshopruimte C3"),
     "No room should match the workshop identifiers",
   );
-  assertEquals(extractRoom("workshop c3"), UNKNOWN_ROOM);
-  assertEquals(extractRoom("workshopruimte c3"), UNKNOWN_ROOM);
+  assertEquals(parseEvent(eventWithSummary("workshop c3")).room, UNKNOWN_ROOM);
+  assertEquals(
+    parseEvent(eventWithSummary("workshopruimte c3")).room,
+    UNKNOWN_ROOM,
+  );
 });
 
 Deno.test("Room objects have correct structure", () => {
