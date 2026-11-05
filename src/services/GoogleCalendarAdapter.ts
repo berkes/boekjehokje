@@ -20,10 +20,10 @@ import {
   bookingToEvent,
   type BookingUpdate,
   type CalendarServicePort,
-  getThisWeek,
+  type DayRange,
+  getDayRange,
   type NewBooking,
   type Room,
-  type WeekRange,
 } from "./CalendarServicePort.ts";
 import { type ParsedEvent, parseEvent } from "./parser.ts";
 import { ROOMS } from "./rooms.ts";
@@ -99,20 +99,28 @@ export class GoogleCalendarAdapter implements CalendarServicePort {
   }
 
   /**
-   * Get all rooms with their bookings for a specific week
+   * Get all rooms with their bookings for a specific day
    *
-   * @param week - The week range to query (default: current week)
+   * The fetch window is the day itself (local midnight to local
+   * midnight). Google returns every event overlapping that window — an
+   * event counts when its end is after timeMin and its start before
+   * timeMax — so bookings that start the previous day and end on the
+   * requested day come along; the overlap filter in buildRooms keeps
+   * exactly those, whatever the source returns.
+   *
+   * @param day - The day to query (default: today)
    * @returns Promise resolving to array of rooms with their bookings
    * @throws CalendarApiError on API errors
    */
-  async getRoomsWithBookings(week: WeekRange = getThisWeek()): Promise<Room[]> {
+  async getDay(day: Date = new Date()): Promise<Room[]> {
+    const range = getDayRange(day);
     const events = await this.apiClient.fetchEvents(
       this.calendarId,
-      week.start,
-      week.end,
+      range.start,
+      range.end,
     );
 
-    return this.buildRooms(events as CalendarEvent[]);
+    return this.buildRooms(events as CalendarEvent[], range);
   }
 
   /**
@@ -152,12 +160,15 @@ export class GoogleCalendarAdapter implements CalendarServicePort {
 
   /**
    * Build the domain rooms from the fetched events: ignored events are
-   * skipped, the rest are parsed and grouped under their room, and rooms
-   * without bookings are left out. One step in building the list is
-   * deciding editability: this is the only place where that rule lives,
-   * regardless of what the API client or parser produced.
+   * skipped, the rest are parsed, kept when they overlap the queried day
+   * (which includes bookings that start the previous day and end on the
+   * day) and grouped under their room. Every room is returned, also
+   * without bookings, so the day board shows all columns with their free
+   * slots. One step in building the list is deciding editability: this
+   * is the only place where that rule lives, regardless of what the API
+   * client or parser produced.
    */
-  private buildRooms(events: CalendarEvent[]): Room[] {
+  private buildRooms(events: CalendarEvent[], range: DayRange): Room[] {
     const eventsByRoom = new Map<string, ParsedEvent[]>();
     for (const room of ROOMS) {
       eventsByRoom.set(room.canonicalName, []);
@@ -165,12 +176,12 @@ export class GoogleCalendarAdapter implements CalendarServicePort {
     for (const event of events) {
       if (isIgnoredEvent(event.summary)) continue;
       const parsed = parseEvent(event);
+      if (parsed.start >= range.end || parsed.end <= range.start) continue;
       eventsByRoom.get(parsed.room)?.push(parsed);
     }
 
     const rooms: Room[] = [];
     for (const [canonicalName, parsedEvents] of eventsByRoom) {
-      if (parsedEvents.length === 0) continue;
       const room = ROOMS.find((r) => r.canonicalName === canonicalName);
       rooms.push({
         canonicalName,

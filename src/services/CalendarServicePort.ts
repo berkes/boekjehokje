@@ -13,6 +13,7 @@
  */
 
 import { ROOMS } from "./rooms.ts";
+import { endOfDay, startOfDay } from "../utils/clock.ts";
 import type { CalendarEventDraft } from "../utils/types.ts";
 
 /**
@@ -109,9 +110,9 @@ export function bookingToEvent(
 }
 
 /**
- * A week range for querying bookings
+ * A day range for querying bookings: local midnight to local midnight
  */
-export interface WeekRange {
+export interface DayRange {
   start: Date;
   end: Date;
 }
@@ -121,12 +122,16 @@ export interface WeekRange {
  */
 export interface CalendarServicePort {
   /**
-   * Get all rooms with their bookings for a specific week
+   * Get all rooms with their bookings for a specific day
    *
-   * @param week - The week range to query (default: current week)
+   * A day's bookings are all bookings overlapping the day: a booking
+   * that starts on the previous day but ends on the requested day is
+   * included.
+   *
+   * @param day - The day to query (default: today)
    * @returns Promise resolving to array of rooms with their bookings
    */
-  getRoomsWithBookings(week?: WeekRange): Promise<Room[]>;
+  getDay(day?: Date): Promise<Room[]>;
 
   /**
    * Create a new booking on the calendar source
@@ -155,36 +160,8 @@ export interface CalendarServicePort {
 }
 
 /**
- * Get the current week range (Monday to Sunday)
+ * Get the range of the given day (local midnight to local midnight)
  */
-export function getThisWeek(): WeekRange {
-  const now = new Date();
-
-  // Get start of week (Monday)
-  const start = new Date(now);
-  start.setDate(now.getDate() - now.getDay() + 1);
-  start.setHours(0, 0, 0, 0);
-
-  // Get end of week (Sunday)
-  const end = new Date(start);
-  end.setDate(start.getDate() + 6);
-  end.setHours(23, 59, 59, 999);
-
-  return { start, end };
-}
-
-/**
- * Get the next week range (Monday to Sunday)
- */
-export function getNextWeek(): WeekRange {
-  const thisWeek = getThisWeek();
-  const start = new Date(thisWeek.end);
-  start.setDate(start.getDate() + 1);
-  start.setHours(0, 0, 0, 0);
-
-  const end = new Date(start);
-  end.setDate(start.getDate() + 6);
-  end.setHours(23, 59, 59, 999);
-
-  return { start, end };
+export function getDayRange(day: Date): DayRange {
+  return { start: startOfDay(day), end: endOfDay(day) };
 }

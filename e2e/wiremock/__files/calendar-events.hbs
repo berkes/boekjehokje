@@ -5,8 +5,11 @@
   The bookings transcribe the "current week" of the demo content in
   src/services/DemoCalendarAdapter.ts: the same rooms, bookers and times,
   one line per booking. Dates are not hardcoded: every event is placed
-  relative to the Monday of the week the app requested (its timeMin query
-  parameter), so week navigation in the UI keeps hitting the same pattern.
+  relative to the Monday of the week the requested day (the timeMin query
+  parameter) falls in — the app fetches one day at a time, so timeMin is
+  the start of the selected day, and the Monday is derived from its
+  weekday ('u': 1 = Monday .. 7 = Sunday, rendered in UTC). Switching days
+  in the UI therefore keeps hitting the same week pattern.
 
   Editable bookings carry the creator email of the mocked user
   (ber@boekjehokje.test, see e2e/fixtures/auth.ts), since editability is
@@ -19,12 +22,14 @@
   "timeZone": "UTC",
   "items": [
     {{#*inline "event"}}
+    {{#assign 'mondayOffset'}}-{{math (date (parseDate request.query.timeMin) format='u') '-' 1}} days{{/assign}}
+    {{#assign 'monday'}}{{date (parseDate request.query.timeMin) offset=mondayOffset format='yyyy-MM-dd'}}{{/assign}}
     {
       "id": "{{summary}}-{{day}}-{{from}}",
       "summary": "{{summary}}",
       "creator": { "email": "{{creator}}" },
-      "start": { "dateTime": "{{date (parseDate request.query.timeMin) offset=dayOffset format='yyyy-MM-dd'}}T{{from}}:00.000Z" },
-      "end": { "dateTime": "{{date (parseDate request.query.timeMin) offset=dayOffset format='yyyy-MM-dd'}}T{{to}}:00.000Z" },
+      "start": { "dateTime": "{{date (parseDate monday format='yyyy-MM-dd') offset=dayOffset format='yyyy-MM-dd'}}T{{from}}:00.000Z" },
+      "end": { "dateTime": "{{date (parseDate monday format='yyyy-MM-dd') offset=dayOffset format='yyyy-MM-dd'}}T{{to}}:00.000Z" },
       "status": "confirmed",
       "sequence": 0
     }

@@ -8,17 +8,33 @@
 import { GoogleCalendarAdapter } from "../GoogleCalendarAdapter.ts";
 import {
   type BookingUpdate,
-  getNextWeek,
-  getThisWeek,
+  getDayRange,
   type NewBooking,
 } from "../CalendarServicePort.ts";
+import { ROOMS } from "../rooms.ts";
 import type { CalendarEvent, CalendarEventDraft } from "../../utils/types.ts";
 import { CalendarApiError } from "../../utils/googleCalendarApi.ts";
+import { isSameDay } from "../../utils/clock.ts";
 
 import { assert, assertEquals, assertRejects } from "@std/assert";
 import { assertSpyCallArg, assertSpyCalls, spy } from "@std/testing/mock";
 
 const CALENDAR_ID = "nyma-fake-calendar@example.com";
+
+/**
+ * The day the read tests query: Tuesday 6 October 2026, midday local
+ * time, so the queried day is 6 October in every timezone
+ */
+const DAY = new Date(2026, 9, 6, 12, 0);
+
+/**
+ * ISO string of a local date-time on 2026-10-<day> at "hh:mm", so the
+ * mock events land on local days whatever the test runner's timezone
+ */
+function localIso(day: number, hhmm: string): string {
+  const [hours, minutes] = hhmm.split(":").map(Number);
+  return new Date(2026, 9, day, hours, minutes).toISOString();
+}
 
 function createMockEvent(
   id: string,
@@ -73,52 +89,36 @@ function writeOps(creatorEmail = "boeker@example.com") {
   };
 }
 
-Deno.test("getThisWeek returns correct Monday-Sunday range", () => {
-  const thisWeek = getThisWeek();
+Deno.test("getDayRange returns the local midnight-to-midnight range of the day", () => {
+  const range = getDayRange(DAY);
 
-  // Start should be Monday
-  assertEquals(thisWeek.start.getDay(), 1, "Start should be Monday (1)");
+  assert(isSameDay(range.start, DAY), "Start should be on the queried day");
+  assertEquals(range.start.getHours(), 0, "Start should be midnight");
+  assertEquals(range.start.getMinutes(), 0);
+  assertEquals(range.start.getSeconds(), 0);
+  assertEquals(range.start.getMilliseconds(), 0);
 
-  // End should be Sunday
-  assertEquals(thisWeek.end.getDay(), 0, "End should be Sunday (0)");
+  assert(isSameDay(range.end, DAY), "End should be on the queried day");
+  assertEquals(range.end.getHours(), 23, "End should be the day's last hour");
+  assertEquals(range.end.getMinutes(), 59);
+  assertEquals(range.end.getSeconds(), 59);
+  assertEquals(range.end.getMilliseconds(), 999);
 
-  // End should be 7 days after start (Monday to Sunday inclusive)
-  const timeDiff = thisWeek.end.getTime() - thisWeek.start.getTime();
-  const daysDiff = timeDiff / (1000 * 60 * 60 * 24);
   assertEquals(
-    Math.round(daysDiff),
-    7,
-    "Week should span 7 days (Monday to Sunday inclusive)",
+    range.end.getTime() - range.start.getTime(),
+    24 * 60 * 60 * 1000 - 1,
+    "The range should span the whole day",
   );
 });
 
-Deno.test("getNextWeek returns correct range after this week", () => {
-  const thisWeek = getThisWeek();
-  const nextWeek = getNextWeek();
-
-  // Next week start should be after this week end
-  assert(
-    nextWeek.start.getTime() > thisWeek.end.getTime(),
-    "Next week start should be after this week end",
-  );
-
-  // Next week should also be Monday-Sunday
-  assertEquals(
-    nextWeek.start.getDay(),
-    1,
-    "Next week start should be Monday (1)",
-  );
-  assertEquals(nextWeek.end.getDay(), 0, "Next week end should be Sunday (0)");
-});
-
-Deno.test("getRoomsThisWeek calls API client with correct attributes", async () => {
+Deno.test("getDay calls API client with the range of the given day", async () => {
   const mockEvents: CalendarEvent[] = [
     createMockEvent(
       "event-1",
       "uid-1",
       "05 kletshok - Peter",
-      "2026-10-06T10:00:00Z",
-      "2026-10-06T11:00:00Z",
+      localIso(6, "10:00"),
+      localIso(6, "11:00"),
     ),
   ];
 
@@ -132,10 +132,9 @@ Deno.test("getRoomsThisWeek calls API client with correct attributes", async () 
   };
 
   const service = new GoogleCalendarAdapter(mockClient, CALENDAR_ID, null);
-  const week = getThisWeek();
 
   // Call the method
-  await service.getRoomsWithBookings(week);
+  await service.getDay(DAY);
 
   // Verify fetchEvents was called with correct parameters
   const fetchEventsSpy = mockClient.fetchEvents as unknown as ReturnType<
@@ -144,12 +143,38 @@ Deno.test("getRoomsThisWeek calls API client with correct attributes", async () 
   assertSpyCalls(fetchEventsSpy, 1);
 
   // Check the first call arguments
+  const range = getDayRange(DAY);
   assertSpyCallArg(fetchEventsSpy, 0, 0, CALENDAR_ID);
-  assertSpyCallArg(fetchEventsSpy, 0, 1, week.start);
-  assertSpyCallArg(fetchEventsSpy, 0, 2, week.end);
+  assertSpyCallArg(fetchEventsSpy, 0, 1, range.start);
+  assertSpyCallArg(fetchEventsSpy, 0, 2, range.end);
 });
 
-Deno.test("getRoomsThisWeek calls API client with custom calendar ID", async () => {
+Deno.test("getDay without argument fetches today", async () => {
+  const mockClient = {
+    fetchEvents: spy((_calendarId: string, _timeMin?: Date, _timeMax?: Date) =>
+      Promise.resolve([])
+    ),
+    ...writeOps(),
+    listCalendars: () => Promise.resolve([]),
+  };
+
+  const service = new GoogleCalendarAdapter(mockClient, CALENDAR_ID, null);
+
+  await service.getDay();
+
+  const fetchEventsSpy = mockClient.fetchEvents as unknown as ReturnType<
+    typeof spy
+  >;
+  assertSpyCalls(fetchEventsSpy, 1);
+  const timeMin = fetchEventsSpy.calls[0].args[1] as Date;
+  const timeMax = fetchEventsSpy.calls[0].args[2] as Date;
+  assert(isSameDay(timeMin, new Date()), "timeMin should be today");
+  assertEquals(timeMin.getHours(), 0, "timeMin should be midnight");
+  assert(isSameDay(timeMax, new Date()), "timeMax should be today");
+  assertEquals(timeMax.getHours(), 23, "timeMax should be the day's end");
+});
+
+Deno.test("getDay calls API client with custom calendar ID", async () => {
   const mockEvents: CalendarEvent[] = [];
   const customCalendarId = "custom-calendar-id";
 
@@ -162,9 +187,8 @@ Deno.test("getRoomsThisWeek calls API client with custom calendar ID", async () 
   };
 
   const service = new GoogleCalendarAdapter(mockClient, customCalendarId, null);
-  const week = getThisWeek();
 
-  await service.getRoomsWithBookings(week);
+  await service.getDay(DAY);
 
   const fetchEventsSpy = mockClient.fetchEvents as unknown as ReturnType<
     typeof spy
@@ -173,21 +197,82 @@ Deno.test("getRoomsThisWeek calls API client with custom calendar ID", async () 
   assertSpyCallArg(fetchEventsSpy, 0, 0, customCalendarId);
 });
 
-Deno.test("getRoomsWithBookings marks bookings of the profile user editable", async () => {
+Deno.test("getDay includes bookings that start the previous day and end on the day", async () => {
+  const mockEvents: CalendarEvent[] = [
+    // Starts the day before, ends on the queried day: included
+    createMockEvent(
+      "night-before",
+      "uid-nb",
+      "Kletshok 05 - Peter",
+      localIso(5, "23:00"),
+      localIso(6, "01:00"),
+    ),
+    // Entirely on the day before: excluded
+    createMockEvent(
+      "day-before",
+      "uid-db",
+      "Kletshok 05 - Sanne",
+      localIso(5, "10:00"),
+      localIso(5, "11:00"),
+    ),
+    // During the queried day: included
+    createMockEvent(
+      "during",
+      "uid-d",
+      "Kletshok 05 - Fatima",
+      localIso(6, "10:00"),
+      localIso(6, "11:00"),
+    ),
+    // Starts on the queried day, ends the next day: included
+    createMockEvent(
+      "night-after",
+      "uid-na",
+      "Kletshok 05 - Ozan",
+      localIso(6, "23:00"),
+      localIso(7, "01:00"),
+    ),
+    // Entirely on the day after: excluded
+    createMockEvent(
+      "day-after",
+      "uid-da",
+      "Kletshok 05 - Jorien",
+      localIso(7, "10:00"),
+      localIso(7, "11:00"),
+    ),
+  ];
+
+  const mockClient = {
+    fetchEvents: () => Promise.resolve(mockEvents),
+    ...writeOps(),
+    listCalendars: () => Promise.resolve([]),
+  };
+
+  const service = new GoogleCalendarAdapter(mockClient, CALENDAR_ID, null);
+  const rooms = await service.getDay(DAY);
+  const bookings = rooms.flatMap((room) => room.bookings);
+
+  assertEquals(
+    bookings.map((b) => b.id).sort(),
+    ["during", "night-after", "night-before"],
+    "only the bookings overlapping the queried day are served",
+  );
+});
+
+Deno.test("getDay marks bookings of the profile user editable", async () => {
   const mockEvents: CalendarEvent[] = [
     createMockEvent(
       "event-1",
       "uid-1",
       "Kletshok 05 - B\u00e8r",
-      "2026-10-06T10:00:00Z",
-      "2026-10-06T11:00:00Z",
+      localIso(6, "10:00"),
+      localIso(6, "11:00"),
     ),
     createMockEvent(
       "event-2",
       "uid-2",
       "Kletshok 05 - Sanne",
-      "2026-10-06T12:00:00Z",
-      "2026-10-06T13:00:00Z",
+      localIso(6, "12:00"),
+      localIso(6, "13:00"),
     ),
   ];
   mockEvents[0].creator = { email: "ber@berkes.nl" };
@@ -204,7 +289,7 @@ Deno.test("getRoomsWithBookings marks bookings of the profile user editable", as
     { name: "B\u00e8r", email: "BER@berkes.nl" },
   );
 
-  const rooms = await service.getRoomsWithBookings();
+  const rooms = await service.getDay(DAY);
   const bookings = rooms.flatMap((room) => room.bookings);
 
   const own = bookings.find((b) => b.id === "event-1");
@@ -215,14 +300,14 @@ Deno.test("getRoomsWithBookings marks bookings of the profile user editable", as
   assert(!other.editable, "booking created by someone else is read-only");
 });
 
-Deno.test("getRoomsWithBookings marks all bookings read-only without a profile", async () => {
+Deno.test("getDay marks all bookings read-only without a profile", async () => {
   const mockEvents: CalendarEvent[] = [
     createMockEvent(
       "event-1",
       "uid-1",
       "Kletshok 05 - B\u00e8r",
-      "2026-10-06T10:00:00Z",
-      "2026-10-06T11:00:00Z",
+      localIso(6, "10:00"),
+      localIso(6, "11:00"),
     ),
   ];
 
@@ -233,26 +318,26 @@ Deno.test("getRoomsWithBookings marks all bookings read-only without a profile",
   };
 
   const service = new GoogleCalendarAdapter(mockClient, CALENDAR_ID, null);
-  const rooms = await service.getRoomsWithBookings();
+  const rooms = await service.getDay(DAY);
   const bookings = rooms.flatMap((room) => room.bookings);
   assertEquals(bookings.length, 1);
   assert(!bookings[0].editable, "without a profile nothing is editable");
 });
-Deno.test("getRoomsWithBookings skips events on the ignore list", async () => {
+Deno.test("getDay skips events on the ignore list", async () => {
   const mockEvents: CalendarEvent[] = [
     createMockEvent(
       "blocking-1",
       "blocking-uid-1",
       "C3 workshopruimte Team NYMA makersplaats",
-      "2026-10-06T09:00:00Z",
-      "2026-10-06T17:00:00Z",
+      localIso(6, "09:00"),
+      localIso(6, "17:00"),
     ),
     createMockEvent(
       "event-1",
       "uid-1",
       "05 kletshok - Peter",
-      "2026-10-06T10:00:00Z",
-      "2026-10-06T11:00:00Z",
+      localIso(6, "10:00"),
+      localIso(6, "11:00"),
     ),
   ];
 
@@ -263,36 +348,40 @@ Deno.test("getRoomsWithBookings skips events on the ignore list", async () => {
   };
 
   const service = new GoogleCalendarAdapter(mockClient, CALENDAR_ID, null);
-  const rooms = await service.getRoomsWithBookings();
+  const rooms = await service.getDay(DAY);
 
-  assertEquals(rooms.length, 1, "Only the normal event should remain");
-  assertEquals(rooms[0].canonicalName, "Kletshok 05");
-  assertEquals(rooms[0].bookings.length, 1);
-  assertEquals(rooms[0].bookings[0].id, "event-1");
+  const bookings = rooms.flatMap((room) => room.bookings);
+  assertEquals(bookings.length, 1, "Only the normal event should remain");
+  assertEquals(bookings[0].id, "event-1");
+  assertEquals(
+    rooms.find((room) => room.canonicalName === "Kletshok 05")?.bookings
+      .length,
+    1,
+  );
 });
 
-Deno.test("getRoomsWithBookings ignores inloopuurtje and bakwagen events", async () => {
+Deno.test("getDay ignores inloopuurtje and bakwagen events", async () => {
   const mockEvents: CalendarEvent[] = [
     createMockEvent(
       "inloop-1",
       "inloop-uid-1",
       "Inloopuurtje huurders",
-      "2026-10-06T09:00:00Z",
-      "2026-10-06T17:00:00Z",
+      localIso(6, "09:00"),
+      localIso(6, "17:00"),
     ),
     createMockEvent(
       "bakwagen-1",
       "bakwagen-uid-1",
       "Bakwagen C3 bezet",
-      "2026-10-06T09:00:00Z",
-      "2026-10-06T17:00:00Z",
+      localIso(6, "09:00"),
+      localIso(6, "17:00"),
     ),
     createMockEvent(
       "event-1",
       "uid-1",
       "05 kletshok - Peter",
-      "2026-10-06T10:00:00Z",
-      "2026-10-06T11:00:00Z",
+      localIso(6, "10:00"),
+      localIso(6, "11:00"),
     ),
   ];
 
@@ -303,35 +392,35 @@ Deno.test("getRoomsWithBookings ignores inloopuurtje and bakwagen events", async
   };
 
   const service = new GoogleCalendarAdapter(mockClient, CALENDAR_ID, null);
-  const rooms = await service.getRoomsWithBookings();
+  const rooms = await service.getDay(DAY);
 
-  assertEquals(rooms.length, 1, "Only the normal event should remain");
-  assertEquals(rooms[0].canonicalName, "Kletshok 05");
-  assertEquals(rooms[0].bookings.length, 1);
+  const bookings = rooms.flatMap((room) => room.bookings);
+  assertEquals(bookings.length, 1, "Only the normal event should remain");
+  assertEquals(bookings[0].id, "event-1");
 });
 
-Deno.test("getRoomsWithBookings ignores any summary containing workshopruimte or torenkamer", async () => {
+Deno.test("getDay ignores any summary containing workshopruimte or torenkamer", async () => {
   const mockEvents: CalendarEvent[] = [
     createMockEvent(
       "ws-1",
       "ws-uid-1",
       "Workshopruimte - Peter",
-      "2026-10-06T09:00:00Z",
-      "2026-10-06T10:00:00Z",
+      localIso(6, "09:00"),
+      localIso(6, "10:00"),
     ),
     createMockEvent(
       "tk-1",
       "tk-uid-1",
       "Torenkamer WT-04 I EV's NYMA",
-      "2026-10-06T11:00:00Z",
-      "2026-10-06T12:00:00Z",
+      localIso(6, "11:00"),
+      localIso(6, "12:00"),
     ),
     createMockEvent(
       "event-1",
       "uid-1",
       "05 kletshok - Peter",
-      "2026-10-06T10:00:00Z",
-      "2026-10-06T11:00:00Z",
+      localIso(6, "10:00"),
+      localIso(6, "11:00"),
     ),
   ];
 
@@ -342,35 +431,35 @@ Deno.test("getRoomsWithBookings ignores any summary containing workshopruimte or
   };
 
   const service = new GoogleCalendarAdapter(mockClient, CALENDAR_ID, null);
-  const rooms = await service.getRoomsWithBookings();
+  const rooms = await service.getDay(DAY);
 
-  assertEquals(rooms.length, 1, "Only the normal event should remain");
-  assertEquals(rooms[0].canonicalName, "Kletshok 05");
-  assertEquals(rooms[0].bookings.length, 1);
+  const bookings = rooms.flatMap((room) => room.bookings);
+  assertEquals(bookings.length, 1, "Only the normal event should remain");
+  assertEquals(bookings[0].id, "event-1");
 });
 
-Deno.test("getRoomsWithBookings groups events per room and routes unmatched ones to Unknown", async () => {
+Deno.test("getDay groups events per room and routes unmatched ones to Unknown", async () => {
   const mockEvents: CalendarEvent[] = [
     createMockEvent(
       "event-1",
       "uid-1",
       "05 kletshok - Peter",
-      "2026-10-06T10:00:00Z",
-      "2026-10-06T11:00:00Z",
+      localIso(6, "10:00"),
+      localIso(6, "11:00"),
     ),
     createMockEvent(
       "event-2",
       "uid-2",
       "Tuinkamer - Sanne",
-      "2026-10-06T12:00:00Z",
-      "2026-10-06T13:00:00Z",
+      localIso(6, "12:00"),
+      localIso(6, "13:00"),
     ),
     createMockEvent(
       "event-3",
       "uid-3",
       "Werkplaats overleg - Griet",
-      "2026-10-06T14:00:00Z",
-      "2026-10-06T15:00:00Z",
+      localIso(6, "14:00"),
+      localIso(6, "15:00"),
     ),
   ];
 
@@ -381,15 +470,31 @@ Deno.test("getRoomsWithBookings groups events per room and routes unmatched ones
   };
 
   const service = new GoogleCalendarAdapter(mockClient, CALENDAR_ID, null);
-  const rooms = await service.getRoomsWithBookings();
+  const rooms = await service.getDay(DAY);
 
-  // Rooms without bookings are left out; the rest sort by canonical name
+  // Every room is served, also without bookings, sorted by canonical name
+  assertEquals(rooms.length, ROOMS.length);
+  const byName = new Map(rooms.map((room) => [room.canonicalName, room]));
   assertEquals(
     rooms.map((room) => room.canonicalName),
-    ["Kletshok 05", "Tuinkamer", "Unknown"],
+    [...ROOMS].map((room) => room.canonicalName).sort((a, b) =>
+      a.localeCompare(b)
+    ),
   );
-  assertEquals(rooms[0].shortName, "KH 05");
-  assertEquals(rooms[2].bookings[0].booker, "Werkplaats overleg - Griet");
+  assertEquals(byName.get("Kletshok 05")?.shortName, "KH 05");
+  assertEquals(byName.get("Kletshok 05")?.bookings.map((b) => b.id), [
+    "event-1",
+  ]);
+  assertEquals(byName.get("Tuinkamer")?.bookings.map((b) => b.id), ["event-2"]);
+  assertEquals(
+    byName.get("Unknown")?.bookings[0].booker,
+    "Werkplaats overleg - Griet",
+  );
+  assertEquals(
+    byName.get("Kletshok 03")?.bookings.length,
+    0,
+    "rooms without bookings are served empty",
+  );
 });
 
 Deno.test("createBooking writes the standardized event format to the calendar", async () => {

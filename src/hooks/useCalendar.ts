@@ -18,9 +18,9 @@ import {
  * Return type for useCalendar hook
  */
 export interface UseCalendarReturn {
-  /** (re)Load the calendar data  **/
-  load: () => Promise<void>;
-  /** All rooms with their bookings for the current week */
+  /** (re)Load the calendar data for the given day **/
+  load: (day: Date) => Promise<void>;
+  /** All rooms with their bookings for the loaded day */
   rooms: Room[];
   /** Whether data is currently loading */
   isLoading: boolean;
@@ -60,9 +60,10 @@ export function useCalendar(
   const [error, setError] = useState<Error | null>(null);
 
   /**
-   * Load calendar data through the calendar service port
+   * Load the calendar data for the given day through the calendar
+   * service port
    */
-  const load = useCallback(async () => {
+  const load = useCallback(async (day: Date) => {
     // Clear previous error
     setError(null);
 
@@ -76,7 +77,7 @@ export function useCalendar(
     try {
       setIsLoading(true);
 
-      const roomsWithBookings = await calendarService.getRoomsWithBookings();
+      const roomsWithBookings = await calendarService.getDay(day);
       setRooms(roomsWithBookings);
     } catch (err: unknown) {
       // Handle CalendarApiError and other errors

@@ -18,10 +18,10 @@ import {
   type BookingUpdate,
   bookingToEvent,
   type CalendarServicePort,
-  getThisWeek,
+  type DayRange,
+  getDayRange,
   type NewBooking,
   type Room,
-  type WeekRange,
 } from "./CalendarServicePort.ts";
 import { ROOMS } from "./rooms.ts";
 
@@ -335,9 +335,10 @@ const DEMO_BOOKINGS: DemoBooking[] = [
  * Demo calendar adapter
  *
  * Serves the hardcoded demo bookings of the previous, current and next
- * week for the given profile, using the real rooms from rooms.ts. The
- * bookings marked editable are the profile user's; all others are
- * read-only. Never touches the network or Google Calendar.
+ * week — queried per day — for the given profile, using the real rooms
+ * from rooms.ts. The bookings marked editable are the profile user's;
+ * all others are read-only. Never touches the network or Google
+ * Calendar.
  */
 export class DemoCalendarAdapter implements CalendarServicePort {
   private bookings: Booking[];
@@ -355,14 +356,16 @@ export class DemoCalendarAdapter implements CalendarServicePort {
   }
 
   /**
-   * Get all rooms with their demo bookings for the requested week
+   * Get all rooms with their demo bookings for the requested day
    *
-   * @param week - The week range to serve bookings from (default:
-   *               current week)
+   * A day's bookings are all demo bookings overlapping the day, so a
+   * booking that starts the previous day and ends on the day is included.
+   *
+   * @param day - The day to serve bookings for (default: today)
    * @returns Promise resolving to array of rooms with their bookings
    */
-  getRoomsWithBookings(week: WeekRange = getThisWeek()): Promise<Room[]> {
-    return Promise.resolve(this.buildRooms(week));
+  getDay(day: Date = new Date()): Promise<Room[]> {
+    return Promise.resolve(this.buildRooms(getDayRange(day)));
   }
 
   /**
@@ -415,15 +418,15 @@ export class DemoCalendarAdapter implements CalendarServicePort {
   }
 
   /**
-   * Build the rooms with the demo bookings that fall in the given week
+   * Build the rooms with the demo bookings that overlap the given day
    */
-  private buildRooms(week: WeekRange): Room[] {
+  private buildRooms(range: DayRange): Room[] {
     return ROOMS.map((room) => ({
       canonicalName: room.canonicalName,
       shortName: room.shortName,
       bookings: this.bookings.filter((booking) =>
         booking.room === room.canonicalName &&
-        booking.start < week.end && booking.end > week.start
+        booking.start < range.end && booking.end > range.start
       ),
     }));
   }

@@ -48,7 +48,7 @@ flowchart TB
   end
 
   subgraph services["Services (src/services) — ports and adapters"]
-    calPort["CalendarServicePort (port)<br/>Room, Booking, NewBooking, BookingUpdate<br/>getRoomsWithBookings, createBooking, updateBooking, deleteBooking"]
+    calPort["CalendarServicePort (port)<br/>Room, Booking, NewBooking, BookingUpdate<br/>getDay, createBooking, updateBooking, deleteBooking"]
     googleAdapter["GoogleCalendarAdapter"]
     demoAdapter["DemoCalendarAdapter"]
     parser["parser.ts<br/>extractRoom / extractBooker / parseEvent"]
@@ -99,11 +99,11 @@ sequenceDiagram
   participant GClient as GoogleCalendarApiClient
   participant API as Google Calendar API
 
-  User->>Board: open the week overview
-  Board->>Hook: load()
-  Hook->>Service: getRoomsWithBookings(week)
-  Service->>Adapter: getRoomsWithBookings(week)
-  Adapter->>Client: fetchEvents(CALENDAR_ID, week.start, week.end)
+  User->>Board: open the day overview (today)
+  Board->>Hook: load(day)
+  Hook->>Service: getDay(day)
+  Service->>Adapter: getDay(day)
+  Adapter->>Client: fetchEvents(CALENDAR_ID, dayRange.start, dayRange.end)
   Client->>GClient: fetchEvents(...)
   GClient->>API: GET /calendars/&lt;id&gt;/events?timeMin=...&amp;timeMax=...
   API-->>GClient: events (JSON)
@@ -114,6 +114,9 @@ sequenceDiagram
   Service-->>Hook: rooms
   Hook-->>Board: rooms state
   Board-->>User: render room columns, bookings and free slots
+  User->>Board: switch day (previous/next/today/quick button)
+  Board->>Hook: load(newDay)
+  Hook->>Service: getDay(newDay) (only the selected day is fetched)
 ```
 
 ## Sequence: how a booking is created
@@ -144,7 +147,7 @@ sequenceDiagram
   Adapter->>Parser: parseEvent(event) — round-trip back to domain
   Parser-->>Adapter: parsed event
   Adapter-->>Board: created Booking
-  Board->>Service: getRoomsWithBookings() (refresh board)
+  Board->>Service: getDay(selectedDay) (refresh board)
   Service-->>Board: updated rooms
   Board-->>User: board shows the new booking
 ```
@@ -187,7 +190,7 @@ sequenceDiagram
     API-->>GClient: 204 No Content
   end
   Service-->>UI: Booking (update) or void (delete)
-  UI->>Service: getRoomsWithBookings() (refresh board)
+  UI->>Service: getDay(selectedDay) (refresh board)
   Service-->>UI: updated rooms
 ```
 

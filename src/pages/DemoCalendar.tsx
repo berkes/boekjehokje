@@ -18,31 +18,39 @@ import { useUser } from "../context/useUser.ts";
 import {
   type BookingUpdate,
   DemoCalendarAdapter,
-  getThisWeek,
   type NewBooking,
   type Room,
 } from "../services/index.ts";
+import { isSameDay, systemClock } from "../utils/clock.ts";
 
 /**
- * Load the rooms with their demo bookings for the current week
+ * Demo calendar: the real calendar with demo data, served for the
+ * logged-in user
  */
-function useDemoRooms(profile: { name: string; email: string } | null): {
-  rooms: Room[];
-  isLoading: boolean;
-  error: Error | null;
-} {
+export function DemoCalendar(): React.JSX.Element {
+  const { user } = useUser();
+  const demoAdapter = useMemo(
+    () => (user ? new DemoCalendarAdapter(user) : null),
+    [user],
+  );
+  const [selectedDate, setSelectedDate] = useState(() => systemClock.now());
   const [rooms, setRooms] = useState<Room[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
+  /**
+   * (Re)load the demo bookings of the selected day whenever it changes,
+   * like the real calendar does when switching days
+   */
   useEffect(() => {
-    if (!profile) {
+    if (!demoAdapter) {
       setRooms([]);
       setIsLoading(false);
       return;
     }
 
-    new DemoCalendarAdapter(profile).getRoomsWithBookings(getThisWeek())
+    setIsLoading(true);
+    demoAdapter.getDay(selectedDate)
       .then((result) => {
         setRooms(result);
         setIsLoading(false);
@@ -51,23 +59,15 @@ function useDemoRooms(profile: { name: string; email: string } | null): {
         setError(err instanceof Error ? err : new Error(String(err)));
         setIsLoading(false);
       });
-  }, [profile]);
+  }, [demoAdapter, selectedDate]);
 
-  return { rooms, isLoading, error };
-}
-
-/**
- * Demo calendar: the real calendar with demo data, served for the
- * logged-in user
- */
-export function DemoCalendar(): React.JSX.Element {
-  const { user } = useUser();
-  const { rooms, isLoading, error } = useDemoRooms(user);
-
-  const demoAdapter = useMemo(
-    () => (user ? new DemoCalendarAdapter(user) : null),
-    [user],
-  );
+  /**
+   * Switch the day the board shows; selecting the day already shown does
+   * not trigger a reload
+   */
+  const selectDate = useCallback((date: Date): void => {
+    setSelectedDate((previous) => isSameDay(previous, date) ? previous : date);
+  }, []);
   const createBooking = useCallback(
     async (booking: NewBooking): Promise<void> => {
       await demoAdapter?.createBooking(booking);
@@ -107,6 +107,8 @@ export function DemoCalendar(): React.JSX.Element {
     <Box>
       <Calendar
         rooms={rooms}
+        selectedDate={selectedDate}
+        onSelectDate={selectDate}
         onCreateBooking={createBooking}
         onUpdateBooking={updateBooking}
         onDeleteBooking={deleteBooking}

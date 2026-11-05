@@ -2,7 +2,7 @@
  * Clock abstraction for testability
  *
  * Dependency injection for the current time, so date-dependent logic
- * (week ranges, "today" highlighting) can be tested deterministically
+ * (day ranges, "today" highlighting) can be tested deterministically
  * and stays consistent within a render pass.
  */
 export interface Clock {
@@ -28,6 +28,24 @@ export function isSameDay(a: Date, b: Date): boolean {
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate()
   );
+}
+
+/**
+ * Get the start of the day (midnight, local time)
+ */
+export function startOfDay(date: Date): Date {
+  const result = new Date(date);
+  result.setHours(0, 0, 0, 0);
+  return result;
+}
+
+/**
+ * Get the end of the day (23:59:59.999, local time)
+ */
+export function endOfDay(date: Date): Date {
+  const result = new Date(date);
+  result.setHours(23, 59, 59, 999);
+  return result;
 }
 
 /**

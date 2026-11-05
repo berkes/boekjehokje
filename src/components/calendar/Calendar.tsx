@@ -36,7 +36,7 @@ import type {
   CalendarServicePort,
   NewBooking,
 } from "../../services/index.ts";
-import { systemClock } from "../../utils/clock.ts";
+import { isSameDay, systemClock } from "../../utils/clock.ts";
 import { BookingForm } from "./BookingForm.tsx";
 import { BookingSidebar } from "./BookingSidebar.tsx";
 import { CalendarToolbar } from "./CalendarToolbar.tsx";
@@ -85,6 +85,10 @@ const START_HOUR = 8;
 export interface CalendarProps {
   /** Rooms with their bookings to display */
   rooms: CalendarRoom[];
+  /** The day the board shows; switching it reloads the calendar */
+  selectedDate: Date;
+  /** Select another day (previous/next/today/quick buttons) */
+  onSelectDate: (date: Date) => void;
   /** Save a new booking through the calendar service (issue #15) */
   onCreateBooking: (booking: NewBooking) => Promise<void>;
   /** Save changes to an existing booking through the calendar service (#14) */
@@ -288,9 +292,15 @@ function FreeSlotBar(
  * the booking's values and the delete icon deletes immediately (#14).
  */
 export function Calendar(
-  { rooms, onCreateBooking, onUpdateBooking, onDeleteBooking }: CalendarProps,
+  {
+    rooms,
+    selectedDate,
+    onSelectDate,
+    onCreateBooking,
+    onUpdateBooking,
+    onDeleteBooking,
+  }: CalendarProps,
 ): React.JSX.Element {
-  const [selectedDate, setSelectedDate] = useState(() => systemClock.now());
   const [sidebarState, setSidebarState] = useState<SidebarState>(null);
   const [moved, setMoved] = useState<ReadonlyMap<string, MovedEvent>>(
     () => new Map(),
@@ -585,7 +595,7 @@ export function Calendar(
     <React.Fragment>
       <CalendarToolbar
         selectedDate={selectedDate}
-        onSelectDate={setSelectedDate}
+        onSelectDate={onSelectDate}
         clock={systemClock}
       />
       <RoomVisibiltyControls rooms={rooms} hidden={hidden} onToggle={toggle} />
@@ -641,41 +651,51 @@ export function CalendarView(
   { service }: CalendarViewProps,
 ): React.JSX.Element {
   const { load, rooms, isLoading, error } = useCalendar(service);
+  const [selectedDate, setSelectedDate] = useState(() => systemClock.now());
 
   /**
-   * Initial load on mount
+   * (Re)load the board whenever the selected day changes: on mount and
+   * when the user switches days (previous/next/today/quick buttons)
    */
   useEffect(() => {
-    load();
-  }, [load]);
+    load(selectedDate);
+  }, [load, selectedDate]);
+
+  /**
+   * Switch the day the board shows; selecting the day already shown does
+   * not trigger a reload
+   */
+  const selectDate = useCallback((date: Date): void => {
+    setSelectedDate((previous) => isSameDay(previous, date) ? previous : date);
+  }, []);
 
   /**
    * Saving, updating or deleting a booking goes through the service port
-   * and refreshes the board afterwards; the service persists it to the
-   * calendar source
+   * and refreshes the shown day afterwards; the service persists it to
+   * the calendar source
    */
   const createBooking = useCallback(
     async (booking: NewBooking): Promise<void> => {
       await service.createBooking(booking);
-      await load();
+      await load(selectedDate);
     },
-    [service, load],
+    [service, load, selectedDate],
   );
 
   const updateBooking = useCallback(
     async (booking: BookingUpdate): Promise<void> => {
       await service.updateBooking(booking);
-      await load();
+      await load(selectedDate);
     },
-    [service, load],
+    [service, load, selectedDate],
   );
 
   const deleteBooking = useCallback(
     async (bookingId: string): Promise<void> => {
       await service.deleteBooking(bookingId);
-      await load();
+      await load(selectedDate);
     },
-    [service, load],
+    [service, load, selectedDate],
   );
 
   if (isLoading) {
@@ -709,7 +729,7 @@ export function CalendarView(
         }}
       >
         <Typography color="error">Fout: {error.message}</Typography>
-        <Button variant="contained" onClick={load}>
+        <Button variant="contained" onClick={() => load(selectedDate)}>
           Opnieuw proberen
         </Button>
       </Box>
@@ -728,6 +748,8 @@ export function CalendarView(
     <Box>
       <Calendar
         rooms={rooms}
+        selectedDate={selectedDate}
+        onSelectDate={selectDate}
         onCreateBooking={createBooking}
         onUpdateBooking={updateBooking}
         onDeleteBooking={deleteBooking}

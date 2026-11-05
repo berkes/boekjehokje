@@ -37,8 +37,9 @@ API instead (`PUT /__admin/files/...` for the response template,
   bookings, `calendar-event-written.hbs` echoes a written event back). The
   bookings transcribe the current-week demo content of
   `src/services/DemoCalendarAdapter.ts`; dates are not hardcoded but templated
-  relative to the Monday the app requests (`timeMin`), so week navigation in the
-  UI keeps hitting the same pattern.
+  relative to the Monday of the week of the day the app requests (`timeMin`, the
+  start of the selected day — the app fetches one day at a time), so day
+  navigation in the UI keeps hitting the same week pattern.
 - **Fake session** — the `authedPage` fixture seeds the session the
   AuthenticationService restores from localStorage
   (`boekjehokje_authentication`, the seam documented in AGENTS.md). The mocked
@@ -46,9 +47,9 @@ API instead (`PUT /__admin/files/...` for the response template,
   ones the app renders as editable (ADR-0004).
 - **Fixed clock** — the fixture also pins the browser clock
   (`page.clock.install`) to `FIXED_NOW` in `e2e/fixtures/auth.ts`: Wednesday 28
-  October 2026, 10:00 UTC. The app computes its week from the clock, so it
-  always requests the same week, the stubs always render the same bookings, and
-  the board always opens on the same Wednesday.
+  October 2026, 10:00 UTC. The app computes its selected day from the clock, so
+  it always requests the same day, the stubs always render the same bookings,
+  and the board always opens on the same Wednesday.
 
 ## Writing specs
 

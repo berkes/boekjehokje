@@ -15,6 +15,7 @@ import {
   type Clock,
   isSameDay,
   longDateLabel,
+  startOfDay,
   startOfWeek,
   weekdayOptions,
 } from "../../utils/clock.ts";
@@ -105,14 +106,5 @@ export function CalendarToolbar(
 function addDays(date: Date, days: number): Date {
   const result = new Date(date);
   result.setDate(result.getDate() + days);
-  return result;
-}
-
-/**
- * Get the start of the day (midnight, local time)
- */
-function startOfDay(date: Date): Date {
-  const result = new Date(date);
-  result.setHours(0, 0, 0, 0);
   return result;
 }
