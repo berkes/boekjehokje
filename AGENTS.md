@@ -23,19 +23,25 @@
 
 ```
 .
-├── docs/              # Project documentation
+├── docs/               # Project documentation
 │   └── adr/            # Architecture Decision Records
-├── src/               # Source code
+│   ─── tasks/          # Per-issue task write-ups
+├── e2e/                # Playwright E2E suite (see docs/e2e.md)
+├── src/                # Source code
 │   ├── App.tsx         # Main application
 │   ├── main.tsx        # Entry point
-│   ├── assets/         # Static assets
+│   ├── assets/         # Static assets (landing page screenshots)
 │   ├── components/     # UI components
+│   ├── config/         # Google API configuration
 │   ├── context/        # React contexts (user session)
+│   ├── hooks/          # Reusable hooks
+│   ├── pages/          # Page components (Landing, Faq, Settings, DemoCalendar)
 │   ├── services/       # Domain services (calendar, authentication)
-├── public/            # Static files
-├── package.json       # Dependencies & scripts
-├── vite.config.ts     # Vite configuration
-└── tsconfig.json      # TypeScript configuration
+│   ├── theme.ts        # MUI theme
+│   └── utils/          # Calendar API clients, clock, types
+├── package.json        # Dependencies & scripts
+├── vite.config.ts      # Vite configuration
+└── tsconfig.json       # TypeScript configuration
 ```
 
 ## TypeScript Best Practices
