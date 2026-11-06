@@ -20,7 +20,11 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import React, { useEffect, useState } from "react";
 import { useUser } from "../../context/useUser.ts";
-import { type Booking, type NewBooking } from "../../services/index.ts";
+import {
+  type Booking,
+  findOverlaps,
+  type NewBooking,
+} from "../../services/index.ts";
 import { ROOMS, UNKNOWN_ROOM } from "../../services/rooms.ts";
 import { loadBookerContact, saveBookerContact } from "./bookerContact.ts";
 import {
@@ -44,7 +48,7 @@ const BOOKABLE_ROOMS = ROOMS.filter(
  * Props for BookingForm component
  */
 export interface BookingFormProps {
-  /** All rooms with their bookings, to check the margin against (ADR-0006) */
+  /** All rooms with their bookings, to warn about overlaps and margins (issue #16, ADR-0006) */
   rooms: CalendarRoom[];
   /** The booking being edited; when set, the form updates it instead of creating one (#14) */
   booking?: Booking;
@@ -64,7 +68,9 @@ export interface BookingFormProps {
  * Booking form component
  * Controlled MUI fields, all UI text inline in Dutch. The five-minute
  * margin rule (ADR-0006) is applied here, no matter how the range was
- * entered: overlaps are blocked, a zero-minute gap shows a warning
+ * entered: a zero-minute gap shows a warning. An overlap with existing
+ * bookings shows a warning listing them (issue #16) — the user stays
+ * free to confirm anyway, the app guides but never blocks (ADR-0002).
  */
 export function BookingForm(
   {
@@ -91,11 +97,15 @@ export function BookingForm(
   const preview = summaryPreview(roomConfig?.shortName ?? room, booker);
 
   // The booking being edited never counts as an overlap with itself
+  const start = new Date(from);
+  const end = new Date(to);
+  const overlaps = findOverlaps(rooms, room, start, end)
+    .filter((b) => b.id !== booking?.id);
   const roomBookings = rooms.find((r) => r.canonicalName === room)?.bookings
     .filter((b) => b.id !== booking?.id) ?? [];
-  const margin = checkMargin(roomBookings, new Date(from), new Date(to));
-  const longBooking = isLongBooking(new Date(from), new Date(to));
-  const invertedRange = isInvertedRange(new Date(from), new Date(to));
+  const margin = checkMargin(roomBookings, start, end);
+  const longBooking = isLongBooking(start, end);
+  const invertedRange = isInvertedRange(start, end);
 
   /**
    * Report the current draft to the board, so it can highlight the
@@ -188,10 +198,11 @@ export function BookingForm(
         slotProps={{ htmlInput: { readOnly: true } }}
         fullWidth
       />
-      {margin.overlappingBooking && (
-        <Typography color="error">
-          Overlapt met boeking &quot;{margin.overlappingBooking}&quot; in deze
-          ruimte.
+      {overlaps.length > 0 && (
+        <Typography color="warning.main">
+          Let op: deze boeking overlapt met{" "}
+          {overlaps.map((b) => `"${b.booker || b.summary}"`).join(", ")}{" "}
+          in deze ruimte. Je kunt desondanks boeken.
         </Typography>
       )}
       {invertedRange && (
@@ -205,7 +216,7 @@ export function BookingForm(
           prima, maar check even dubbel of dit klopt.
         </Typography>
       )}
-      {margin.overlappingBooking === null && margin.zeroGap && (
+      {overlaps.length === 0 && margin.zeroGap && (
         <Typography color="warning.main">
           Let op: er zit geen 5 minuten tussen deze en een aansluitende boeking
           in deze ruimte.
@@ -215,8 +226,7 @@ export function BookingForm(
       <Button
         type="submit"
         variant="contained"
-        disabled={isSubmitting || margin.overlappingBooking !== null ||
-          invertedRange}
+        disabled={isSubmitting || invertedRange}
       >
         {booking ? "Boeking bijwerken" : "Boeking aanmaken"}
       </Button>
