@@ -16,6 +16,7 @@ import type {
 } from "@super-calendar/dom";
 import {
   type Booking,
+  findOverlaps,
   UNKNOWN_ROOM,
   UNKNOWN_ROOM_DESCRIPTION,
 } from "../../services/index.ts";
@@ -63,6 +64,8 @@ export interface BoardEventMeta {
   preview?: boolean;
   /** Free-slot blocks are disabled while the booking form is open */
   disabled?: boolean;
+  /** The block's range overlaps an existing booking (issue #16): warn, never block */
+  conflict?: boolean;
 }
 
 /**
@@ -333,38 +336,57 @@ export function isInvertedRange(start: Date, end: Date): boolean {
 
 /**
  * How a proposed range relates to the existing bookings of the room
- * (ADR-0006): overlaps are never allowed; a zero-minute gap to an adjacent
- * booking is allowed but warned about. `overlappingBooking` names the
- * first booking the range overlaps, so the form can show it
+ * (ADR-0006): a zero-minute gap to an adjacent booking is allowed but
+ * warned about. Overlaps are not handled here: they are found with
+ * findOverlaps in the domain (issue #16) and only ever warned about,
+ * never blocked.
  */
 export interface MarginCheck {
-  overlappingBooking: string | null;
   zeroGap: boolean;
 }
 
 /**
- * Check a proposed range against the room's existing bookings
+ * Check a proposed range for a zero-minute gap to an adjacent booking
  */
 export function checkMargin(
-  bookings: ReadonlyArray<{ start: Date; end: Date; summary?: string }>,
+  bookings: ReadonlyArray<{ start: Date; end: Date }>,
   start: Date,
   end: Date,
 ): MarginCheck {
-  let overlappingBooking: string | null = null;
   let zeroGap = false;
   for (const booking of bookings) {
-    if (start < booking.end && end > booking.start) {
-      if (overlappingBooking === null) {
-        overlappingBooking = booking.summary ?? null;
-      }
-    } else if (
+    if (
       start.getTime() === booking.end.getTime() ||
       end.getTime() === booking.start.getTime()
     ) {
       zeroGap = true;
     }
   }
-  return { overlappingBooking, zeroGap };
+  return { zeroGap };
+}
+
+/**
+ * Mark the free-slot blocks whose range overlaps an existing booking of
+ * their room as conflicting (issue #16), so the board shows the conflict
+ * in red next to the form warning. Booking events are never marked. The
+ * booking with `excludeBookingId` (the one being edited) never counts as
+ * an overlap with itself.
+ */
+export function markConflictingSlots(
+  events: BoardEvent[],
+  rooms: ReadonlyArray<{ canonicalName: string; bookings: Booking[] }>,
+  excludeBookingId?: string,
+): BoardEvent[] {
+  return events.map((event) => {
+    if (!event.freeSlot) return event;
+    const overlaps = findOverlaps(
+      rooms,
+      event.resourceId,
+      event.start,
+      event.end,
+    ).filter((booking) => booking.id !== excludeBookingId);
+    return overlaps.length > 0 ? { ...event, conflict: true } : event;
+  });
 }
 
 /**
@@ -434,6 +456,18 @@ export const FREE_SLOT_PREVIEW_BACKGROUND = "rgba(76, 175, 80, 0.08)";
  * Border of the preview block
  */
 export const FREE_SLOT_PREVIEW_BORDER = "rgba(46, 125, 50, 0.9)";
+
+/**
+ * Background of a free-slot block whose range overlaps an existing
+ * booking (issue #16): a warning red, clearly distinct from the green
+ * free-slot styles
+ */
+export const FREE_SLOT_CONFLICT_BACKGROUND = "rgba(211, 47, 47, 0.2)";
+
+/**
+ * Border of a conflicting free-slot block: solid and strong
+ */
+export const FREE_SLOT_CONFLICT_BORDER = "rgba(183, 28, 28, 0.9)";
 
 /**
  * Minimal MUI palette shape needed to theme the board

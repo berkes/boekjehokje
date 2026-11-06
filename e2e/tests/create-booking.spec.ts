@@ -201,11 +201,17 @@ test("User is warned when booking without a margin, but can still confirm", asyn
  * Given the booking form is open for Kletshok 03, where Willem's booking
  * "Kletshok 03 - Willem" runs 11:00-13:00
  * When I set the range to 10:30-11:30
- * Then the form shows that the range overlaps that booking, naming it, and
- * the confirm button is disabled (ADR-0006: overlaps are never allowed)
- * So that I cannot double-book a room.
+ * Then the form warns that the range overlaps that booking, naming it, and
+ * the preview block on the board is marked as conflicting
+ * And the confirm button stays enabled
+ * When I fill in my contact and confirm anyway
+ * Then the booking is written to the calendar API (POST) with start
+ * "2026-10-28T10:30:00.000Z" and end "2026-10-28T11:30:00.000Z", and the
+ * form closes
+ * So that I notice the double booking before confirming, but stay free to
+ * book anyway (issue #16: the app guides, it does not block).
  */
-test("User cannot confirm a booking that overlaps an existing booking", async ({ authedPage }) => {
+test("User is warned about an overlap but can still confirm", async ({ authedPage }) => {
   const overview = await new OverviewPage(authedPage).goto();
 
   await overview.clickFreeSlotBlock("Kletshok 03", 0);
@@ -219,8 +225,20 @@ test("User cannot confirm a booking that overlaps an existing booking", async ({
     booker: "Bèr",
     summary: "KH 03 | Bèr",
   });
-  await overview.assertOverlapErrorIsShown("Kletshok 03 - Willem");
-  await overview.assertSubmitIsDisabled();
+  await overview.assertOverlapWarningIsShown("Willem");
+  await overview.assertConflictSlotIsShownIn("Kletshok 03");
+  await overview.assertSubmitIsEnabled();
+
+  await overview.fillContact("ber@boekjehokje.test");
+  await overview.submitBookingForm();
+  await overview.assertBookingWasWritten({
+    method: "POST",
+    summary: "KH 03 | Bèr",
+    description: "ber@boekjehokje.test",
+    start: "2026-10-28T10:30:00.000Z",
+    end: "2026-10-28T11:30:00.000Z",
+  });
+  await overview.assertBookingFormIsClosed();
 });
 
 /**

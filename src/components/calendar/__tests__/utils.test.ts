@@ -21,6 +21,7 @@ import {
   isLongBooking,
   LONG_BOOKING_MINUTES,
   MARGIN_MINUTES,
+  markConflictingSlots,
   READ_ONLY_EVENT_BACKGROUND,
   roomDescription,
   roomLabel,
@@ -317,17 +318,17 @@ Deno.test("checkMargin flags a zero-minute gap to an adjacent booking (ADR-0006)
     new Date(2026, 9, 28, 10, 0),
     new Date(2026, 9, 28, 11, 0),
   );
-  assertEquals(before, { overlappingBooking: null, zeroGap: true });
+  assertEquals(before, { zeroGap: true });
 
   const after = checkMargin(
     bookings,
     new Date(2026, 9, 28, 14, 0),
     new Date(2026, 9, 28, 15, 0),
   );
-  assertEquals(after, { overlappingBooking: null, zeroGap: true });
+  assertEquals(after, { zeroGap: true });
 });
 
-Deno.test("checkMargin flags an overlap as never allowed and names the booking (ADR-0006)", () => {
+Deno.test("checkMargin does not flag an overlap as a zero gap (overlaps are findOverlaps' job, issue #16)", () => {
   const bookings = [{
     start: new Date(2026, 9, 28, 11, 0),
     end: new Date(2026, 9, 28, 14, 0),
@@ -339,10 +340,7 @@ Deno.test("checkMargin flags an overlap as never allowed and names the booking (
     new Date(2026, 9, 28, 10, 30),
     new Date(2026, 9, 28, 11, 30),
   );
-  assertEquals(result, {
-    overlappingBooking: "Kletshok 03 - Willem",
-    zeroGap: false,
-  });
+  assertEquals(result, { zeroGap: false });
 });
 
 Deno.test("checkMargin passes a booking with a five-minute margin on both sides", () => {
@@ -356,7 +354,105 @@ Deno.test("checkMargin passes a booking with a five-minute margin on both sides"
     new Date(2026, 9, 28, 10, 5),
     new Date(2026, 9, 28, 10, 55),
   );
-  assertEquals(result, { overlappingBooking: null, zeroGap: false });
+  assertEquals(result, { zeroGap: false });
+});
+
+Deno.test("markConflictingSlots flags a free-slot block that overlaps a booking (issue #16)", () => {
+  const rooms = [{
+    canonicalName: "Kletshok 03",
+    shortName: "KH 03",
+    bookings: [
+      booking({
+        id: "willem",
+        booker: "Willem",
+        start: new Date(2026, 9, 28, 11, 0),
+        end: new Date(2026, 9, 28, 13, 0),
+      }),
+    ],
+  }];
+  const events: BoardEvent[] = [{
+    title: "Nu boeken",
+    start: new Date(2026, 9, 28, 10, 30),
+    end: new Date(2026, 9, 28, 11, 30),
+    resourceId: "Kletshok 03",
+    freeSlot: {
+      start: new Date(2026, 9, 28, 10, 30),
+      end: new Date(2026, 9, 28, 11, 30),
+    },
+    draggable: false,
+  }];
+
+  const marked = markConflictingSlots(events, rooms);
+
+  assertEquals(marked[0].conflict, true);
+  // The original event stays untouched
+  assertEquals(events[0].conflict, undefined);
+});
+
+Deno.test("markConflictingSlots leaves free-slot blocks without an overlap unmarked", () => {
+  const rooms = [{
+    canonicalName: "Kletshok 03",
+    shortName: "KH 03",
+    bookings: [
+      booking({
+        id: "willem",
+        booker: "Willem",
+        start: new Date(2026, 9, 28, 11, 0),
+        end: new Date(2026, 9, 28, 13, 0),
+      }),
+    ],
+  }];
+  const events: BoardEvent[] = [{
+    title: "Nu boeken",
+    start: new Date(2026, 9, 28, 14, 0),
+    end: new Date(2026, 9, 28, 14, 55),
+    resourceId: "Kletshok 03",
+    freeSlot: {
+      start: new Date(2026, 9, 28, 14, 0),
+      end: new Date(2026, 9, 28, 14, 55),
+    },
+    draggable: false,
+  }];
+
+  assertEquals(markConflictingSlots(events, rooms)[0].conflict, undefined);
+});
+
+Deno.test("markConflictingSlots never marks booking events and never the excluded booking (issue #16)", () => {
+  const rooms = [{
+    canonicalName: "Kletshok 03",
+    shortName: "KH 03",
+    bookings: [
+      booking({
+        id: "willem",
+        booker: "Willem",
+        editable: true,
+        start: new Date(2026, 9, 28, 11, 0),
+        end: new Date(2026, 9, 28, 13, 0),
+      }),
+    ],
+  }];
+  const bookingEvent = toEvents(rooms)[0];
+  const slotEvent: BoardEvent = {
+    title: "Nu boeken",
+    start: new Date(2026, 9, 28, 10, 30),
+    end: new Date(2026, 9, 28, 11, 30),
+    resourceId: "Kletshok 03",
+    freeSlot: {
+      start: new Date(2026, 9, 28, 10, 30),
+      end: new Date(2026, 9, 28, 11, 30),
+    },
+    preview: true,
+    draggable: false,
+  };
+
+  const marked = markConflictingSlots(
+    [bookingEvent, slotEvent],
+    rooms,
+    "willem",
+  );
+
+  assertEquals(marked[0].conflict, undefined);
+  assertEquals(marked[1].conflict, undefined);
 });
 
 Deno.test("formatDateTimeLocal formats a date for a datetime-local input", () => {

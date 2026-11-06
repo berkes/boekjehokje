@@ -53,11 +53,14 @@ import {
   findBooking,
   FREE_SLOT_BACKGROUND,
   FREE_SLOT_BORDER,
+  FREE_SLOT_CONFLICT_BACKGROUND,
+  FREE_SLOT_CONFLICT_BORDER,
   FREE_SLOT_PREVIEW_BACKGROUND,
   FREE_SLOT_PREVIEW_BORDER,
   FREE_SLOT_SELECTED_BACKGROUND,
   FREE_SLOT_SELECTED_BORDER,
   isCalendarResource,
+  markConflictingSlots,
   type MovedEvent,
   READ_ONLY_EVENT_BACKGROUND,
   READ_ONLY_EVENT_BORDER,
@@ -245,12 +248,14 @@ function FreeSlotBar(
   const selected = event.selected === true;
   const preview = event.preview === true;
   const disabled = event.disabled === true;
+  const conflict = event.conflict === true;
   return (
     <Box
-      title="Nu boeken"
+      title={conflict ? "Overlapt met een bestaande boeking" : "Nu boeken"}
       data-slot-selected={selected ? "true" : undefined}
       data-slot-preview={preview ? "true" : undefined}
       data-slot-disabled={disabled ? "true" : undefined}
+      data-slot-conflict={conflict ? "true" : undefined}
       sx={{
         cursor: disabled ? "default" : undefined,
         opacity: disabled && !selected && !preview ? 0.45 : undefined,
@@ -261,17 +266,21 @@ function FreeSlotBar(
         display: "flex",
         alignItems: "center",
         gap: 0.5,
-        backgroundColor: selected
+        backgroundColor: conflict
+          ? FREE_SLOT_CONFLICT_BACKGROUND
+          : selected
           ? FREE_SLOT_SELECTED_BACKGROUND
           : preview
           ? FREE_SLOT_PREVIEW_BACKGROUND
           : FREE_SLOT_BACKGROUND,
-        border: selected
+        border: conflict
+          ? `2px solid ${FREE_SLOT_CONFLICT_BORDER}`
+          : selected
           ? `2px solid ${FREE_SLOT_SELECTED_BORDER}`
           : preview
           ? `2px solid ${FREE_SLOT_PREVIEW_BORDER}`
           : `1px dashed ${FREE_SLOT_BORDER}`,
-        color: "success.dark",
+        color: conflict ? "error.dark" : "success.dark",
       }}
     >
       <Add fontSize="inherit" />
@@ -290,6 +299,8 @@ function FreeSlotBar(
  * pressing or dragging empty lane space, opens the booking form in the same
  * sidebar (issue #15); the edit icon opens the same form prefilled with
  * the booking's values and the delete icon deletes immediately (#14).
+ * Free-slot blocks whose range overlaps an existing booking are marked
+ * red on the board, next to the form's overlap warning (issue #16).
  */
 export function Calendar(
   {
@@ -334,18 +345,40 @@ export function Calendar(
       selectedSlot,
     )
     : null;
+  /**
+   * The booking being edited never counts as an overlap with itself
+   * (issue #16)
+   */
+  const editedBookingId = sidebarState?.mode === "edit"
+    ? sidebarState.booking.id
+    : undefined;
+
   const events = useMemo(
-    () => [
-      ...applyMovedEvents(toEvents(visibleRooms), moved),
-      ...toFreeSlotEvents(
-        visibleRooms,
-        selectedDate,
-        systemClock.now(),
-        selectedSlot,
-      ).map((event) => ({ ...event, disabled: formOpen })),
-      ...(previewEvent ? [previewEvent] : []),
+    () =>
+      markConflictingSlots(
+        [
+          ...applyMovedEvents(toEvents(visibleRooms), moved),
+          ...toFreeSlotEvents(
+            visibleRooms,
+            selectedDate,
+            systemClock.now(),
+            selectedSlot,
+          ).map((event) => ({ ...event, disabled: formOpen })),
+          ...(previewEvent ? [previewEvent] : []),
+        ],
+        rooms,
+        editedBookingId,
+      ),
+    [
+      visibleRooms,
+      rooms,
+      moved,
+      selectedDate,
+      selectedSlot,
+      previewEvent,
+      formOpen,
+      editedBookingId,
     ],
-    [visibleRooms, moved, selectedDate, selectedSlot, previewEvent, formOpen],
   );
 
   /**

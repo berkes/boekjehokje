@@ -39,8 +39,9 @@ implemented, see issue #13) — and then about what the defaults encourage.
 - The five-minute margin is encouraged through defaults and warnings, never
   enforced: users must be able to start exactly at their chosen start time and
   stay until exactly their chosen end time.
-- Overlapping bookings are never allowed; a zero-minute gap between consecutive
-  bookings is allowed, but warned about.
+- Overlapping bookings are warned about, never blocked (issue #16, per ADR-0002:
+  users may book directly in Google Calendar anyway); a zero-minute gap between
+  consecutive bookings is allowed, but warned about.
 - Defaults encourage all bookings to start at the whole hour and to last until
   five minutes before the whole hour.
 - One rule covers every way a range can be entered — click, drag, manual input
@@ -60,10 +61,13 @@ implemented, see issue #13) — and then about what the defaults encourage.
 ### Business rule: the margin is encouraged, never enforced
 
 - The default margin between consecutive bookings in the same room is 5 minutes.
-- Overlapping bookings are never allowed. Booking without margin — bookings
-  following with 0 minutes between them — is allowed, but the app shows a
-  warning, and the user can deliberately ignore the warning to book without
-  margin.
+- Overlapping bookings are warned about, never blocked (updated by issue #16,
+  which reversed the original "never allowed" rule: the app guides visually and
+  does not enforce, per ADR-0002, so a block in the app would only create a
+  false sense of safety — the booking form lists the overlapping bookings and
+  the user can confirm anyway). Booking without margin — bookings following with
+  0 minutes between them — is allowed, but the app shows a warning, and the user
+  can deliberately ignore the warning to book without margin.
 - The warning is shown whenever a booking is made without margin, no matter how
   the range was entered: a plain click, a drag selection, manual input in the
   booking form, or editing an existing booking (planned, not yet implemented).
