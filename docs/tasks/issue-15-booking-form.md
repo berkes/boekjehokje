@@ -23,10 +23,12 @@ ADR-0006 (PR #28).
   when that ends later, and ending five to the first whole hour more than 30
   minutes away. A drag opens the form with the exact swept range.
 - The five-minute margin rule (ADR-0006) is checked in the form, no matter how
-  the range was entered (`checkMargin` in `utils.tsx`): an overlap with an
-  existing booking shows an error and disables the confirm button (overlaps are
-  never allowed); a zero-minute gap to an adjacent booking shows a warning but
-  can be confirmed deliberately.
+  the range was entered (`checkMargin` in `utils.tsx`): a zero-minute gap to an
+  adjacent booking shows a warning but can be confirmed deliberately. Overlaps
+  were an error with a disabled confirm button here; issue #16 changed that to a
+  warning that lists the overlapping bookings (`findOverlaps` in
+  `src/services/overlaps.ts`) while the booking stays confirmable — see
+  [issue-16-conflict-warnings.md](issue-16-conflict-warnings.md).
 - The form re-uses the sidebar shell (`SidebarShell`), not a dialog: `Calendar`
   keeps a single sidebar state (`details | create`) and renders `BookingForm`
   for the `create` mode.

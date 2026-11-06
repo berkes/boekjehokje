@@ -488,14 +488,28 @@ export class OverviewPage {
   }
 
   /**
-   * Assert the form shows an error naming the booking the range overlaps
-   * (ADR-0006: overlaps are never allowed).
+   * Assert the form warns that the range overlaps the named bookings
+   * (issue #16: overlaps are warned about, never blocked).
    */
-  async assertOverlapErrorIsShown(bookingName: string): Promise<void> {
-    const escaped = bookingName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  async assertOverlapWarningIsShown(...bookingNames: string[]): Promise<void> {
+    const names = bookingNames.map((name) =>
+      `"${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`
+    ).join(", ");
     await expect(
-      this.page.getByText(new RegExp(`Overlapt met boeking "${escaped}"`)),
+      this.page.getByText(new RegExp(`overlapt met ${names}`)),
     ).toBeVisible();
+  }
+
+  /**
+   * Assert a free-slot block conflicting with an existing booking is
+   * marked in a room's lane (issue #16).
+   */
+  async assertConflictSlotIsShownIn(room: string): Promise<void> {
+    await expect(
+      this.page.locator(
+        `[data-resource-id="${room}"] [data-slot-conflict="true"]`,
+      ),
+    ).toHaveCount(1);
   }
 
   /**
