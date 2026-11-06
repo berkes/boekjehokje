@@ -33,10 +33,9 @@ export function Landing(): React.JSX.Element {
         variant="subtitle1"
         sx={{ color: "text.secondary", maxWidth: 640 }}
       >
-        boekjehokje zet de gedeelde Google Agenda van de NYMA Makersplaats om in
+        BoekJeHokje zet de gedeelde Google Agenda van de NYMA Makersplaats om in
         één helder overzicht van alle ruimtes. Je ziet direct welk hokje wanneer
-        vrij is en boekt het in een paar klikken. De agenda zelf blijf je gewoon
-        gebruiken.
+        vrij is en boekt het in een paar klikken.
       </Typography>
 
       <Box component="section" sx={{ mt: 6 }}>

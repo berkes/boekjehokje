@@ -1,26 +1,29 @@
-import React from "react";
-import "./App.scss";
-import CssBaseline from "@mui/material/CssBaseline";
-import Container from "@mui/material/Container";
+import HelpIcon from "@mui/icons-material/Help";
+import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
+import Container from "@mui/material/Container";
+import CssBaseline from "@mui/material/CssBaseline";
+import Toolbar from "@mui/material/Toolbar";
+import Typography from "@mui/material/Typography";
+import React from "react";
+import { Link, Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import "./App.scss";
+import logoUrl from "./assets/logo.svg";
 import { CalendarView, GoogleAuthWrapper } from "./components/index.ts";
+import { ProfileMenu } from "./components/ProfileMenu.tsx";
+import { ProtectedRoute } from "./components/ProtectedRoute.tsx";
 import { UserProvider } from "./context/UserContext.tsx";
 import { useUser } from "./context/useUser.ts";
-import { ProfileMenu } from "./components/ProfileMenu.tsx";
-import AppBar from "@mui/material/AppBar";
-import Toolbar from "@mui/material/Toolbar";
-import Button from "@mui/material/Button";
-import HelpIcon from "@mui/icons-material/Help";
-import { BrowserRouter as Router, Link, Route, Routes } from "react-router-dom";
 import { DemoCalendar, Faq, Landing, Settings } from "./pages/index.ts";
-import { ProtectedRoute } from "./components/ProtectedRoute.tsx";
 import { GoogleCalendarAdapter } from "./services/GoogleCalendarAdapter.ts";
 import {
   CALENDAR_ID,
   GoogleCalendarApiClient,
 } from "./utils/calendar/GoogleCalendarApiClient.ts";
+import { ThemeProvider } from "@mui/material/styles";
+import { appTheme } from "./theme.ts";
 
 /**
  * Main application component
@@ -30,13 +33,14 @@ function App(): React.JSX.Element {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
   return (
-    <React.Fragment>
+    <ThemeProvider theme={appTheme}>
       <CssBaseline enableColorScheme />
       <Router basename={import.meta.env.BASE_URL}>
         <GoogleAuthWrapper clientId={clientId}>
           <UserProvider>
             <AppBar position="static" color="primary" enableColorOnDark>
               <Toolbar>
+                <img src={logoUrl} alt="Logo" style={{ width: "40px", height: "40px", marginRight: "12px" }} />
                 <Typography
                   variant="h6"
                   component={Link}
@@ -75,7 +79,7 @@ function App(): React.JSX.Element {
           </UserProvider>
         </GoogleAuthWrapper>
       </Router>
-    </React.Fragment>
+    </ThemeProvider>
   );
 }
 
