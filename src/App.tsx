@@ -8,7 +8,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import React from "react";
-import { Link, Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import { BrowserRouter as Router, Link, Route, Routes } from "react-router-dom";
 import "./App.scss";
 import logoUrl from "./assets/logo.svg";
 import { CalendarView, GoogleAuthWrapper } from "./components/index.ts";
@@ -40,7 +40,11 @@ function App(): React.JSX.Element {
           <UserProvider>
             <AppBar position="static" color="primary" enableColorOnDark>
               <Toolbar>
-                <img src={logoUrl} alt="Logo" style={{ width: "40px", height: "40px", marginRight: "12px" }} />
+                <img
+                  src={logoUrl}
+                  alt="Logo"
+                  style={{ width: "40px", height: "40px", marginRight: "12px" }}
+                />
                 <Typography
                   variant="h6"
                   component={Link}
