@@ -5,10 +5,10 @@
  * the authentication service and the key-value store repository of the
  * preferences service.
  */
-import type { AuthenticationSession } from "../services/authentication/AuthenticationServicePort.ts";
-import type { SessionStoragePort } from "../services/authentication/SessionStoragePort.ts";
-import type { BrowserStorage } from "../services/preferences/LocalStorageAdapter.ts";
-import type { KeyValueStorePort } from "../services/preferences/KeyValueStorePort.ts";
+import type { AuthenticationSession } from "../../src/services/authentication/AuthenticationServicePort.ts";
+import type { SessionStoragePort } from "../../src/services/authentication/SessionStoragePort.ts";
+import type { BrowserStorage } from "../../src/services/preferences/LocalStorageAdapter.ts";
+import type { KeyValueStorePort } from "../../src/services/preferences/KeyValueStorePort.ts";
 
 /**
  * In-memory session storage (SessionStoragePort)

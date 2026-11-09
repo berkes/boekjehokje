@@ -11,8 +11,8 @@ import type {
   CalendarEventRepositoryPort,
   EventDraft,
   StoredEvent,
-} from "../services/calendar/CalendarEventRepositoryPort.ts";
-import type { DayRange } from "../services/calendar/CalendarServicePort.ts";
+} from "../../src/services/calendar/CalendarEventRepositoryPort.ts";
+import type { DayRange } from "../../src/services/calendar/CalendarServicePort.ts";
 
 /**
  * Build a stored event fixture. Only id, summary, start and end are

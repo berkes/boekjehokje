@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page } from "@playwright/test";
-import { SettingsPage } from "./SettingsPage.ts";
+import { SettingsPage } from "SettingsPage.ts";
 
 /**
  * The rooms of the makersplaats and their column headers on the board.

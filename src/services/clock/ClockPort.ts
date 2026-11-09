@@ -3,7 +3,7 @@
  *
  * The single way the app asks for the current time. Components and other
  * services get a ClockPort instance injected (via the service tree), so
- * date-dependent logic can be tested with a fixed clock (see src/testing).
+ * date-dependent logic can be tested with a fixed clock (see tests/utils).
  */
 export interface ClockPort {
   /** The current instant */

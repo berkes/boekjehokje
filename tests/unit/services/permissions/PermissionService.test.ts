@@ -2,7 +2,7 @@
  * Unit tests for the permission service
  *
  * The service is tested through its public interface (PermissionServicePort)
- * with the central FakeAuthenticationService from src/testing, so the
+ * with the central FakeAuthenticationService from tests/utils, so the
  * "current user" is set directly. The ownership rule is ADR-0004; its
  * interaction with the calendar service is covered by the integration
  * tests in tests/integration.
@@ -13,8 +13,8 @@ import {
   FakeAuthenticationService,
   fakeSession,
   fakeUser,
-} from "../../../testing/index.ts";
-import { PermissionService } from "../PermissionService.ts";
+} from "../../../utils/index.ts";
+import { PermissionService } from "../../../../src/services/permissions/PermissionService.ts";
 
 function bookingBy(author: string) {
   return { details: { author } };

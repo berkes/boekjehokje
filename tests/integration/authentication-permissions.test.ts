@@ -13,7 +13,7 @@ import {
   fakeTokens,
   fakeUser,
   InMemorySessionStorage,
-} from "../../src/testing/index.ts";
+} from "../utils/index.ts";
 import { AuthenticationService } from "../../src/services/authentication/AuthenticationService.ts";
 import { PermissionService } from "../../src/services/permissions/PermissionService.ts";
 

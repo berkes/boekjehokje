@@ -5,7 +5,10 @@
  * hidden set and filtering rooms down to the visible ones.
  */
 import { assertEquals } from "@std/assert";
-import { toggleHiddenRoom, visibleRooms } from "../roomVisibility.ts";
+import {
+  toggleHiddenRoom,
+  visibleRooms,
+} from "../../../src/hooks/roomVisibility.ts";
 
 function room(canonicalName: string) {
   return { canonicalName, shortName: canonicalName, bookings: [] };

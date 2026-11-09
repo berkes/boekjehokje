@@ -4,11 +4,11 @@
  * The adapter stays dumb: it only stores what it is handed and propagates
  * storage failures (the preferences service decides they are
  * non-essential). Tests use the central in-memory browser storage fake
- * from src/testing.
+ * from tests/utils.
  */
 import { assertEquals, assertThrows } from "@std/assert";
-import { InMemoryBrowserStorage } from "../../../testing/index.ts";
-import { LocalStorageAdapter } from "../LocalStorageAdapter.ts";
+import { InMemoryBrowserStorage } from "../../../utils/index.ts";
+import { LocalStorageAdapter } from "../../../../src/services/preferences/LocalStorageAdapter.ts";
 
 Deno.test("write then read round-trips the value", () => {
   const storage = new InMemoryBrowserStorage();

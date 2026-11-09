@@ -10,8 +10,8 @@ import type {
   AuthenticationServicePort,
   AuthenticationSession,
   AuthenticationTokens,
-} from "../services/authentication/AuthenticationServicePort.ts";
-import type { AuthenticationProviderPort } from "../services/authentication/AuthenticationProviderPort.ts";
+} from "../../src/services/authentication/AuthenticationServicePort.ts";
+import type { AuthenticationProviderPort } from "../../src/services/authentication/AuthenticationProviderPort.ts";
 
 /**
  * The default fake user of the test suite

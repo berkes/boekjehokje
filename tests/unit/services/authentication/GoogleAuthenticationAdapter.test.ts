@@ -10,11 +10,11 @@
 
 import { assertEquals, assertRejects } from "@std/assert";
 import { stub } from "@std/testing/mock";
-import type { AuthenticatedUser } from "../AuthenticationServicePort.ts";
+import type { AuthenticatedUser } from "../../../../src/services/authentication/AuthenticationServicePort.ts";
 import {
   GoogleAuthenticationAdapter,
   type GoogleOAuthResponse,
-} from "../GoogleAuthenticationAdapter.ts";
+} from "../../../../src/services/authentication/GoogleAuthenticationAdapter.ts";
 
 /** Fixed point in time for deterministic expiry math */
 const NOW = 1_730_000_000_000;

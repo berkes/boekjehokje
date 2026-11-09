@@ -4,7 +4,7 @@
  * A ClockPort with a fixed, adjustable "now", so date-dependent services
  * and components can be tested deterministically.
  */
-import type { ClockPort } from "../services/clock/ClockPort.ts";
+import type { ClockPort } from "../../src/services/clock/ClockPort.ts";
 
 /**
  * A clock that always returns the same instant, adjustable with setNow

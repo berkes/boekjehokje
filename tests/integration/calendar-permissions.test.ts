@@ -2,18 +2,14 @@
  * Integration tests: calendar service + permission service
  *
  * Two real services (CalendarService and PermissionService) composed over
- * the central fakes from src/testing, testing their interaction through
+ * the central fakes from tests/utils, testing their interaction through
  * the public interfaces: getDay asks the permission service to mark the
  * editable bookings (ADR-0004). Interactions of more than two services are
  * covered by the E2E suite, not here.
  */
 
 import { assert, assertEquals } from "@std/assert";
-import {
-  buildTestServices,
-  fakeUser,
-  storedEvent,
-} from "../../src/testing/index.ts";
+import { buildTestServices, fakeUser, storedEvent } from "../utils/index.ts";
 import type { StoredEvent } from "../../src/services/calendar/index.ts";
 
 /** Tuesday 6 October 2026, midday local */
