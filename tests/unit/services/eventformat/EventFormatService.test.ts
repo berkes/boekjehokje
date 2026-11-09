@@ -1,27 +1,28 @@
 /**
- * Unit tests for the room parser
+ * Unit tests for the event format service
  *
- * Tests the public interface of parser.ts: parseEvent. The room and
- * booker extraction tables drive parseEvent with full event summaries
- * and assert on the ParsedEvent attributes. The serializer
- * bookingToEvent (the inverse of parseEvent) lives in eventFormat.ts and
- * is round-trip tested here. Grouping and ignore-list behavior is covered
- * through the CalendarService in CalendarService.test.ts.
+ * Tests the public interface of the eventformat module (EventFormatPort):
+ * parse (room and booker extraction tables, driven with full event
+ * summaries) and serialize (the inverse of parse, round-trip tested here).
+ * Grouping and ignore-list behavior is covered through the CalendarService
+ * in CalendarService.test.ts.
  */
 
 import type { StoredEvent } from "../../../../src/services/calendar/CalendarEventRepositoryPort.ts";
-import { bookingToEvent } from "../../../../src/services/calendar/eventFormat.ts";
-import { parseEvent } from "../../../../src/services/calendar/parser.ts";
+import { EventFormatService } from "../../../../src/services/eventformat/index.ts";
 import {
-  ROOMS,
+  RoomsService,
   UNKNOWN_ROOM,
-} from "../../../../src/services/calendar/rooms.ts";
+} from "../../../../src/services/rooms/index.ts";
 
 import { assert, assertEquals } from "@std/assert";
 
+const service = new EventFormatService({ rooms: new RoomsService() });
+const rooms = new RoomsService();
+
 /**
  * A minimal stored event carrying the given summary, for driving
- * parseEvent in the extraction tables
+ * parse in the extraction tables
  */
 function eventWithSummary(summary: string): StoredEvent {
   return {
@@ -240,8 +241,8 @@ Deno.test.each(
       expected: UNKNOWN_ROOM,
     },
   ],
-)("parseEvent($input).room -> $expected", ({ input, expected }) => {
-  assertEquals(parseEvent(eventWithSummary(input)).room, expected);
+)("service.parse($input).room -> $expected", ({ input, expected }) => {
+  assertEquals(service.parse(eventWithSummary(input)).room, expected);
 });
 
 Deno.test.each(
@@ -282,11 +283,11 @@ Deno.test.each(
       expected: null,
     },
   ],
-)("parseEvent($input).booker -> $expected", ({ input, expected }) => {
-  assertEquals(parseEvent(eventWithSummary(input)).booker, expected);
+)("service.parse($input).booker -> $expected", ({ input, expected }) => {
+  assertEquals(service.parse(eventWithSummary(input)).booker, expected);
 });
 
-Deno.test("parseEvent", () => {
+Deno.test("parse", () => {
   const mockEvent: StoredEvent = {
     id: "test-id",
     uid: "test-uid",
@@ -300,7 +301,7 @@ Deno.test("parseEvent", () => {
     sequence: 0,
   };
 
-  const result = parseEvent(mockEvent);
+  const result = service.parse(mockEvent);
 
   assertEquals(result.id, "test-id", "Event ID should match");
   assertEquals(result.uid, "test-uid", "Event UID should match");
@@ -325,50 +326,8 @@ Deno.test("parseEvent", () => {
   );
 });
 
-Deno.test("Workshopruimte is no longer a known room", () => {
-  assert(
-    !ROOMS.some((room) => room.canonicalName === "Workshopruimte C3"),
-    "No room should match the workshop identifiers",
-  );
-  assertEquals(parseEvent(eventWithSummary("workshop c3")).room, UNKNOWN_ROOM);
-  assertEquals(
-    parseEvent(eventWithSummary("workshopruimte c3")).room,
-    UNKNOWN_ROOM,
-  );
-});
-
-Deno.test("Room objects have correct structure", () => {
-  assert(ROOMS.length > 0, "Should have at least one room");
-
-  for (const room of ROOMS) {
-    assert(
-      "canonicalName" in room && typeof room.canonicalName === "string",
-      "Room should have canonicalName string",
-    );
-    assert(
-      "shortName" in room && typeof room.shortName === "string",
-      "Room should have shortName string",
-    );
-    assert(
-      "aliases" in room && Array.isArray(room.aliases),
-      "Room should have aliases array",
-    );
-
-    // All aliases should be strings
-    for (const alias of room.aliases) {
-      assert(typeof alias === "string", "All aliases should be strings");
-    }
-  }
-});
-
-Deno.test("The Unknown room config is included in ROOMS", () => {
-  const unknownRoom = ROOMS.find((room) => room.canonicalName === UNKNOWN_ROOM);
-  assert(unknownRoom !== undefined, "The Unknown room should be in ROOMS");
-  assertEquals(unknownRoom?.canonicalName, UNKNOWN_ROOM);
-});
-
-Deno.test("bookingToEvent serializes into the standardized format the parser reads back", () => {
-  const event = bookingToEvent({
+Deno.test("serialize produces the standardized format that parse reads back", () => {
+  const event = service.serialize({
     room: "Kletshok 03",
     booker: "Bèr",
     contact: "ber@boekjehokje.test",
@@ -382,8 +341,8 @@ Deno.test("bookingToEvent serializes into the standardized format the parser rea
   assertEquals(event.end, new Date("2026-10-28T10:55:00Z"));
 
   // Round-trip: parsing the written event yields the same room and
-  // booker (parseEvent is the inverse of bookingToEvent)
-  const parsed = parseEvent({
+  // booker (parse is the inverse of serialize)
+  const parsed = service.parse({
     ...eventWithSummary(event.summary),
     creatorEmail: "ber@boekjehokje.test",
     start: event.start,
@@ -395,19 +354,19 @@ Deno.test("bookingToEvent serializes into the standardized format the parser rea
   assertEquals(parsed.end, new Date("2026-10-28T10:55:00Z"));
 });
 
-Deno.test("bookingToEvent round-trips every bookable room", () => {
-  const bookableRooms = ROOMS
-    .filter((room) => room.canonicalName !== UNKNOWN_ROOM)
+Deno.test("serialize round-trips every bookable room", () => {
+  const bookableRooms = rooms
+    .bookable()
     .map((room) => room.canonicalName);
 
   for (const room of bookableRooms) {
-    const event = bookingToEvent({
+    const event = service.serialize({
       room,
       booker: "Sanne",
       start: new Date("2026-10-28T10:00:00Z"),
       end: new Date("2026-10-28T11:00:00Z"),
     });
-    const parsed = parseEvent({
+    const parsed = service.parse({
       ...eventWithSummary(event.summary),
       creatorEmail: "sanne@example.com",
       start: event.start,
@@ -422,8 +381,8 @@ Deno.test("bookingToEvent round-trips every bookable room", () => {
   }
 });
 
-Deno.test("bookingToEvent omits the description when there is no contact", () => {
-  const event = bookingToEvent({
+Deno.test("serialize omits the description when there is no contact", () => {
+  const event = service.serialize({
     room: "Stilteruimte",
     booker: "Bèr",
     contact: "  ",
@@ -434,10 +393,10 @@ Deno.test("bookingToEvent omits the description when there is no contact", () =>
   assert(!("description" in event), "no empty description is written");
 });
 
-Deno.test("parseEvent keeps the event's htmlLink, null when the API provides none", () => {
+Deno.test("parse keeps the event's htmlLink, null when the source provides none", () => {
   const base = eventWithSummary("Kletshok 03 - Bèr");
 
-  const withLink = parseEvent({
+  const withLink = service.parse({
     ...base,
     htmlLink: "https://calendar.google.com/calendar/event?eid=abc123",
   });
@@ -446,6 +405,6 @@ Deno.test("parseEvent keeps the event's htmlLink, null when the API provides non
     "https://calendar.google.com/calendar/event?eid=abc123",
   );
 
-  const withoutLink = parseEvent(base);
+  const withoutLink = service.parse(base);
   assertEquals(withoutLink.htmlLink, null);
 });
