@@ -6,7 +6,8 @@
 - **Frontend**: React 19+ with TypeScript
 - **UI**: Material-UI (MUI) v9 with TypeScript
 - **Calendar**: super-calendar (`@super-calendar/dom`) with TypeScript
-- **State**: React Context API with typed hooks
+- **State**: React Context API with typed hooks (services are React-free; the
+  hooks manage their results as React state — see ADR-0007)
 - **Auth**: Google OAuth 2.0 behind the AuthenticationService port (see
   "Authentication Architecture" below)
 - **API**: Google Calendar API
@@ -25,24 +26,29 @@
 .
 ├── docs/               # Project documentation
 │   └── adr/            # Architecture Decision Records
-│   ─── tasks/          # Per-issue task write-ups
+│   └── tasks/          # Per-issue task write-ups
 ├── e2e/                # Playwright E2E suite (see docs/e2e.md)
+├── tests/              # Integration tests: two real services (see ADR-0008)
 ├── src/                # Source code
-│   ├── App.tsx         # Main application
+│   ├── App.tsx         # Composition root: builds the service tree, provides it
 │   ├── main.tsx        # Entry point
 │   ├── assets/         # Static assets (landing page screenshots)
-│   ├── components/     # UI components
-│   ├── config/         # Google API configuration
-│   ├── context/        # React contexts (user session)
-│   ├── hooks/          # Reusable hooks
-│   ├── pages/          # Page components (Landing, Faq, Settings, DemoCalendar)
-│   ├── services/       # Domain services (calendar, authentication)
-│   ├── theme.ts        # MUI theme
-│   └── utils/          # Calendar API clients, clock, types
+│   ├── components/     # UI components (incl. pages/ and the calendar board)
+│   ├── hooks/          # React bridge: ServicesProvider, useServices, useSession, useCalendar, ...
+│   ├── services/       # Service modules: authentication, calendar, permissions, clock, preferences
+│   │   └── <name>/     #   <Name>Port.ts, <Name>Service.ts, output ports, adapters, index.ts, __tests__/
+│   ├── testing/        # Central test fakes & test-tree builders (tests only, not in the app build)
+│   └── theme.ts        # MUI theme
 ├── package.json        # Dependencies & scripts
 ├── vite.config.ts      # Vite configuration
 └── tsconfig.json       # TypeScript configuration
 ```
+
+The app has only components, hooks, services, ports and adapters (repositories
+for external storage) — see ADR-0007 and docs/architecture.md. There is no
+`utils/`, `context/`, `config/` or `pages/` category: date helpers live in
+`services/clock/`, the session context in `hooks/useSession.tsx`, Google
+endpoints in the Google adapters, and pages under `components/pages/`.
 
 ## TypeScript Best Practices
 
@@ -117,46 +123,78 @@
 
 ### Module Design
 
+- The app is structured as components, hooks, services, ports and adapters
+  (ADR-0007): `src/components/`, `src/hooks/`, `src/services/<name>/`. Every
+  service module has the same layout: `<Name>Port.ts` (input port + domain
+  types), `<Name>Service.ts`, output ports, adapters/repositories, private
+  helpers, `index.ts` (the module's whole public API), `__tests__/`.
 - Limit public interfaces: only export what must be used outside the module
-- Group logically related functionality into bounded domain modules (either in
-  subdirs with index.ts or in single files)
-- Use dependency injection with interfaces for testability
+  (deep modules: the `index.ts` is the whole public API).
+- Services are objects with methods; all dependencies are passed in on creation
+  (deps object). Services, ports and adapters never touch React state — they
+  only store it (repositories) or get it passed in as arguments. The whole tree
+  of services and repositories is composed once on top level in `App.tsx` and
+  provided through `ServicesProvider`; components reach services only through
+  the hooks in `src/hooks/`.
+- Use dependency injection with interfaces for testability: input ports describe
+  what hooks and other services may call; output ports (implemented by adapters)
+  describe what a service calls out; repositories persist state externally
+  (localStorage, REST APIs).
 
 ### Authentication Architecture
 
-Authentication follows the same service-with-dependency-injection pattern as the
-calendar domain (see issue #12): an anti-corruption layer around Google OAuth,
-in `src/services/authentication/`.
+Authentication follows the service-with-dependency-injection pattern of ADR-0007
+(originally issue #12): an anti-corruption layer around Google OAuth, in
+`src/services/authentication/`.
 
-- `AuthenticationServicePort` defines the domain language API (`login`,
-  `logout`, `getAuthenticatedUser`, `isAuthenticated`, `getTokens`,
+- `AuthenticationServicePort` (input port) defines the domain language API
+  (`login`, `logout`, `getAuthenticatedUser`, `isAuthenticated`, `getTokens`,
   `fetchProfile`) in our own types (`AuthenticatedUser`, `AuthenticationTokens`,
   `AuthenticationSession`).
-- `GoogleAuthenticationAdapter` implements the port. All Google details (scopes,
-  response shapes, token expiry math, People API, the `@react-oauth/google`
-  wiring) stay in the adapter and its `useGoogleLoginFlow` bridge. Do not import
-  Google OAuth types outside this module.
+- `AuthenticationService` implements the port: it runs the login flow through
+  the `AuthenticationProviderPort` (output port), persists the session through
+  the `SessionStoragePort` repository, and validates expiry on reads.
+- `GoogleAuthenticationAdapter` implements the provider port. All Google details
+  (scopes, response shapes, token expiry math, People API, the
+  `@react-oauth/google` wiring via its `useGoogleLoginFlow` bridge) stay in the
+  adapter. Do not import Google OAuth types outside this module.
 - Sessions persist through `SessionStoragePort`; `LocalSessionStorageAdapter`
   stores them in localStorage.
-- `AuthenticationProvider` provides the port and the session storage through
-  React context. The session storage and the adapter are passed in as
-  properties, so tests and E2E harnesses can inject fakes;
-  `GoogleAuthenticationWrapper` is the composition root for the Google adapter
-  and its login-flow bridge.
+- The React glue lives in `src/hooks/` (never in the service module):
+  `ServicesProvider` provides the service tree composed in `App.tsx`, and
+  `useSession` (`hooks/useSession.tsx`) manages the session as React state.
+  Tests and E2E harnesses inject fakes instead of the Google adapter.
 
 Fake-auth seam for tests and E2E: establish a fake authenticated session either
 by injecting a fake `AuthenticationServicePort` (and `SessionStoragePort`), or
 by writing a session to the localStorage key `boekjehokje_authentication`
-(`AUTHENTICATION_STORAGE_KEY`) shaped as
+(`AUTHENTICATION_STORAGE_KEY` in
+`src/services/authentication/LocalSessionStorageAdapter.ts`) shaped as
 `{"user":{"name":"...","email":"..."},"tokens":{"accessToken":"...","tokenType":"Bearer","expiresAt":<epoch milliseconds in the future>}}`.
 The app restores such a session without any Google interaction.
 
 ## Testing
 
-- Write unit tests for the public interface of modules
+Strategy per ADR-0008: unit tests in each module's `__tests__/`, integration
+tests in `tests/integration/` (exactly two real services; e2e covers more), run
+everything with plain `deno test`.
+
+- Write unit tests for the public interface of modules (the module's `index.ts`
+  / port), never for private items
 - Keep tests simple, clean, and focused on behavior
-- Use dependency injection to mock external dependencies
+- Use dependency injection to mock external dependencies: complex fakes/spies
+  come from the central kit in `src/testing/` (`FakeClock`,
+  `FakeAuthenticationService`, `FakeAuthenticationProvider`,
+  `InMemorySessionStorage`, `InMemoryKeyValueStore`,
+  `FakeCalendarEventRepository`
+  - `storedEvent`, and `buildTestServices()` which composes a subset of the real
+    service tree over the fakes); simple mocks may be built in the test itself
+- Integration tests in `tests/integration/` compose subsets of actual trees with
+  two real services (e.g. calendar + permissions) over the central fakes; never
+  test more than two services there — e2e covers that
 - Test domain logic, not implementation details
+- `src/testing/` and `src/**/__tests__` are excluded from the app build
+  (`tsconfig.app.json`)
 
 ### E2E tests
 
@@ -201,8 +239,8 @@ stopped and why it was stopped.
 
 ## Landing Page Screenshots
 
-The landing page (`src/pages/Landing.tsx`) shows two screenshots of the calendar
-overview, bundled from `src/assets/overview-desktop.png` and
+The landing page (`src/components/pages/Landing.tsx`) shows two screenshots of
+the calendar overview, bundled from `src/assets/overview-desktop.png` and
 `src/assets/overview-mobile.png`. On every visible change to the app, the
 screenshots must be updated — never leave stale ones behind.
 

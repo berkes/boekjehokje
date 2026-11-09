@@ -15,6 +15,8 @@ link to its replacement.
 | [0004](0004-editability-ownership.md)                    | Determine editability by creator-email ownership                                                                  | approved |
 | [0005](0005-super-calendar-migration.md)                 | Replace DayPilot Lite with super-calendar for the resource calendar view                                          | approved |
 | [0006](0006-default-click-slot-55-minutes.md)            | Encourage a five-minute margin between bookings (defaults: whole hour to five to the hour)                        | proposed |
+| [0007](0007-components-services-ports-adapters.md)       | Structure the app as components, hooks, services, ports and adapters, with the service tree composed in App.tsx   | proposed |
+| [0008](0008-testing-strategy-services.md)                | Test services with central fakes (src/testing), two-service integration tests (tests/integration), and e2e        | proposed |
 
 ## Format
 

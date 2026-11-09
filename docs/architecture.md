@@ -1,88 +1,117 @@
-# Architecture: the app and the Google Calendar API
+# Architecture: components, hooks, services, ports and adapters
 
-High-level overview of how boekjehokje talks to Google Calendar. The app is a
-pure frontend (ADR-0003): Google Calendar is the single source of truth, and
-every interaction with it goes through a port/adapter pair, so no Google shapes
-leak into the UI or the domain services.
+High-level overview of how boekjehokje is structured and how it talks to Google
+Calendar. The app is a pure frontend (ADR-0003): Google Calendar is the single
+source of truth, and every interaction with it goes through a repository adapter
+behind a port, so no Google shapes leak into the services or the UI.
 
-The diagrams below are [Mermaid](https://mermaid.js.org/) — plain Markdown code
-blocks that GitHub renders natively and that stay trivially editable as text.
-They are deliberately high level, at module level: components, hooks, services,
-adapters and ports, not classes and functions.
+The structure is decided in
+[ADR-0007](adr/0007-components-services-ports-adapters.md) (testing in
+[ADR-0008](adr/0008-testing-strategy-services.md)): the app has only components,
+hooks, services, ports and adapters. The diagrams below are
+[Mermaid](https://mermaid.js.org/) — plain Markdown code blocks that GitHub
+renders natively and that stay trivially editable as text. They are deliberately
+high level, at module level.
 
 Layers, top to bottom:
 
-- **React UI** (`src/components/`, `src/pages/`) — MUI components and the
-  super-calendar board. No API calls, only domain types from the services.
-- **React hooks** (`src/hooks/`, `src/context/`) — `useCalendar` loads rooms
-  through the calendar service port; `useUser` exposes the authentication
-  session.
-- **Services** (`src/services/`) — the ports (`CalendarServicePort`,
-  `AuthenticationServicePort`) define the domain language (`Room`, `Booking`,
-  `NewBooking`, `BookingUpdate`, create/update/delete operations);
-  `GoogleCalendarAdapter` and `DemoCalendarAdapter` implement the calendar port;
-  `parser.ts` reads the standardized event format (`extractRoom`,
-  `extractBooker`, `parseEvent`); `CalendarServicePort.ts` owns the write side
-  (`bookingToEvent`, the inverse of `parseEvent`).
-- **Adapters/clients** (`src/utils/calendar/`) — `CalendarApiClient` is the
-  injected port; `GoogleCalendarApiClient` implements it with the REST calls
-  (`GET/POST/PATCH/DELETE .../calendars/{id}/events`) against `CALENDAR_ID`.
-- **Authentication** (`src/services/authentication/`) —
-  `GoogleAuthenticationAdapter` owns the OAuth flow and scopes (including
-  `calendar.events`, which grants the event writes) and the People API; the
-  session persists through `SessionStoragePort` in localStorage.
+- **Components** (`src/components/`) — MUI components, the pages
+  (`components/pages/`) and the super-calendar board (`components/calendar/`).
+  No API calls, no service wiring: domain types and pure helpers from the
+  services barrel, service instances only via hooks.
+- **Hooks** (`src/hooks/`) — the React bridge. `ServicesProvider` provides the
+  service tree; `useServices.ts` exposes typed accessors; `useSession`,
+  `useCalendar` and `useRoomVisibility` call the services and manage the results
+  as React state.
+- **Services** (`src/services/<name>/`) — each service is an object with methods
+  implementing its input port, with all dependencies injected on creation:
+  **authentication** (`AuthenticationService` over an
+  `AuthenticationProviderPort` + `SessionStoragePort`), **permissions**
+  (`PermissionService`, deciding editability per ADR-0004, reading the current
+  user from the authentication service), **calendar** (`CalendarService` over a
+  `CalendarEventRepositoryPort` + the permission service + the clock), **clock**
+  (`SystemClock`), **preferences** (`PreferencesService` over a
+  `KeyValueStorePort`).
+- **Adapters / repositories** — inside the service modules:
+  `GoogleCalendarRepositoryAdapter` (REST GET/POST/PATCH/DELETE
+  `.../calendars/{id}/events` against `CALENDAR_ID`, reading the OAuth token
+  from the authentication service per call), `DemoCalendarRepositoryAdapter`,
+  `GoogleAuthenticationAdapter` (OAuth flow + People API),
+  `LocalSessionStorageAdapter` and `LocalStorageAdapter` (localStorage).
+
+The whole service tree is composed once on top level in `App.tsx`
+(`AppServices`) and provided through `ServicesProvider`; the demo page composes
+a subset tree with the demo repository.
 
 ## Component diagram
 
 ```mermaid
 flowchart TB
-  subgraph ui["React UI (src/components, src/pages)"]
-    Board["Calendar board (Calendar.tsx)"]
-    Form["BookingForm.tsx"]
-    Sidebar["BookingSidebar.tsx"]
+  subgraph app["Composition root: src/App.tsx"]
+    compose["AppServices builds the service tree once<br/>(deps injected) and provides it via ServicesProvider"]
   end
 
-  subgraph hooks["React hooks (src/hooks, src/context)"]
+  subgraph ui["Components (src/components)"]
+    Board["calendar/Calendar.tsx (super-calendar board)"]
+    Form["calendar/BookingForm.tsx"]
+    Sidebar["calendar/BookingSidebar.tsx"]
+    Pages["pages/ (Landing, Faq, Settings, DemoCalendar)"]
+  end
+
+  subgraph hooks["Hooks (src/hooks) — the only way components reach services"]
     useCalendar["useCalendar"]
-    useUser["useUser / UserContext"]
+    useSession["useSession"]
+    accessors["useServices accessors<br/>useCalendarService, useAuthenticationService, useClock, usePreferences"]
   end
 
   subgraph services["Services (src/services) — ports and adapters"]
-    calPort["CalendarServicePort (port)<br/>Room, Booking, NewBooking, BookingUpdate<br/>getDay, createBooking, updateBooking, deleteBooking"]
-    googleAdapter["GoogleCalendarAdapter"]
-    demoAdapter["DemoCalendarAdapter"]
-    parser["parser.ts<br/>extractRoom / extractBooker / parseEvent"]
+    calPort["calendar/CalendarServicePort (input port)<br/>Room, Booking, NewBooking, BookingUpdate<br/>getDay, createBooking, updateBooking, deleteBooking"]
+    calService["calendar/CalendarService"]
+    eventsPort["calendar/CalendarEventRepositoryPort (output port)<br/>StoredEvent, EventDraft<br/>fetchEvents, createEvent, updateEvent, deleteEvent"]
+    permPort["permissions/PermissionServicePort<br/>may(create) / may(update|delete, booking)"]
+    permService["permissions/PermissionService"]
+    authPort["authentication/AuthenticationServicePort (input port)"]
+    authService["authentication/AuthenticationService"]
+    providerPort["authentication/AuthenticationProviderPort (output port)<br/>login, fetchProfile"]
+    clockPort["clock/ClockPort"]
+    prefPort["preferences/PreferencesPort"]
+    prefService["preferences/PreferencesService"]
   end
 
-  subgraph clients["API clients (src/utils/calendar)"]
-    clientPort["CalendarApiClient (port)<br/>fetchEvents, createEvent, updateEvent, deleteEvent"]
-    googleClient["GoogleCalendarApiClient<br/>REST GET/POST/PATCH/DELETE .../events"]
-  end
-
-  subgraph auth["Authentication (src/services/authentication)"]
-    authPort["AuthenticationServicePort (port)"]
-    googleAuthentication["GoogleAuthenticationAdapter + useGoogleLoginFlow<br/>OAuth scopes incl. calendar.events"]
-    session["SessionStoragePort / LocalSessionStorageAdapter<br/>(localStorage)"]
+  subgraph adapters["Adapters / repositories"]
+    googleEvents["calendar/GoogleCalendarRepositoryAdapter<br/>REST .../events, token from the authentication service"]
+    demoEvents["calendar/DemoCalendarRepositoryAdapter"]
+    googleAuth["authentication/GoogleAuthenticationAdapter + useGoogleLoginFlow<br/>OAuth scopes incl. calendar.events, People API"]
+    sessionStorage["authentication/LocalSessionStorageAdapter<br/>(localStorage)"]
+    kvStore["preferences/LocalStorageAdapter<br/>(localStorage)"]
   end
 
   googleAPI[("Google Calendar API<br/>shared NYMA calendar (CALENDAR_ID)")]
   peopleAPI[("Google People API")]
 
+  compose --> services
   Board --> useCalendar
-  Form --> Board
-  Sidebar --> Board
-  useCalendar --> calPort
+  Form --> useSession
+  Pages --> useSession
+  useCalendar --> accessors
+  useSession --> accessors
+  accessors --> calService
+  accessors --> authService
   Board --> calPort
-  calPort -. implements .-> googleAdapter
-  calPort -. implements .-> demoAdapter
-  googleAdapter --> parser
-  googleAdapter --> clientPort
-  clientPort -. implements .-> googleClient
-  googleClient -->|"OAuth Bearer token"| googleAPI
-  useUser --> authPort
-  authPort -. implements .-> googleAuthentication
-  googleAuthentication --> session
-  googleAuthentication -->|"profile"| peopleAPI
+  calService -. implements .-> calPort
+  calService --> eventsPort
+  calService --> permService
+  permService --> authService
+  authService -. implements .-> authPort
+  authService --> providerPort
+  authService --> sessionStorage
+  eventsPort -. implemented by .-> googleEvents
+  eventsPort -. implemented by .-> demoEvents
+  providerPort -. implemented by .-> googleAuth
+  googleEvents -->|"OAuth Bearer token"| googleAPI
+  googleAuth -->|"profile"| peopleAPI
+  prefService --> kvStore
+  clockPort -.-> services
 ```
 
 ## Sequence: how events get on screen
@@ -90,28 +119,28 @@ flowchart TB
 ```mermaid
 sequenceDiagram
   actor User
-  participant Board as Calendar board (Calendar.tsx)
+  participant Board as Calendar board (components/calendar/Calendar.tsx)
   participant Hook as useCalendar (hook)
-  participant Service as CalendarServicePort
-  participant Adapter as GoogleCalendarAdapter
-  participant Parser as parser.ts
-  participant Client as CalendarApiClient
-  participant GClient as GoogleCalendarApiClient
+  participant Service as CalendarService
+  participant Permissions as PermissionService
+  participant Repo as CalendarEventRepositoryPort
+  participant Google as GoogleCalendarRepositoryAdapter
+  participant Parser as parser.ts (private to the calendar module)
   participant API as Google Calendar API
 
   User->>Board: open the day overview (today)
   Board->>Hook: load(day)
   Hook->>Service: getDay(day)
-  Service->>Adapter: getDay(day)
-  Adapter->>Client: fetchEvents(CALENDAR_ID, dayRange.start, dayRange.end)
-  Client->>GClient: fetchEvents(...)
-  GClient->>API: GET /calendars/&lt;id&gt;/events?timeMin=...&amp;timeMax=...
-  API-->>GClient: events (JSON)
-  GClient-->>Adapter: CalendarEvent[]
-  Adapter->>Parser: parseEvent(event) per event
-  Parser-->>Adapter: parsed events (room + booker from the summary)
-  Adapter-->>Service: Room[] grouped by room, with editable flags (ADR-0004)
-  Service-->>Hook: rooms
+  Service->>Repo: fetchEvents(dayRange)
+  Repo->>Google: fetchEvents(dayRange)
+  Google->>API: GET /calendars/&lt;id&gt;/events?timeMin=...&amp;timeMax=...
+  API-->>Google: events (JSON, mapped to StoredEvent)
+  Google-->>Service: StoredEvent[]
+  Service->>Parser: parseEvent(event) per event
+  Parser-->>Service: parsed events (room + booker from the summary)
+  Service->>Permissions: may("update", booking) per booking (ADR-0004)
+  Permissions-->>Service: editable flags
+  Service-->>Hook: Room[] grouped by room, with editable flags
   Hook-->>Board: rooms state
   Board-->>User: render room columns, bookings and free slots
   User->>Board: switch day (previous/next/today/quick button)
@@ -125,28 +154,24 @@ sequenceDiagram
 sequenceDiagram
   actor User
   participant Form as BookingForm
-  participant Board as CalendarView (Calendar.tsx)
-  participant Service as CalendarServicePort
-  participant Adapter as GoogleCalendarAdapter
-  participant Port as CalendarServicePort.ts (bookingToEvent)
-  participant Client as CalendarApiClient
-  participant GClient as GoogleCalendarApiClient
+  participant Board as CalendarView (components/calendar/Calendar.tsx)
+  participant Service as CalendarService
+  participant Serializer as eventFormat.ts (bookingToEvent, private)
+  participant Repo as CalendarEventRepositoryPort
+  participant Google as GoogleCalendarRepositoryAdapter
   participant API as Google Calendar API
 
   User->>Form: pick a slot, fill in contact, confirm
   Form->>Board: onSubmit(NewBooking)
   Board->>Service: createBooking(NewBooking)
-  Service->>Adapter: createBooking(booking)
-  Adapter->>Port: bookingToEvent(booking)
-  Port-->>Adapter: CalendarEventDraft (summary "KH 03 | Bèr", description = contact)
-  Adapter->>Client: createEvent(CALENDAR_ID, draft)
-  Client->>GClient: createEvent(...)
-  GClient->>API: POST /calendars/&lt;id&gt;/events
-  API-->>GClient: created event
-  GClient-->>Adapter: CalendarEvent
-  Adapter->>Parser: parseEvent(event) — round-trip back to domain
-  Parser-->>Adapter: parsed event
-  Adapter-->>Board: created Booking
+  Service->>Serializer: bookingToEvent(booking)
+  Serializer-->>Service: EventDraft (summary "KH 03 | Bèr", description = contact)
+  Service->>Repo: createEvent(draft)
+  Repo->>Google: createEvent(draft)
+  Google->>API: POST /calendars/&lt;id&gt;/events
+  API-->>Google: created event (mapped to StoredEvent)
+  Google-->>Service: StoredEvent
+  Service-->>Board: created Booking (parsed back to domain language)
   Board->>Service: getDay(selectedDay) (refresh board)
   Service-->>Board: updated rooms
   Board-->>User: board shows the new booking
@@ -155,39 +180,30 @@ sequenceDiagram
 ## Sequence: how a booking is updated or deleted
 
 Update and delete share the whole write path and differ only in the verb and the
-service method, so they are folded into one diagram. The edit UI (the same
-booking form, prefilled) and the delete icon are wired in issue #14's PR; the
-timed undo toast is issue #36.
+service method, so they are folded into one diagram.
 
 ```mermaid
 sequenceDiagram
   actor User
   participant UI as Edit form / delete icon (board actions)
-  participant Service as CalendarServicePort
-  participant Adapter as GoogleCalendarAdapter
-  participant Port as CalendarServicePort.ts (bookingToEvent)
-  participant Client as CalendarApiClient
-  participant GClient as GoogleCalendarApiClient
+  participant Service as CalendarService
+  participant Repo as CalendarEventRepositoryPort
+  participant Google as GoogleCalendarRepositoryAdapter
   participant API as Google Calendar API
 
   User->>UI: change or delete an own booking (ADR-0004)
   alt update
     UI->>Service: updateBooking(BookingUpdate with id)
-    Service->>Adapter: updateBooking(booking)
-    Adapter->>Port: bookingToEvent(booking)
-    Port-->>Adapter: CalendarEventDraft
-    Adapter->>Client: updateEvent(CALENDAR_ID, id, draft)
-    Client->>GClient: updateEvent(...)
-    GClient->>API: PATCH /calendars/&lt;id&gt;/events/&lt;eventId&gt;
-    API-->>GClient: updated event
-    GClient-->>Adapter: CalendarEvent (parsed back to Booking)
+    Service->>Repo: updateEvent(id, bookingToEvent(fields))
+    Repo->>Google: updateEvent(id, draft)
+    Google->>API: PATCH /calendars/&lt;id&gt;/events/&lt;eventId&gt;
+    API-->>Service: updated StoredEvent (parsed back to Booking)
   else delete
     UI->>Service: deleteBooking(bookingId)
-    Service->>Adapter: deleteBooking(id)
-    Adapter->>Client: deleteEvent(CALENDAR_ID, id)
-    Client->>GClient: deleteEvent(...)
-    GClient->>API: DELETE /calendars/&lt;id&gt;/events/&lt;eventId&gt;
-    API-->>GClient: 204 No Content
+    Service->>Repo: deleteEvent(bookingId)
+    Repo->>Google: deleteEvent(id)
+    Google->>API: DELETE /calendars/&lt;id&gt;/events/&lt;eventId&gt;
+    API-->>Google: 204 No Content
   end
   Service-->>UI: Booking (update) or void (delete)
   UI->>Service: getDay(selectedDay) (refresh board)
@@ -196,14 +212,25 @@ sequenceDiagram
 
 ## The standardized event format
 
-Writes and reads meet in one format, defined by `src/services/parser.ts` (reads)
-and `src/services/CalendarServicePort.ts` (writes):
+Writes and reads meet in one format, defined by
+`src/services/calendar/eventFormat.ts` (writes: `bookingToEvent`) and
+`src/services/calendar/parser.ts` (reads: `parseEvent`):
 
 - **summary**: `<room short name> | <booker>`, e.g. `KH 03 | Bèr` —
   `bookingToEvent` (serializer) produces it, `parseEvent` reads the room and
   booker back out of it; the round-trip is unit tested.
 - **description**: the booker's contact details (optional).
-- **start / end**: RFC 3339 `dateTime`.
+- **start / end**: plain `Date`s in the repository port's `EventDraft` /
+  `StoredEvent`; only `GoogleCalendarRepositoryAdapter` translates them to and
+  from RFC 3339 `dateTime`.
 
 Events created outside the app (directly in Google Calendar) are parsed by the
 same `parseEvent`, so both flows land in the same domain model.
+
+## Testing
+
+See [ADR-0008](adr/0008-testing-strategy-services.md): unit tests live in each
+module's `__tests__/` and inject fakes from the central `src/testing/` kit;
+integration tests in `tests/integration/` test exactly two real services
+together; the Playwright suite in `e2e/` covers the full tree against the
+WireMock-mocked Google APIs (see [docs/e2e.md](e2e.md)).
