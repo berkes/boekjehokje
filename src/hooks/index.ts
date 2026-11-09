@@ -6,12 +6,16 @@
  * here as React state.
  */
 export { ServicesProvider } from "./ServicesProvider.tsx";
+export { useGoogleLoginFlow } from "./useGoogleLoginFlow.ts";
 export {
   useAuthenticationService,
   useCalendarService,
   useClock,
+  useEventFormatService,
+  useOverlapsService,
   usePermissionService,
   usePreferences,
+  useRoomsService,
   useServices,
 } from "./useServices.ts";
 export { SessionProvider, useSession } from "./useSession.tsx";

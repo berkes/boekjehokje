@@ -19,30 +19,25 @@ import Select from "@mui/material/Select";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import React, { useEffect, useState } from "react";
-import { usePreferences, useSession } from "../../hooks/index.ts";
 import {
-  type Booking,
-  findOverlaps,
-  type NewBooking,
-  ROOMS,
-  UNKNOWN_ROOM,
-} from "../../services/index.ts";
+  useEventFormatService,
+  useOverlapsService,
+  usePreferences,
+  useRoomsService,
+  useSession,
+} from "../../hooks/index.ts";
+import { type Booking, type NewBooking } from "../../services/index.ts";
 import {
   type CalendarRoom,
   checkMargin,
   formatDateTimeLocal,
   isInvertedRange,
   isLongBooking,
-  summaryPreview,
 } from "./board.ts";
 
 /**
- * Rooms offered in the select: all hardcoded rooms, except the Unknown
- * group that collects unmatched bookings
+ * Props for BookingForm component
  */
-const BOOKABLE_ROOMS = ROOMS.filter(
-  (room) => room.canonicalName !== UNKNOWN_ROOM,
-);
 
 /**
  * Props for BookingForm component
@@ -85,6 +80,9 @@ export function BookingForm(
 ): React.JSX.Element {
   const { user } = useSession();
   const preferences = usePreferences();
+  const roomsService = useRoomsService();
+  const overlaps = useOverlapsService();
+  const eventFormat = useEventFormatService();
   const booker = user?.name ?? "";
 
   const [room, setRoom] = useState(initialRoom);
@@ -94,13 +92,11 @@ export function BookingForm(
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const roomConfig = BOOKABLE_ROOMS.find((r) => r.canonicalName === room);
-  const preview = summaryPreview(roomConfig?.shortName ?? room, booker);
-
   // The booking being edited never counts as an overlap with itself
   const start = new Date(from);
   const end = new Date(to);
-  const overlaps = findOverlaps(rooms, room, start, end)
+  const preview = eventFormat.serialize({ room, booker, start, end }).summary;
+  const conflicting = overlaps.findOverlaps(rooms, room, start, end)
     .filter((b) => b.id !== booking?.id);
   const roomBookings = rooms.find((r) => r.canonicalName === room)?.bookings
     .filter((b) => b.id !== booking?.id) ?? [];
@@ -154,7 +150,7 @@ export function BookingForm(
           value={room}
           onChange={(event) => setRoom(event.target.value)}
         >
-          {BOOKABLE_ROOMS.map((option) => (
+          {roomsService.bookable().map((option) => (
             <MenuItem
               key={option.canonicalName}
               value={option.canonicalName}
@@ -199,10 +195,10 @@ export function BookingForm(
         slotProps={{ htmlInput: { readOnly: true } }}
         fullWidth
       />
-      {overlaps.length > 0 && (
+      {conflicting.length > 0 && (
         <Alert severity="warning">
           Let op: deze boeking overlapt met{" "}
-          {overlaps.map((b) => `"${b.booker || b.summary}"`).join(", ")}{" "}
+          {conflicting.map((b) => `"${b.booker || b.summary}"`).join(", ")}{" "}
           in deze ruimte. Je kunt desondanks boeken.
         </Alert>
       )}
@@ -215,7 +211,7 @@ export function BookingForm(
           prima, maar check even dubbel of dit klopt.
         </Alert>
       )}
-      {overlaps.length === 0 && margin.zeroGap && (
+      {conflicting.length === 0 && margin.zeroGap && (
         <Alert severity="warning">
           Let op: er zit geen 5 minuten tussen deze en een aansluitende boeking
           in deze ruimte.

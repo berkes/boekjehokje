@@ -30,7 +30,11 @@ import React, {
   useState,
 } from "react";
 import { useCalendar } from "../../hooks/useCalendar.ts";
-import { useCalendarService, useClock } from "../../hooks/useServices.ts";
+import {
+  useCalendarService,
+  useClock,
+  useOverlapsService,
+} from "../../hooks/useServices.ts";
 import { useRoomVisibility } from "../../hooks/useRoomVisibility.ts";
 import {
   type Booking,
@@ -336,6 +340,7 @@ export function Calendar(
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
   const clock = useClock();
+  const overlaps = useOverlapsService();
 
   const { rooms: visibleRooms, hidden, toggle } = useRoomVisibility(rooms);
 
@@ -384,6 +389,7 @@ export function Calendar(
           ...(previewEvent ? [previewEvent] : []),
         ],
         rooms,
+        overlaps,
         editedBookingId,
       ),
     [
@@ -396,6 +402,7 @@ export function Calendar(
       formOpen,
       editedBookingId,
       clock,
+      overlaps,
     ],
   );
 

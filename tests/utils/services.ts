@@ -10,13 +10,19 @@
  */
 import { CalendarService } from "../../src/services/calendar/CalendarService.ts";
 import type { StoredEvent } from "../../src/services/calendar/CalendarEventRepositoryPort.ts";
+import { EventFormatService } from "../../src/services/eventformat/EventFormatService.ts";
+import { OverlapsService } from "../../src/services/overlaps/OverlapsService.ts";
 import { PermissionService } from "../../src/services/permissions/PermissionService.ts";
 import { PreferencesService } from "../../src/services/preferences/PreferencesService.ts";
+import { RoomsService } from "../../src/services/rooms/RoomsService.ts";
 import type { AuthenticationServicePort } from "../../src/services/authentication/AuthenticationServicePort.ts";
 import type { CalendarServicePort } from "../../src/services/calendar/CalendarServicePort.ts";
 import type { ClockPort } from "../../src/services/clock/ClockPort.ts";
+import type { EventFormatPort } from "../../src/services/eventformat/EventFormatPort.ts";
+import type { OverlapsPort } from "../../src/services/overlaps/OverlapsPort.ts";
 import type { PermissionServicePort } from "../../src/services/permissions/PermissionServicePort.ts";
 import type { PreferencesPort } from "../../src/services/preferences/PreferencesPort.ts";
+import type { RoomsPort } from "../../src/services/rooms/RoomsPort.ts";
 import type { AuthenticatedUser } from "../../src/services/authentication/AuthenticationServicePort.ts";
 import { FakeAuthenticationService, fakeSession } from "./authentication.ts";
 import { FakeCalendarEventRepository } from "./calendar.ts";
@@ -30,7 +36,10 @@ export interface TestServices {
   services: {
     authentication: AuthenticationServicePort;
     calendar: CalendarServicePort;
+    eventFormat: EventFormatPort;
+    overlaps: OverlapsPort;
     permissions: PermissionServicePort;
+    rooms: RoomsPort;
     clock: ClockPort;
     preferences: PreferencesPort;
   };
@@ -68,12 +77,30 @@ export function buildTestServices(
   );
   const permissions = new PermissionService({ authentication });
   const events = new FakeCalendarEventRepository(options.events ?? []);
-  const calendar = new CalendarService({ events, permissions, clock });
+  const rooms = new RoomsService();
+  const eventFormat = new EventFormatService({ rooms });
+  const overlaps = new OverlapsService();
+  const calendar = new CalendarService({
+    events,
+    permissions,
+    clock,
+    eventFormat,
+    rooms,
+  });
   const store = new InMemoryKeyValueStore();
   const preferences = new PreferencesService({ store });
 
   return {
-    services: { authentication, calendar, permissions, clock, preferences },
+    services: {
+      authentication,
+      calendar,
+      eventFormat,
+      overlaps,
+      permissions,
+      rooms,
+      clock,
+      preferences,
+    },
     fakes: { authentication, events, clock, store, sessionStorage },
   };
 }

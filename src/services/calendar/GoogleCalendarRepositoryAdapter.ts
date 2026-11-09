@@ -14,17 +14,43 @@
  */
 
 import type { AuthenticationServicePort } from "../authentication/AuthenticationServicePort.ts";
-import { CalendarApiError } from "./CalendarApiError.ts";
-import type {
-  CalendarEventRepositoryPort,
-  EventDraft,
-  StoredEvent,
+import {
+  CalendarApiError,
+  type CalendarEventRepositoryPort,
+  type EventDraft,
+  type StoredEvent,
 } from "./CalendarEventRepositoryPort.ts";
 import type { DayRange } from "./CalendarServicePort.ts";
-import type {
-  GoogleCalendarEvent,
-  GoogleCalendarEventDraft,
-} from "./googleShapes.ts";
+
+/**
+ * Google Calendar API event resource, as returned by the API
+ */
+interface GoogleCalendarEvent {
+  id: string;
+  uid: string;
+  summary: string;
+  /** Link to the event in the Google Calendar web UI, if the API provides one */
+  htmlLink?: string;
+  creator: {
+    email?: string;
+  };
+  start: { dateTime?: string; date?: string };
+  end: { dateTime?: string; date?: string };
+  created: string;
+  updated: string;
+  status: string;
+  sequence: number;
+}
+
+/**
+ * The writable fields of a Google Calendar event (POST/PATCH body)
+ */
+interface GoogleCalendarEventDraft {
+  summary: string;
+  description?: string;
+  start: { dateTime?: string; date?: string };
+  end: { dateTime?: string; date?: string };
+}
 
 /**
  * NYMA makersplaats room bookings calendar ID

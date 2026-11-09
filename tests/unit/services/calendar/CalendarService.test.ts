@@ -15,8 +15,9 @@ import {
   storedEvent,
 } from "../../../utils/index.ts";
 import type { StoredEvent } from "../../../../src/services/calendar/CalendarEventRepositoryPort.ts";
-import { CalendarApiError } from "../../../../src/services/calendar/CalendarApiError.ts";
+import { CalendarApiError } from "../../../../src/services/calendar/CalendarEventRepositoryPort.ts";
 import { CalendarService } from "../../../../src/services/calendar/CalendarService.ts";
+import { EventFormatService } from "../../../../src/services/eventformat/index.ts";
 import {
   type BookingUpdate,
   getDayRange,
@@ -24,7 +25,7 @@ import {
 } from "../../../../src/services/calendar/CalendarServicePort.ts";
 import type { PermissionServicePort } from "../../../../src/services/permissions/PermissionServicePort.ts";
 import { isSameDay } from "../../../../src/services/clock/index.ts";
-import { ROOMS } from "../../../../src/services/calendar/rooms.ts";
+import { RoomsService } from "../../../../src/services/rooms/index.ts";
 
 /**
  * The day the read tests query: Tuesday 6 October 2026, midday local
@@ -55,10 +56,13 @@ function makeService(
 ) {
   const clock = new FakeClock(now);
   const repo = new FakeCalendarEventRepository(events);
+  const rooms = new RoomsService();
   const service = new CalendarService({
     events: repo,
     permissions: permissionsPort,
     clock,
+    eventFormat: new EventFormatService({ rooms }),
+    rooms,
   });
   return { service, repo, clock };
 }
@@ -302,13 +306,14 @@ Deno.test("getDay groups events per room and routes unmatched ones to Unknown", 
   const rooms = await service.getDay(DAY);
 
   // Every room is served, also without bookings, sorted by canonical name
-  assertEquals(rooms.length, ROOMS.length);
+  assertEquals(rooms.length, new RoomsService().all().length);
   const byName = new Map(rooms.map((room) => [room.canonicalName, room]));
   assertEquals(
     rooms.map((room) => room.canonicalName),
-    [...ROOMS].map((room) => room.canonicalName).sort((a, b) =>
-      a.localeCompare(b)
-    ),
+    [...new RoomsService().all()].map((room) => room.canonicalName).sort((
+      a,
+      b,
+    ) => a.localeCompare(b)),
   );
   assertEquals(byName.get("Kletshok 05")?.shortName, "KH 05");
   assertEquals(byName.get("Kletshok 05")?.bookings.map((b) => b.id), [

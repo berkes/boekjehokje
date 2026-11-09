@@ -31,15 +31,18 @@ import {
   CALENDAR_ID,
   CalendarService,
   ClockService,
+  EventFormatService,
   GoogleAuthenticationAdapter,
   GoogleCalendarRepositoryAdapter,
   LocalSessionStorageAdapter,
   LocalStorageAdapter,
+  OverlapsService,
   PermissionService,
   PreferencesService,
+  RoomsService,
   type Services,
 } from "./services/index.ts";
-import { useGoogleLoginFlow } from "./services/authentication/index.ts";
+import { useGoogleLoginFlow } from "./hooks/index.ts";
 
 /**
  * Main application component
@@ -128,11 +131,29 @@ function AppServices({ children }: { children: ReactNode }): React.JSX.Element {
       calendarId: CALENDAR_ID,
       authentication,
     });
-    const calendar = new CalendarService({ events, permissions, clock });
+    const rooms = new RoomsService();
+    const eventFormat = new EventFormatService({ rooms });
+    const overlaps = new OverlapsService();
+    const calendar = new CalendarService({
+      events,
+      permissions,
+      clock,
+      eventFormat,
+      rooms,
+    });
     const preferences = new PreferencesService({
       store: new LocalStorageAdapter(),
     });
-    return { authentication, calendar, permissions, clock, preferences };
+    return {
+      authentication,
+      calendar,
+      eventFormat,
+      overlaps,
+      permissions,
+      rooms,
+      clock,
+      preferences,
+    };
   }, [initiateLogin]);
 
   return (

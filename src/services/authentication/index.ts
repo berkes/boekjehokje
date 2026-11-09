@@ -3,9 +3,10 @@
  *
  * Exports the domain-language input port, the service, the domain types,
  * the output port and its Google adapter, and the session storage
- * repository. The React glue (session state hook, service tree provider)
- * lives in src/hooks, not here: services never touch React state. The
- * Google OAuth provider wiring is done by the composition root in App.tsx.
+ * repository. The React glue (session state hook, login-flow bridge,
+ * service tree provider) lives in src/hooks, not here: services never touch
+ * React state. The Google OAuth provider wiring is done by the composition
+ * root in App.tsx.
  */
 
 export type {
@@ -25,7 +26,6 @@ export {
   type GoogleLoginInitiator,
   type GoogleOAuthResponse,
 } from "./GoogleAuthenticationAdapter.ts";
-export { useGoogleLoginFlow } from "./useGoogleLoginFlow.ts";
 export {
   SessionStorageError,
   type SessionStoragePort,
