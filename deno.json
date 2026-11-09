@@ -7,7 +7,8 @@
     "exclude": [
       "public/**/*.svg",
       "src/assets/**/*.svg",
-      "src/services/DemoCalendarAdapter.ts"
+      "src/services/DemoCalendarAdapter.ts",
+      "src/services/calendar/DemoCalendarRepositoryAdapter.ts"
     ]
   },
   "imports": {
@@ -16,8 +17,14 @@
   },
   "nodeModulesDir": "auto",
   "compilerOptions": {
-    "lib": ["ES2023", "DOM", "deno.ns"],
+    "lib": [
+      "ES2023",
+      "DOM",
+      "deno.ns"
+    ],
     "jsx": "react-jsx",
-    "types": ["vite/client"]
+    "types": [
+      "vite/client"
+    ]
   }
 }
