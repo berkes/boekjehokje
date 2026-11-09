@@ -12,13 +12,13 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import React from "react";
 import {
-  type Clock,
+  type ClockPort,
   isSameDay,
   longDateLabel,
   startOfDay,
   startOfWeek,
   weekdayOptions,
-} from "../../utils/clock.ts";
+} from "../../services/index.ts";
 
 /**
  * Minimum touch target for the quick navigation buttons
@@ -34,7 +34,7 @@ export interface CalendarToolbarProps {
   /** Select another day */
   onSelectDate: (date: Date) => void;
   /** The injected clock, used for "today" and week calculation */
-  clock: Clock;
+  clock: ClockPort;
 }
 
 /**

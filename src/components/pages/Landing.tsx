@@ -11,9 +11,9 @@ import AlertTitle from "@mui/material/AlertTitle";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 import { Link as RouterLink } from "react-router-dom";
-import { GoogleAuthenticationButton } from "../components/index.ts";
-import overviewDesktop from "../assets/overview-desktop.png";
-import overviewMobile from "../assets/overview-mobile.png";
+import { GoogleAuthenticationButton } from "../index.ts";
+import overviewDesktop from "../../assets/overview-desktop.png";
+import overviewMobile from "../../assets/overview-mobile.png";
 
 /**
  * Landing page for visitors who are not signed in: what boekjehokje is, the

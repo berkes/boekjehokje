@@ -1,13 +1,30 @@
-import React, { useCallback, useEffect, useState } from "react";
+/**
+ * Session state hook
+ *
+ * The React bridge to the authentication service: it calls the service
+ * (from the service tree, via useAuthenticationService) and manages the
+ * result — the current session — as normal React state. Components use
+ * this hook; they never touch the service's storage themselves.
+ */
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import type { ReactNode } from "react";
 import type {
   AuthenticatedUser,
   AuthenticationTokens,
-} from "../services/authentication/index.ts";
-import { useAuthenticationService } from "../services/authentication/index.ts";
-import { UserContext } from "./useUser.ts";
-// Type definitions
-export interface AuthenticationState {
+} from "../services/index.ts";
+import { useAuthenticationService } from "./useServices.ts";
+
+/**
+ * The authentication session as React state
+ */
+export interface SessionState {
   user: AuthenticatedUser | null;
   tokens: AuthenticationTokens | null;
   isLoggedIn: boolean;
@@ -15,21 +32,30 @@ export interface AuthenticationState {
   error: string | null;
 }
 
-export interface UserContextType extends AuthenticationState {
+/**
+ * The session context value: the session state plus the actions
+ */
+export interface SessionContextType extends SessionState {
   login: () => Promise<void>;
   logout: () => void;
 }
 
-// Provider component
-interface UserProviderProps {
+const SessionContext = createContext<SessionContextType | undefined>(undefined);
+
+/** Props for SessionProvider */
+interface SessionProviderProps {
   children: ReactNode;
 }
 
-export function UserProvider(
-  { children }: UserProviderProps,
+/**
+ * Provides the session state, derived from the authentication service, to
+ * the tree below
+ */
+export function SessionProvider(
+  { children }: SessionProviderProps,
 ): React.JSX.Element {
   const service = useAuthenticationService();
-  const [state, setState] = useState<AuthenticationState>({
+  const [state, setState] = useState<SessionState>({
     user: null,
     tokens: null,
     isLoggedIn: false,
@@ -93,11 +119,24 @@ export function UserProvider(
     });
   }, [service]);
 
-  const value: UserContextType = {
+  const value: SessionContextType = {
     ...state,
     login,
     logout,
   };
 
-  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
+  return (
+    <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
+  );
+}
+
+/**
+ * Access the session state (and the login/logout actions)
+ */
+export function useSession(): SessionContextType {
+  const context = useContext(SessionContext);
+  if (context === undefined) {
+    throw new Error("useSession must be used within a SessionProvider");
+  }
+  return context;
 }

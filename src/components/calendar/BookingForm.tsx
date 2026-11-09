@@ -19,14 +19,14 @@ import Select from "@mui/material/Select";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import React, { useEffect, useState } from "react";
-import { useUser } from "../../context/useUser.ts";
+import { usePreferences, useSession } from "../../hooks/index.ts";
 import {
   type Booking,
   findOverlaps,
   type NewBooking,
+  ROOMS,
+  UNKNOWN_ROOM,
 } from "../../services/index.ts";
-import { ROOMS, UNKNOWN_ROOM } from "../../services/rooms.ts";
-import { loadBookerContact, saveBookerContact } from "./bookerContact.ts";
 import {
   type CalendarRoom,
   checkMargin,
@@ -34,7 +34,7 @@ import {
   isInvertedRange,
   isLongBooking,
   summaryPreview,
-} from "./utils.tsx";
+} from "./board.ts";
 
 /**
  * Rooms offered in the select: all hardcoded rooms, except the Unknown
@@ -83,13 +83,14 @@ export function BookingForm(
     onDraftChange,
   }: BookingFormProps,
 ): React.JSX.Element {
-  const { user } = useUser();
+  const { user } = useSession();
+  const preferences = usePreferences();
   const booker = user?.name ?? "";
 
   const [room, setRoom] = useState(initialRoom);
   const [from, setFrom] = useState(() => formatDateTimeLocal(initialStart));
   const [to, setTo] = useState(() => formatDateTimeLocal(initialEnd));
-  const [contact, setContact] = useState(() => loadBookerContact());
+  const [contact, setContact] = useState(() => preferences.getBookerContact());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -135,7 +136,7 @@ export function BookingForm(
         },
         booking?.id,
       );
-      saveBookerContact(trimmedContact);
+      preferences.saveBookerContact(trimmedContact);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {

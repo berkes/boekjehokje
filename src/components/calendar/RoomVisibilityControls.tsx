@@ -19,7 +19,7 @@ import {
   roomDescription,
   roomLabel,
   withUnknownLast,
-} from "./utils.tsx";
+} from "./board.ts";
 
 /**
  * Extra whitespace between the Unknown chip and the other chips
@@ -27,9 +27,9 @@ import {
 const UNKNOWN_MARGIN = 2;
 
 /**
- * Props for RoomVisibiltyControls component
+ * Props for RoomVisibilityControls component
  */
-export interface RoomVisibiltyControlsProps {
+export interface RoomVisibilityControlsProps {
   /** All rooms, in display order */
   rooms: CalendarRoom[];
   /** Canonical names of the hidden rooms */
@@ -41,8 +41,8 @@ export interface RoomVisibiltyControlsProps {
 /**
  * Chips that toggle the visibility of the room columns
  */
-export function RoomVisibiltyControls(
-  { rooms, hidden, onToggle }: RoomVisibiltyControlsProps,
+export function RoomVisibilityControls(
+  { rooms, hidden, onToggle }: RoomVisibilityControlsProps,
 ): React.JSX.Element {
   return (
     <Stack direction="row" spacing={0.5} useFlexGap sx={{ flexWrap: "wrap" }}>

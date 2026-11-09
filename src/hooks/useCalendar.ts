@@ -1,18 +1,20 @@
 /**
  * React hook for calendar data
  *
- * Provides easy integration with UI components for displaying
- * room bookings from the NYMA makersplaats calendar.
+ * The React bridge to the calendar service: it calls the service (from the
+ * service tree, via useCalendarService — or an explicitly composed
+ * override, e.g. the demo calendar's) and manages the result as normal
+ * React state: rooms, loading and error.
  */
 
 import { useCallback, useState } from "react";
-import { useUser } from "../context/useUser.ts";
 import {
   type Booking,
   CalendarApiError,
   type CalendarServicePort,
   type Room,
 } from "../services/index.ts";
+import { useCalendarService } from "./useServices.ts";
 
 /**
  * Return type for useCalendar hook
@@ -35,26 +37,23 @@ export interface UseCalendarReturn {
 /**
  * Custom hook for accessing calendar room booking data
  *
- * @returns Object with rooms, loading state, error, and refresh function
+ * @param service - The calendar service to use; defaults to the one from
+ *                  the service tree. Pass an explicitly composed service
+ *                  (e.g. the demo calendar's) to use another source.
  *
  * @example
  * ```typescript
  * function RoomList() {
- *   const { rooms, isLoading, error, refresh } = useCalendar();
- *
- *   if (isLoading) return <div>Loading...</div>;
- *   if (error) return <div>Error: {error.message}</div>;
- *
- *   return rooms.map(room => (
- *     <CalendarColumn key={room.canonicalName} room={room} />
- *   ));
+ *   const { rooms, isLoading, error, load } = useCalendar();
+ *   ...
  * }
  * ```
  */
 export function useCalendar(
-  calendarService: CalendarServicePort,
+  service?: CalendarServicePort,
 ): UseCalendarReturn {
-  const { tokens, user } = useUser();
+  const contextService = useCalendarService();
+  const calendar = service ?? contextService;
   const [rooms, setRooms] = useState<Room[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -67,17 +66,10 @@ export function useCalendar(
     // Clear previous error
     setError(null);
 
-    // Check if user has access token
-    if (!tokens?.accessToken) {
-      setRooms([]);
-      setIsLoading(false);
-      return;
-    }
-
     try {
       setIsLoading(true);
 
-      const roomsWithBookings = await calendarService.getDay(day);
+      const roomsWithBookings = await calendar.getDay(day);
       setRooms(roomsWithBookings);
     } catch (err: unknown) {
       // Handle CalendarApiError and other errors
@@ -95,7 +87,7 @@ export function useCalendar(
     } finally {
       setIsLoading(false);
     }
-  }, [tokens?.accessToken, user]);
+  }, [calendar]);
 
   /**
    * Get bookings for a specific room (from already loaded data)

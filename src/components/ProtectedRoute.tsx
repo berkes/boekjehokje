@@ -1,7 +1,7 @@
 import React from "react";
 import CircularProgress from "@mui/material/CircularProgress";
 import { Navigate } from "react-router-dom";
-import { useUser } from "../context/useUser.ts";
+import { useSession } from "../hooks/useSession.tsx";
 
 /**
  * Protected route component that redirects to home if not authenticated
@@ -9,7 +9,7 @@ import { useUser } from "../context/useUser.ts";
 export function ProtectedRoute(
   { children }: { children: React.JSX.Element },
 ): React.JSX.Element {
-  const { isLoggedIn, isLoading } = useUser();
+  const { isLoggedIn, isLoading } = useSession();
 
   if (isLoading) {
     return <CircularProgress />;

@@ -30,19 +30,19 @@ import React, {
   useState,
 } from "react";
 import { useCalendar } from "../../hooks/useCalendar.ts";
-import type {
-  Booking,
-  BookingUpdate,
-  CalendarServicePort,
-  NewBooking,
+import { useCalendarService, useClock } from "../../hooks/useServices.ts";
+import { useRoomVisibility } from "../../hooks/useRoomVisibility.ts";
+import {
+  type Booking,
+  type BookingUpdate,
+  isSameDay,
+  type NewBooking,
 } from "../../services/index.ts";
-import { isSameDay, systemClock } from "../../utils/clock.ts";
 import { BookingForm } from "./BookingForm.tsx";
 import { BookingSidebar } from "./BookingSidebar.tsx";
 import { CalendarToolbar } from "./CalendarToolbar.tsx";
 import { SidebarShell } from "./SidebarShell.tsx";
-import { RoomVisibiltyControls } from "./RoomVisibiltyControls.tsx";
-import { useRoomVisibility } from "./useRoomVisibility.ts";
+import { RoomVisibilityControls } from "./RoomVisibilityControls.tsx";
 import {
   applyMovedEvents,
   type BoardEvent,
@@ -71,7 +71,7 @@ import {
   toFreeSlotEvents,
   toPreviewEvent,
   toResources,
-} from "./utils.tsx";
+} from "./board.ts";
 
 /**
  * Height of the board; the time track scrolls inside it
@@ -335,6 +335,7 @@ export function Calendar(
 
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
+  const clock = useClock();
 
   const { rooms: visibleRooms, hidden, toggle } = useRoomVisibility(rooms);
 
@@ -377,7 +378,7 @@ export function Calendar(
           ...toFreeSlotEvents(
             visibleRooms,
             selectedDate,
-            systemClock.now(),
+            clock.now(),
             selectedSlot,
           ).map((event) => ({ ...event, disabled: formOpen })),
           ...(previewEvent ? [previewEvent] : []),
@@ -394,6 +395,7 @@ export function Calendar(
       previewEvent,
       formOpen,
       editedBookingId,
+      clock,
     ],
   );
 
@@ -645,9 +647,9 @@ export function Calendar(
       <CalendarToolbar
         selectedDate={selectedDate}
         onSelectDate={onSelectDate}
-        clock={systemClock}
+        clock={clock}
       />
-      <RoomVisibiltyControls rooms={rooms} hidden={hidden} onToggle={toggle} />
+      <RoomVisibilityControls rooms={rooms} hidden={hidden} onToggle={toggle} />
       <BoardActionsContext.Provider value={boardActions}>
         <ResourceTimeline<BoardEventMeta>
           orientation="vertical"
@@ -687,20 +689,16 @@ export function Calendar(
   );
 }
 
-interface CalendarViewProps {
-  service: CalendarServicePort;
-}
-
 /**
  * Calendar view component
- * Fetches rooms with their bookings and renders the calendar
- * with loading, error and empty states
+ * Fetches rooms with their bookings through the calendar service (from the
+ * service tree, via the useCalendar hook) and renders the calendar with
+ * loading, error and empty states
  */
-export function CalendarView(
-  { service }: CalendarViewProps,
-): React.JSX.Element {
-  const { load, rooms, isLoading, error } = useCalendar(service);
-  const [selectedDate, setSelectedDate] = useState(() => systemClock.now());
+export function CalendarView(): React.JSX.Element {
+  const { load, rooms, isLoading, error } = useCalendar();
+  const clock = useClock();
+  const [selectedDate, setSelectedDate] = useState(() => clock.now());
 
   /**
    * (Re)load the board whenever the selected day changes: on mount and
@@ -723,6 +721,8 @@ export function CalendarView(
    * and refreshes the shown day afterwards; the service persists it to
    * the calendar source
    */
+  const service = useCalendarService();
+
   const createBooking = useCallback(
     async (booking: NewBooking): Promise<void> => {
       await service.createBooking(booking);

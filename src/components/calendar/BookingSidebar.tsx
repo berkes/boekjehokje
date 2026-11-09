@@ -11,7 +11,7 @@ import Typography from "@mui/material/Typography";
 import React from "react";
 import { type Booking } from "../../services/index.ts";
 import { bookingCalendarLink } from "./bookingLink.ts";
-import type { CalendarRoom } from "./utils.tsx";
+import type { CalendarRoom } from "./board.ts";
 
 /**
  * Locale used for the full date labels

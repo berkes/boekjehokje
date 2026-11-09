@@ -6,7 +6,7 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
-import { useUser } from "../context/index.ts";
+import { useSession } from "../hooks/useSession.tsx";
 import { useNavigate } from "react-router-dom";
 
 /**
@@ -18,7 +18,7 @@ export function ProfileMenu(): React.JSX.Element {
     isLoggedIn,
     user,
     logout,
-  } = useUser();
+  } = useSession();
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(
     null,
   );
