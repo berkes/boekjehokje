@@ -15,7 +15,12 @@
  */
 
 import type { ClockPort } from "../clock/ClockPort.ts";
+import type {
+  EventFormatPort,
+  ParsedEvent,
+} from "../eventformat/EventFormatPort.ts";
 import type { PermissionServicePort } from "../permissions/PermissionServicePort.ts";
+import type { RoomsPort } from "../rooms/RoomsPort.ts";
 import {
   type Booking,
   type BookingUpdate,
@@ -29,9 +34,6 @@ import {
   type CalendarEventRepositoryPort,
   type StoredEvent,
 } from "./CalendarEventRepositoryPort.ts";
-import { bookingToEvent } from "./eventFormat.ts";
-import { type ParsedEvent, parseEvent } from "./parser.ts";
-import { ROOMS } from "./rooms.ts";
 
 /**
  * Names of calendar events that must be ignored entirely, for example
@@ -80,6 +82,10 @@ export interface CalendarServiceDeps {
   permissions: PermissionServicePort;
   /** The clock, defaulting "today" to the current instant */
   clock: ClockPort;
+  /** The event format service, parsing and serializing events */
+  eventFormat: EventFormatPort;
+  /** The rooms service, providing the room catalog */
+  rooms: RoomsPort;
 }
 
 /**
@@ -94,6 +100,8 @@ export class CalendarService implements CalendarServicePort {
   private events: CalendarEventRepositoryPort;
   private permissions: PermissionServicePort;
   private clock: ClockPort;
+  private eventFormat: EventFormatPort;
+  private rooms: RoomsPort;
 
   /**
    * Create a new calendar service
@@ -105,6 +113,8 @@ export class CalendarService implements CalendarServicePort {
     this.events = deps.events;
     this.permissions = deps.permissions;
     this.clock = deps.clock;
+    this.eventFormat = deps.eventFormat;
+    this.rooms = deps.rooms;
   }
 
   /**
@@ -133,8 +143,10 @@ export class CalendarService implements CalendarServicePort {
    * source stored it.
    */
   async createBooking(booking: NewBooking): Promise<Booking> {
-    const stored = await this.events.createEvent(bookingToEvent(booking));
-    return this.toBooking(parseEvent(stored));
+    const stored = await this.events.createEvent(
+      this.eventFormat.serialize(booking),
+    );
+    return this.toBooking(this.eventFormat.parse(stored));
   }
 
   /**
@@ -143,8 +155,11 @@ export class CalendarService implements CalendarServicePort {
    */
   async updateBooking(booking: BookingUpdate): Promise<Booking> {
     const { id, ...fields } = booking;
-    const stored = await this.events.updateEvent(id, bookingToEvent(fields));
-    return this.toBooking(parseEvent(stored));
+    const stored = await this.events.updateEvent(
+      id,
+      this.eventFormat.serialize(fields),
+    );
+    return this.toBooking(this.eventFormat.parse(stored));
   }
 
   /**
@@ -166,19 +181,21 @@ export class CalendarService implements CalendarServicePort {
    */
   private buildRooms(events: StoredEvent[], range: DayRange): Room[] {
     const eventsByRoom = new Map<string, ParsedEvent[]>();
-    for (const room of ROOMS) {
+    for (const room of this.rooms.all()) {
       eventsByRoom.set(room.canonicalName, []);
     }
     for (const event of events) {
       if (isIgnoredEvent(event.summary)) continue;
-      const parsed = parseEvent(event);
+      const parsed = this.eventFormat.parse(event);
       if (parsed.start >= range.end || parsed.end <= range.start) continue;
       eventsByRoom.get(parsed.room)?.push(parsed);
     }
 
     const rooms: Room[] = [];
     for (const [canonicalName, parsedEvents] of eventsByRoom) {
-      const room = ROOMS.find((r) => r.canonicalName === canonicalName);
+      const room = this.rooms.all().find((r) =>
+        r.canonicalName === canonicalName
+      );
       rooms.push({
         canonicalName,
         shortName: room?.shortName ?? canonicalName,

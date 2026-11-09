@@ -12,8 +12,11 @@ import type {
   AuthenticationServicePort,
   CalendarServicePort,
   ClockPort,
+  EventFormatPort,
+  OverlapsPort,
   PermissionServicePort,
   PreferencesPort,
+  RoomsPort,
   Services,
 } from "../services/index.ts";
 
@@ -66,4 +69,25 @@ export function useClock(): ClockPort {
  */
 export function usePreferences(): PreferencesPort {
   return useServices().preferences;
+}
+
+/**
+ * Access the rooms service
+ */
+export function useRoomsService(): RoomsPort {
+  return useServices().rooms;
+}
+
+/**
+ * Access the overlaps service
+ */
+export function useOverlapsService(): OverlapsPort {
+  return useServices().overlaps;
+}
+
+/**
+ * Access the event format service
+ */
+export function useEventFormatService(): EventFormatPort {
+  return useServices().eventFormat;
 }

@@ -7,6 +7,7 @@
  */
 import { assert, assertEquals } from "@std/assert";
 import type { Booking } from "../../../../src/services/index.ts";
+import { OverlapsService } from "../../../../src/services/overlaps/index.ts";
 import {
   applyMovedEvents,
   type BoardEvent,
@@ -25,13 +26,22 @@ import {
   READ_ONLY_EVENT_BACKGROUND,
   roomDescription,
   roomLabel,
-  summaryPreview,
   toDomTheme,
   toEvents,
   toPreviewEvent,
   toResources,
   withUnknownLast,
 } from "../../../../src/components/calendar/board.ts";
+
+const overlapsService = new OverlapsService();
+
+function markConflictsWithService(
+  events: Parameters<typeof markConflicts>[0],
+  rooms: Parameters<typeof markConflicts>[1],
+  excludeBookingId?: string,
+) {
+  return markConflicts(events, rooms, overlapsService, excludeBookingId);
+}
 
 function booking(overrides: Partial<Booking>): Booking {
   return {
@@ -383,7 +393,7 @@ Deno.test("markConflicts flags a free-slot block that overlaps a booking (issue 
     draggable: false,
   }];
 
-  const marked = markConflicts(events, rooms);
+  const marked = markConflictsWithService(events, rooms);
 
   assertEquals(marked[0].conflict, true);
   // The original event stays untouched
@@ -415,7 +425,7 @@ Deno.test("markConflicts leaves free-slot blocks without an overlap unmarked", (
     draggable: false,
   }];
 
-  assertEquals(markConflicts(events, rooms)[0].conflict, undefined);
+  assertEquals(markConflictsWithService(events, rooms)[0].conflict, undefined);
 });
 
 Deno.test("markConflicts marks both bookings of an overlapping pair, but never a booking against itself (issue #16)", () => {
@@ -439,7 +449,7 @@ Deno.test("markConflicts marks both bookings of an overlapping pair, but never a
   }];
   const events = toEvents(rooms);
 
-  const marked = markConflicts(events, rooms);
+  const marked = markConflictsWithService(events, rooms);
 
   assertEquals(marked[0].conflict, true);
   assertEquals(marked[1].conflict, true);
@@ -473,7 +483,7 @@ Deno.test("markConflicts never marks the booking being edited against its own dr
     draggable: false,
   };
 
-  const marked = markConflicts(
+  const marked = markConflictsWithService(
     [bookingEvent, slotEvent],
     rooms,
     "willem",
@@ -494,10 +504,6 @@ Deno.test("formatDateTimeLocal formats a date for a datetime-local input", () =>
     formatDateTimeLocal(new Date(2026, 9, 28, 9, 0)),
     "2026-10-28T09:00",
   );
-});
-
-Deno.test("summaryPreview shows the room's short name and the booker", () => {
-  assertEquals(summaryPreview("KH 03", "Bèr"), "KH 03 | Bèr");
 });
 
 Deno.test("toDomTheme maps the MUI palette onto theme tokens", () => {

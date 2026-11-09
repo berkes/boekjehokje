@@ -12,7 +12,7 @@
 
 import { useCallback, useRef } from "react";
 import { useGoogleLogin } from "@react-oauth/google";
-import type { GoogleOAuthResponse } from "./GoogleAuthenticationAdapter.ts";
+import type { GoogleOAuthResponse } from "../services/authentication/GoogleAuthenticationAdapter.ts";
 
 /**
  * Google OAuth scopes for the People API and Calendar API. The Calendar

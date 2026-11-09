@@ -16,7 +16,7 @@ import type {
 } from "@super-calendar/dom";
 import {
   type Booking,
-  findOverlaps,
+  type OverlapsPort,
   UNKNOWN_ROOM,
   UNKNOWN_ROOM_DESCRIPTION,
 } from "../../services/index.ts";
@@ -377,18 +377,19 @@ export function checkMargin(
 export function markConflicts(
   events: BoardEvent[],
   rooms: ReadonlyArray<{ canonicalName: string; bookings: Booking[] }>,
+  overlaps: OverlapsPort,
   excludeBookingId?: string,
 ): BoardEvent[] {
   return events.map((event) => {
     if (!event.freeSlot && !event.booking) return event;
     const selfId = event.booking?.id ?? excludeBookingId;
-    const overlaps = findOverlaps(
+    const conflicting = overlaps.findOverlaps(
       rooms,
       event.resourceId,
       event.start,
       event.end,
     ).filter((booking) => booking.id !== selfId);
-    return overlaps.length > 0 ? { ...event, conflict: true } : event;
+    return conflicting.length > 0 ? { ...event, conflict: true } : event;
   });
 }
 
@@ -401,14 +402,6 @@ export function formatDateTimeLocal(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${
     pad(date.getDate())
   }T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
-/**
- * The summary a new booking will get in the calendar source, shown as a
- * live preview in the booking form: "room short name | booker"
- */
-export function summaryPreview(shortName: string, booker: string): string {
-  return `${shortName} | ${booker}`;
 }
 
 /**

@@ -45,6 +45,8 @@ export function DemoCalendar(): React.JSX.Element {
         events,
         permissions: services.permissions,
         clock: services.clock,
+        eventFormat: services.eventFormat,
+        rooms: services.rooms,
       }),
     };
   }, [services, user]);
