@@ -443,3 +443,19 @@ Deno.test("bookingToEvent omits the description when there is no contact", () =>
   assertEquals(event.summary, "Stilteruimte | Bèr");
   assert(!("description" in event), "no empty description is written");
 });
+
+Deno.test("parseEvent keeps the event's htmlLink, null when the API provides none", () => {
+  const base = eventWithSummary("Kletshok 03 - Bèr");
+
+  const withLink = parseEvent({
+    ...base,
+    htmlLink: "https://calendar.google.com/calendar/event?eid=abc123",
+  });
+  assertEquals(
+    withLink.htmlLink,
+    "https://calendar.google.com/calendar/event?eid=abc123",
+  );
+
+  const withoutLink = parseEvent(base);
+  assertEquals(withoutLink.htmlLink, null);
+});

@@ -323,6 +323,45 @@ Deno.test("getDay marks all bookings read-only without a profile", async () => {
   assertEquals(bookings.length, 1);
   assert(!bookings[0].editable, "without a profile nothing is editable");
 });
+
+Deno.test("getDay keeps the event's htmlLink on the booking, null when the API provides none", async () => {
+  const withLink = createMockEvent(
+    "event-1",
+    "uid-1",
+    "05 kletshok - Peter",
+    localIso(6, "10:00"),
+    localIso(6, "11:00"),
+  );
+  withLink.htmlLink = "https://calendar.google.com/calendar/event?eid=abc123";
+  const withoutLink = createMockEvent(
+    "event-2",
+    "uid-2",
+    "Stilteruimte - Sanne",
+    localIso(6, "12:00"),
+    localIso(6, "13:00"),
+  );
+
+  const mockClient = {
+    fetchEvents: () => Promise.resolve([withLink, withoutLink]),
+    ...writeOps(),
+    listCalendars: () => Promise.resolve([]),
+  };
+
+  const service = new GoogleCalendarAdapter(mockClient, CALENDAR_ID, null);
+  const rooms = await service.getDay(DAY);
+  const bookings = rooms.flatMap((room) => room.bookings);
+
+  assertEquals(bookings.length, 2);
+  assertEquals(
+    bookings.find((booking) => booking.id === "event-1")?.htmlLink,
+    "https://calendar.google.com/calendar/event?eid=abc123",
+  );
+  assertEquals(
+    bookings.find((booking) => booking.id === "event-2")?.htmlLink,
+    null,
+    "an event without htmlLink yields null on the booking",
+  );
+});
 Deno.test("getDay skips events on the ignore list", async () => {
   const mockEvents: CalendarEvent[] = [
     createMockEvent(
