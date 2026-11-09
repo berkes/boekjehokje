@@ -2,7 +2,7 @@
  * Unit tests for the authentication service
  *
  * The service is tested through its public interface
- * (AuthenticationServicePort) with the central fakes from src/testing: a
+ * (AuthenticationServicePort) with the central fakes from tests/utils: a
  * FakeAuthenticationProvider as the identity provider and an in-memory
  * session storage repository, plus an injected clock for the expiry math.
  */
@@ -13,8 +13,8 @@ import {
   fakeTokens,
   fakeUser,
   InMemorySessionStorage,
-} from "../../../testing/index.ts";
-import { AuthenticationService } from "../AuthenticationService.ts";
+} from "../../../utils/index.ts";
+import { AuthenticationService } from "../../../../src/services/authentication/AuthenticationService.ts";
 
 /** Fixed point in time for deterministic expiry math */
 const NOW = 1_730_000_000_000;

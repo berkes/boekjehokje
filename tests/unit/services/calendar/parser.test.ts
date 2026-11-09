@@ -9,10 +9,13 @@
  * through the CalendarService in CalendarService.test.ts.
  */
 
-import type { StoredEvent } from "../CalendarEventRepositoryPort.ts";
-import { bookingToEvent } from "../eventFormat.ts";
-import { parseEvent } from "../parser.ts";
-import { ROOMS, UNKNOWN_ROOM } from "../rooms.ts";
+import type { StoredEvent } from "../../../../src/services/calendar/CalendarEventRepositoryPort.ts";
+import { bookingToEvent } from "../../../../src/services/calendar/eventFormat.ts";
+import { parseEvent } from "../../../../src/services/calendar/parser.ts";
+import {
+  ROOMS,
+  UNKNOWN_ROOM,
+} from "../../../../src/services/calendar/rooms.ts";
 
 import { assert, assertEquals } from "@std/assert";
 

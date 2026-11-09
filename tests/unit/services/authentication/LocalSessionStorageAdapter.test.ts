@@ -5,13 +5,13 @@
  */
 
 import { assert, assertEquals, assertThrows } from "@std/assert";
-import type { AuthenticationSession } from "../AuthenticationServicePort.ts";
+import type { AuthenticationSession } from "../../../../src/services/authentication/AuthenticationServicePort.ts";
 import {
   AUTHENTICATION_STORAGE_KEY,
   type BrowserStorage,
   LocalSessionStorageAdapter,
-} from "../LocalSessionStorageAdapter.ts";
-import { SessionStorageError } from "../SessionStoragePort.ts";
+} from "../../../../src/services/authentication/LocalSessionStorageAdapter.ts";
+import { SessionStorageError } from "../../../../src/services/authentication/SessionStoragePort.ts";
 
 /** In-memory BrowserStorage fake */
 class MemoryBrowserStorage implements BrowserStorage {

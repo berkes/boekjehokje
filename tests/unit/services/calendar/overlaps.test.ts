@@ -7,8 +7,11 @@
  * bookings before confirming (the user stays free to book anyway).
  */
 import { assertEquals } from "@std/assert";
-import type { Booking } from "../CalendarServicePort.ts";
-import { findOverlaps, rangesOverlap } from "../overlaps.ts";
+import type { Booking } from "../../../../src/services/calendar/CalendarServicePort.ts";
+import {
+  findOverlaps,
+  rangesOverlap,
+} from "../../../../src/services/calendar/overlaps.ts";
 
 function booking(overrides: Partial<Booking>): Booking {
   return {

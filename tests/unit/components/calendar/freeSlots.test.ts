@@ -12,7 +12,7 @@ import {
   BUSINESS_START_HOUR,
   freeSlotBlocks,
   SLOT_BLOCK_MINUTES,
-} from "../freeSlots.ts";
+} from "../../../../src/components/calendar/freeSlots.ts";
 
 const DAY = new Date(2026, 9, 28, 12, 0, 0); // Wednesday 28 October 2026
 

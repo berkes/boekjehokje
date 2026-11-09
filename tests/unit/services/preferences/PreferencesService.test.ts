@@ -4,12 +4,12 @@
  * The preferences (last-used booker contact, hidden room columns) are user
  * preferences, stored through the injected key-value store repository
  * (never business data). Tests use the central in-memory fake from
- * src/testing and never touch real localStorage.
+ * tests/utils and never touch real localStorage.
  */
 import { assert, assertEquals } from "@std/assert";
-import { InMemoryKeyValueStore } from "../../../testing/index.ts";
-import type { KeyValueStorePort } from "../KeyValueStorePort.ts";
-import { PreferencesService } from "../PreferencesService.ts";
+import { InMemoryKeyValueStore } from "../../../utils/index.ts";
+import type { KeyValueStorePort } from "../../../../src/services/preferences/KeyValueStorePort.ts";
+import { PreferencesService } from "../../../../src/services/preferences/PreferencesService.ts";
 
 function makeService(store: KeyValueStorePort = new InMemoryKeyValueStore()) {
   return { service: new PreferencesService({ store }), store };

@@ -6,7 +6,7 @@
  * board events and dom theme tokens.
  */
 import { assert, assertEquals } from "@std/assert";
-import type { Booking } from "../../../services/index.ts";
+import type { Booking } from "../../../../src/services/index.ts";
 import {
   applyMovedEvents,
   type BoardEvent,
@@ -31,7 +31,7 @@ import {
   toPreviewEvent,
   toResources,
   withUnknownLast,
-} from "../board.ts";
+} from "../../../../src/components/calendar/board.ts";
 
 function booking(overrides: Partial<Booking>): Booking {
   return {

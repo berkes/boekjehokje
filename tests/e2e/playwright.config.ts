@@ -9,7 +9,7 @@ import { defineConfig } from "@playwright/test";
  * with the UTC times the WireMock stubs render.
  */
 export default defineConfig({
-  testDir: "./tests",
+  testDir: "tests",
   timeout: 30_000,
   fullyParallel: true,
   retries: 0,

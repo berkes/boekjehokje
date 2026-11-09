@@ -2,7 +2,7 @@
  * Unit tests for the calendar service
  *
  * The service is tested through its public interface (the
- * CalendarServicePort) with the central fakes from src/testing: a
+ * CalendarServicePort) with the central fakes from tests/utils: a
  * FakeCalendarEventRepository as the event repository, a FakeClock, and a
  * simple inline permission fake. The interaction with the real permission
  * service is covered by the integration tests in tests/integration.
@@ -13,18 +13,18 @@ import {
   FakeCalendarEventRepository,
   FakeClock,
   storedEvent,
-} from "../../../testing/index.ts";
-import type { StoredEvent } from "../CalendarEventRepositoryPort.ts";
-import { CalendarApiError } from "../CalendarApiError.ts";
-import { CalendarService } from "../CalendarService.ts";
+} from "../../../utils/index.ts";
+import type { StoredEvent } from "../../../../src/services/calendar/CalendarEventRepositoryPort.ts";
+import { CalendarApiError } from "../../../../src/services/calendar/CalendarApiError.ts";
+import { CalendarService } from "../../../../src/services/calendar/CalendarService.ts";
 import {
   type BookingUpdate,
   getDayRange,
   type NewBooking,
-} from "../CalendarServicePort.ts";
-import type { PermissionServicePort } from "../../permissions/PermissionServicePort.ts";
-import { isSameDay } from "../../clock/dates.ts";
-import { ROOMS } from "../rooms.ts";
+} from "../../../../src/services/calendar/CalendarServicePort.ts";
+import type { PermissionServicePort } from "../../../../src/services/permissions/PermissionServicePort.ts";
+import { isSameDay } from "../../../../src/services/clock/dates.ts";
+import { ROOMS } from "../../../../src/services/calendar/rooms.ts";
 
 /**
  * The day the read tests query: Tuesday 6 October 2026, midday local

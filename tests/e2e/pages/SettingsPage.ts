@@ -1,5 +1,5 @@
 import { expect, type Page } from "@playwright/test";
-import { LandingPage } from "./LandingPage.ts";
+import { LandingPage } from "LandingPage.ts";
 
 /**
  * The settings page: the profile of the signed-in user.

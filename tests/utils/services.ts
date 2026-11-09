@@ -8,16 +8,16 @@
  * test one service without the state of others; integration tests in
  * tests/integration use it to test the interaction of two real services.
  */
-import { CalendarService } from "../services/calendar/CalendarService.ts";
-import type { StoredEvent } from "../services/calendar/CalendarEventRepositoryPort.ts";
-import { PermissionService } from "../services/permissions/PermissionService.ts";
-import { PreferencesService } from "../services/preferences/PreferencesService.ts";
-import type { AuthenticationServicePort } from "../services/authentication/AuthenticationServicePort.ts";
-import type { CalendarServicePort } from "../services/calendar/CalendarServicePort.ts";
-import type { ClockPort } from "../services/clock/ClockPort.ts";
-import type { PermissionServicePort } from "../services/permissions/PermissionServicePort.ts";
-import type { PreferencesPort } from "../services/preferences/PreferencesPort.ts";
-import type { AuthenticatedUser } from "../services/authentication/AuthenticationServicePort.ts";
+import { CalendarService } from "../../src/services/calendar/CalendarService.ts";
+import type { StoredEvent } from "../../src/services/calendar/CalendarEventRepositoryPort.ts";
+import { PermissionService } from "../../src/services/permissions/PermissionService.ts";
+import { PreferencesService } from "../../src/services/preferences/PreferencesService.ts";
+import type { AuthenticationServicePort } from "../../src/services/authentication/AuthenticationServicePort.ts";
+import type { CalendarServicePort } from "../../src/services/calendar/CalendarServicePort.ts";
+import type { ClockPort } from "../../src/services/clock/ClockPort.ts";
+import type { PermissionServicePort } from "../../src/services/permissions/PermissionServicePort.ts";
+import type { PreferencesPort } from "../../src/services/preferences/PreferencesPort.ts";
+import type { AuthenticatedUser } from "../../src/services/authentication/AuthenticationServicePort.ts";
 import { FakeAuthenticationService, fakeSession } from "./authentication.ts";
 import { FakeCalendarEventRepository } from "./calendar.ts";
 import { FakeClock } from "./clock.ts";

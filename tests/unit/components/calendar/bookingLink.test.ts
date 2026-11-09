@@ -6,8 +6,8 @@
  * day view of the booking's start date.
  */
 import { assertEquals } from "@std/assert";
-import type { Booking } from "../../../services/index.ts";
-import { bookingCalendarLink } from "../bookingLink.ts";
+import type { Booking } from "../../../../src/services/index.ts";
+import { bookingCalendarLink } from "../../../../src/components/calendar/bookingLink.ts";
 
 /**
  * A minimal booking with the given htmlLink and start date
