@@ -1,10 +1,11 @@
 /**
- * Unit tests for the overlap detection (issue #16)
+ * Unit tests for the overlaps service (issue #16)
  *
- * Tests the public interface of overlaps.ts with plain Date values:
- * findOverlaps finds the existing bookings of a room that a candidate
- * time range overlaps, so the booking form can warn about double
- * bookings before confirming (the user stays free to book anyway).
+ * Tests the public interface of the overlaps module (OverlapsPort) with
+ * plain Date values: findOverlaps finds the existing bookings of a room
+ * that a candidate time range overlaps, so the booking form can warn
+ * about double bookings before confirming (the user stays free to book
+ * anyway).
  */
 import { assertEquals } from "@std/assert";
 import type { Booking } from "../../../../src/services/calendar/CalendarServicePort.ts";
@@ -62,7 +63,7 @@ const ROOMS = [
 ];
 
 Deno.test("findOverlaps returns the booking a range overlaps", () => {
-  const overlaps = findOverlaps(
+  const overlaps = service.findOverlaps(
     ROOMS,
     "Kletshok 03",
     new Date(2026, 9, 28, 10, 30),
@@ -72,7 +73,7 @@ Deno.test("findOverlaps returns the booking a range overlaps", () => {
 });
 
 Deno.test("findOverlaps lists every overlapping booking, sorted by start", () => {
-  const overlaps = findOverlaps(
+  const overlaps = service.findOverlaps(
     ROOMS,
     "Kletshok 03",
     new Date(2026, 9, 28, 12, 0),
@@ -82,7 +83,7 @@ Deno.test("findOverlaps lists every overlapping booking, sorted by start", () =>
 });
 
 Deno.test("findOverlaps returns a range fully inside a booking as an overlap", () => {
-  const overlaps = findOverlaps(
+  const overlaps = service.findOverlaps(
     ROOMS,
     "Kletshok 03",
     new Date(2026, 9, 28, 11, 30),
@@ -92,7 +93,7 @@ Deno.test("findOverlaps returns a range fully inside a booking as an overlap", (
 });
 
 Deno.test("findOverlaps returns a range fully covering bookings as overlaps", () => {
-  const overlaps = findOverlaps(
+  const overlaps = service.findOverlaps(
     ROOMS,
     "Kletshok 03",
     new Date(2026, 9, 28, 10, 0),
@@ -102,7 +103,7 @@ Deno.test("findOverlaps returns a range fully covering bookings as overlaps", ()
 });
 
 Deno.test("findOverlaps does not flag a zero-minute gap as an overlap", () => {
-  const before = findOverlaps(
+  const before = service.findOverlaps(
     ROOMS,
     "Kletshok 03",
     new Date(2026, 9, 28, 10, 0),
@@ -110,7 +111,7 @@ Deno.test("findOverlaps does not flag a zero-minute gap as an overlap", () => {
   );
   assertEquals(before, []);
 
-  const after = findOverlaps(
+  const after = service.findOverlaps(
     ROOMS,
     "Kletshok 03",
     new Date(2026, 9, 28, 13, 0),
@@ -120,7 +121,7 @@ Deno.test("findOverlaps does not flag a zero-minute gap as an overlap", () => {
 });
 
 Deno.test("findOverlaps ignores the bookings of other rooms", () => {
-  const overlaps = findOverlaps(
+  const overlaps = service.findOverlaps(
     ROOMS,
     "Kletshok 04",
     new Date(2026, 9, 28, 11, 30),
@@ -131,7 +132,7 @@ Deno.test("findOverlaps ignores the bookings of other rooms", () => {
 
 Deno.test("findOverlaps returns nothing for an unknown room", () => {
   assertEquals(
-    findOverlaps(
+    service.findOverlaps(
       ROOMS,
       "Onbestaande ruimte",
       new Date(2026, 9, 28, 10, 0),
@@ -143,7 +144,7 @@ Deno.test("findOverlaps returns nothing for an unknown room", () => {
 
 Deno.test("findOverlaps returns nothing for an inverted or empty range", () => {
   assertEquals(
-    findOverlaps(
+    service.findOverlaps(
       ROOMS,
       "Kletshok 03",
       new Date(2026, 9, 28, 12, 0),
@@ -152,7 +153,7 @@ Deno.test("findOverlaps returns nothing for an inverted or empty range", () => {
     [],
   );
   assertEquals(
-    findOverlaps(
+    service.findOverlaps(
       ROOMS,
       "Kletshok 03",
       new Date(2026, 9, 28, 12, 0),
@@ -166,7 +167,7 @@ Deno.test("findOverlaps does not mutate the rooms or the range", () => {
   const rooms = structuredClone(ROOMS);
   const start = new Date(2026, 9, 28, 10, 30);
   const end = new Date(2026, 9, 28, 11, 30);
-  findOverlaps(rooms, "Kletshok 03", start, end);
+  service.findOverlaps(rooms, "Kletshok 03", start, end);
   assertEquals(rooms, ROOMS);
   assertEquals(start, new Date(2026, 9, 28, 10, 30));
   assertEquals(end, new Date(2026, 9, 28, 11, 30));
@@ -178,7 +179,7 @@ Deno.test("rangesOverlap is strict at the boundaries", () => {
     end: new Date(2026, 9, 28, 13, 0),
   };
   assertEquals(
-    rangesOverlap(
+    service.rangesOverlap(
       new Date(2026, 9, 28, 10, 0),
       new Date(2026, 9, 28, 11, 0),
       b,
@@ -186,7 +187,7 @@ Deno.test("rangesOverlap is strict at the boundaries", () => {
     false,
   );
   assertEquals(
-    rangesOverlap(
+    service.rangesOverlap(
       new Date(2026, 9, 28, 13, 0),
       new Date(2026, 9, 28, 14, 0),
       b,
@@ -194,7 +195,7 @@ Deno.test("rangesOverlap is strict at the boundaries", () => {
     false,
   );
   assertEquals(
-    rangesOverlap(
+    service.rangesOverlap(
       new Date(2026, 9, 28, 12, 0),
       new Date(2026, 9, 28, 14, 0),
       b,
