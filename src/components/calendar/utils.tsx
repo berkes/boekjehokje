@@ -75,7 +75,7 @@ export type BoardEvent = CalendarEvent<BoardEventMeta>;
 
 /**
  * A time/room change applied by dragging an own booking (UI-only,
- * persisting it is the edit UI's job, #13)
+ * persisting it is the edit UI's job, #40)
  */
 export interface MovedEvent {
   start: Date;
