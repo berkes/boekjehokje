@@ -3,7 +3,7 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
-import { useUser } from "../context/useUser.ts";
+import { useSession } from "../../hooks/useSession.tsx";
 
 /**
  * Settings page component
@@ -11,7 +11,7 @@ import { useUser } from "../context/useUser.ts";
  * Fields are not editable per requirements
  */
 export function Settings(): React.JSX.Element {
-  const { user, logout } = useUser();
+  const { user, logout } = useSession();
 
   return (
     <Box sx={{ py: 4 }}>

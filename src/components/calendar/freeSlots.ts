@@ -9,7 +9,7 @@
  *
  * Pure functions, so they are unit-testable without rendering the board.
  */
-import { MARGIN_MINUTES } from "./utils.tsx";
+import { MARGIN_MINUTES } from "./board.ts";
 
 /**
  * Business hours of the makersplaats: free-slot blocks only exist within

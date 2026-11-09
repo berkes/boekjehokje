@@ -7,30 +7,47 @@ import Container from "@mui/material/Container";
 import CssBaseline from "@mui/material/CssBaseline";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
-import React from "react";
+import { ThemeProvider } from "@mui/material/styles";
+import { GoogleOAuthProvider } from "@react-oauth/google";
+import React, { useMemo } from "react";
+import type { ReactNode } from "react";
 import { BrowserRouter as Router, Link, Route, Routes } from "react-router-dom";
 import "./App.scss";
 import logoUrl from "./assets/logo.svg";
-import {
-  CalendarView,
-  GoogleAuthenticationWrapper,
-} from "./components/index.ts";
+import { CalendarView } from "./components/calendar/index.ts";
 import { ProfileMenu } from "./components/ProfileMenu.tsx";
 import { ProtectedRoute } from "./components/ProtectedRoute.tsx";
-import { UserProvider } from "./context/UserContext.tsx";
-import { useUser } from "./context/useUser.ts";
-import { DemoCalendar, Faq, Landing, Settings } from "./pages/index.ts";
-import { GoogleCalendarAdapter } from "./services/GoogleCalendarAdapter.ts";
 import {
-  CALENDAR_ID,
-  GoogleCalendarApiClient,
-} from "./utils/calendar/GoogleCalendarApiClient.ts";
-import { ThemeProvider } from "@mui/material/styles";
+  DemoCalendar,
+  Faq,
+  Landing,
+  Settings,
+} from "./components/pages/index.ts";
+import { ServicesProvider } from "./hooks/ServicesProvider.tsx";
+import { SessionProvider, useSession } from "./hooks/useSession.tsx";
 import { appTheme } from "./theme.ts";
+import {
+  AuthenticationService,
+  CALENDAR_ID,
+  CalendarService,
+  GoogleAuthenticationAdapter,
+  GoogleCalendarRepositoryAdapter,
+  LocalSessionStorageAdapter,
+  LocalStorageAdapter,
+  PermissionService,
+  PreferencesService,
+  type Services,
+  SystemClock,
+} from "./services/index.ts";
+import { useGoogleLoginFlow } from "./services/authentication/index.ts";
 
 /**
  * Main application component
- * Wrapped with UserProvider and GoogleAuthenticationWrapper
+ *
+ * The composition root: below Google's OAuth provider, AppServices builds
+ * the entire tree of services and their repositories once, and provides it
+ * through ServicesProvider; every underlying component reaches the
+ * services only through the hooks.
  */
 function App(): React.JSX.Element {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
@@ -38,9 +55,9 @@ function App(): React.JSX.Element {
   return (
     <ThemeProvider theme={appTheme}>
       <CssBaseline enableColorScheme />
-      <Router basename={import.meta.env.BASE_URL}>
-        <GoogleAuthenticationWrapper clientId={clientId}>
-          <UserProvider>
+      <GoogleOAuthProvider clientId={clientId}>
+        <AppServices>
+          <Router basename={import.meta.env.BASE_URL}>
             <AppBar position="static" color="primary" enableColorOnDark>
               <Toolbar>
                 <img
@@ -83,19 +100,54 @@ function App(): React.JSX.Element {
                 <Route path="/demo" element={<DemoCalendar />} />
               </Routes>
             </Container>
-          </UserProvider>
-        </GoogleAuthenticationWrapper>
-      </Router>
+          </Router>
+        </AppServices>
+      </GoogleOAuthProvider>
     </ThemeProvider>
   );
 }
 
 /**
+ * Composition root for the service tree: builds every service and its
+ * repositories once, with all dependencies injected at creation, and
+ * provides the tree through ServicesProvider (with the session state on
+ * top, via SessionProvider).
+ */
+function AppServices({ children }: { children: ReactNode }): React.JSX.Element {
+  const initiateLogin = useGoogleLoginFlow();
+
+  const services = useMemo<Services>(() => {
+    const clock = new SystemClock();
+    const sessionStorage = new LocalSessionStorageAdapter();
+    const authentication = new AuthenticationService({
+      provider: new GoogleAuthenticationAdapter({ initiateLogin }),
+      sessionStorage,
+    });
+    const permissions = new PermissionService({ authentication });
+    const events = new GoogleCalendarRepositoryAdapter({
+      calendarId: CALENDAR_ID,
+      authentication,
+    });
+    const calendar = new CalendarService({ events, permissions, clock });
+    const preferences = new PreferencesService({
+      store: new LocalStorageAdapter(),
+    });
+    return { authentication, calendar, permissions, clock, preferences };
+  }, [initiateLogin]);
+
+  return (
+    <ServicesProvider services={services}>
+      <SessionProvider>{children}</SessionProvider>
+    </ServicesProvider>
+  );
+}
+
+/**
  * Application content component
- * Uses the useUser hook to access auth state
+ * Uses the useSession hook to access the session state
  */
 function AppContent(): React.JSX.Element {
-  const { isLoggedIn, isLoading } = useUser();
+  const { isLoggedIn, isLoading } = useSession();
 
   if (isLoading) {
     return (
@@ -136,23 +188,14 @@ function AppContent(): React.JSX.Element {
 }
 
 /**
- * Main content shown when user is authenticated
+ * Main content shown when the user is authenticated: the calendar board,
+ * served by the calendar service from the service tree
  */
 function MainContent(): React.JSX.Element {
-  const { tokens, user } = useUser();
-  if (!tokens || !user) {
-    throw new Error("MainContent needs tokens and user");
-  }
-
-  const service = new GoogleCalendarAdapter(
-    new GoogleCalendarApiClient(tokens.accessToken),
-    CALENDAR_ID,
-    user,
-  );
   return (
     <Box>
       <Box component="section" sx={{ mb: 4 }}>
-        <CalendarView service={service} />
+        <CalendarView />
       </Box>
     </Box>
   );

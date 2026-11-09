@@ -1,9 +1,11 @@
 /**
- * Google Authentication Adapter
+ * Google Authentication adapter
  *
  * Anti-corruption layer around Google OAuth (`@react-oauth/google`) and the
  * Google People API. This is the only place in the codebase that knows about
  * Google's response shapes, scopes, token expiry math, or the People API.
+ * It implements the AuthenticationProviderPort (output port); the session
+ * handling lives in the AuthenticationService.
  *
  * The Google library is hook-based; the `initiateLogin` dependency is a small
  * bridge created from `useGoogleLogin` (see useGoogleLoginFlow.ts), so this
@@ -12,21 +14,16 @@
 
 import type {
   AuthenticatedUser,
-  AuthenticationServicePort,
-  AuthenticationSession,
   AuthenticationTokens,
 } from "./AuthenticationServicePort.ts";
-import { PEOPLE_API_BASE } from "../../config/googleApi.ts";
-import type { SessionStoragePort } from "./SessionStoragePort.ts";
+import type { AuthenticationProviderPort } from "./AuthenticationProviderPort.ts";
+
+/** Google People API base URL, overridable for the E2E mock (ADR-0001) */
+const PEOPLE_API_BASE: string = import.meta.env?.VITE_GOOGLE_PEOPLE_API_BASE ||
+  "https://people.googleapis.com/v1";
 
 /** Assumed token lifetime for responses without an expiry (one hour) */
 const DEFAULT_TOKEN_LIFETIME_MS = 3_600_000;
-
-/** Fallback user when the profile cannot be fetched */
-const UNKNOWN_USER: AuthenticatedUser = {
-  name: "Onbekend",
-  email: "unknown@example.com",
-};
 
 /** Google People API response shape, only used inside this module */
 interface GooglePeopleProfile {
@@ -46,89 +43,63 @@ export type GoogleOAuthResponse =
   | { credential: string };
 
 /** Initiates the Google login flow and resolves with Google's response */
-type GoogleLoginInitiator = () => Promise<GoogleOAuthResponse>;
+export type GoogleLoginInitiator = () => Promise<GoogleOAuthResponse>;
 
-/** Constructor options for GoogleAuthenticationAdapter */
-interface GoogleAuthenticationAdapterOptions {
+/**
+ * The dependencies of the Google authentication adapter, passed in on
+ * creation
+ */
+export interface GoogleAuthenticationAdapterDeps {
   /** Bridge to the Google login flow (see useGoogleLoginFlow.ts) */
   initiateLogin: GoogleLoginInitiator;
-  /** Session persistence */
-  sessionStorage: SessionStoragePort;
-  /** Clock, injectable for testing */
+  /** Clock in epoch milliseconds, injectable for testing */
   now?: () => number;
+  /** People API base URL override (defaults to the Google People API base) */
+  peopleApiBase?: string;
 }
 
 /**
  * Google Authentication Adapter
  *
- * Implements the AuthenticationServicePort with Google OAuth and the Google
- * People API. Normalizes Google's response shapes into our domain tokens,
- * fetches the profile, and persists the session through SessionStoragePort.
+ * Implements the AuthenticationProviderPort with Google OAuth and the
+ * Google People API. Normalizes Google's response shapes into our domain
+ * tokens and fetches the profile from the People API.
  */
-export class GoogleAuthenticationAdapter implements AuthenticationServicePort {
+export class GoogleAuthenticationAdapter implements AuthenticationProviderPort {
   /** Person fields requested from the Google People API */
   private static readonly PEOPLE_API_FIELDS = "names,emailAddresses,photos";
 
   private initiateLogin: GoogleLoginInitiator;
-  private sessionStorage: SessionStoragePort;
   private now: () => number;
+  private peopleApiBase: string;
 
   /**
    * Create a new Google authentication adapter
    *
-   * @param options - Dependencies: login flow bridge, session storage, and
-   * optional clock
+   * @param deps - The injected dependencies: login flow bridge, optional
+   *               clock and People API base URL override
    */
-  constructor(options: GoogleAuthenticationAdapterOptions) {
-    this.initiateLogin = options.initiateLogin;
-    this.sessionStorage = options.sessionStorage;
-    this.now = options.now ?? Date.now;
+  constructor(deps: GoogleAuthenticationAdapterDeps) {
+    this.initiateLogin = deps.initiateLogin;
+    this.now = deps.now ?? Date.now;
+    this.peopleApiBase = deps.peopleApiBase ?? PEOPLE_API_BASE;
   }
 
   /**
-   * Run the Google login flow, fetch the profile, and persist the session.
+   * Run the Google login flow and normalize the response into domain
+   * tokens.
    *
-   * @returns The authenticated user
+   * @returns The session tokens in domain terms
    * @throws Error when the login flow fails
    */
-  async login(): Promise<AuthenticatedUser> {
+  async login(): Promise<AuthenticationTokens> {
     const response = await this.initiateLogin();
-    const tokens = this.normalizeTokens(response);
-    const user = await this.fetchUserProfile(tokens.accessToken);
-
-    this.sessionStorage.save({ user, tokens });
-    return user;
-  }
-
-  /** End the session and discard the stored credentials */
-  logout(): void {
-    this.sessionStorage.clear();
-  }
-
-  /**
-   * Restore the session and return the authenticated user, or null when
-   * there is no session or it has expired.
-   */
-  getAuthenticatedUser(): AuthenticatedUser | null {
-    return this.loadValidSession()?.user ?? null;
-  }
-
-  /** Whether a valid, non-expired session exists */
-  isAuthenticated(): boolean {
-    return this.loadValidSession() !== null;
-  }
-
-  /** The tokens of the current session, or null when there is none */
-  getTokens(): AuthenticationTokens | null {
-    return this.loadValidSession()?.tokens ?? null;
+    return this.normalizeTokens(response);
   }
 
   /**
    * Fetch the profile of the user the given access token belongs to, from
    * the Google People API.
-   *
-   * Part of the AuthenticationServicePort: the return value is our own
-   * profile type; the People API response shape stays inside this adapter.
    *
    * @param accessToken - OAuth 2.0 access token
    * @returns The profile in domain terms
@@ -136,7 +107,7 @@ export class GoogleAuthenticationAdapter implements AuthenticationServicePort {
    */
   async fetchProfile(accessToken: string): Promise<AuthenticatedUser> {
     const url =
-      `${PEOPLE_API_BASE}/people/me?personFields=${GoogleAuthenticationAdapter.PEOPLE_API_FIELDS}`;
+      `${this.peopleApiBase}/people/me?personFields=${GoogleAuthenticationAdapter.PEOPLE_API_FIELDS}`;
 
     const response = await fetch(url, {
       method: "GET",
@@ -194,37 +165,5 @@ export class GoogleAuthenticationAdapter implements AuthenticationServicePort {
       expiresAt: now + DEFAULT_TOKEN_LIFETIME_MS,
       tokenType: "Bearer",
     };
-  }
-
-  /**
-   * Fetch the profile, falling back to a minimal user when the profile
-   * cannot be retrieved.
-   */
-  private async fetchUserProfile(
-    accessToken: string,
-  ): Promise<AuthenticatedUser> {
-    try {
-      return await this.fetchProfile(accessToken);
-    } catch (error) {
-      console.error("Failed to fetch profile, falling back:", error);
-      return { ...UNKNOWN_USER };
-    }
-  }
-
-  /**
-   * Load the stored session; expired sessions are discarded.
-   */
-  private loadValidSession(): AuthenticationSession | null {
-    const session = this.sessionStorage.load();
-    if (session === null) {
-      return null;
-    }
-
-    if (session.tokens.expiresAt <= this.now()) {
-      this.sessionStorage.clear();
-      return null;
-    }
-
-    return session;
   }
 }

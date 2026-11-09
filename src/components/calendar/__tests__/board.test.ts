@@ -31,7 +31,7 @@ import {
   toPreviewEvent,
   toResources,
   withUnknownLast,
-} from "../utils.tsx";
+} from "../board.ts";
 
 function booking(overrides: Partial<Booking>): Booking {
   return {

@@ -1,16 +1,13 @@
 import React from "react";
 import googleLogoUrl from "./googleLogo.svg";
-import { useUser } from "../context/useUser.ts";
-
-// Re-export the provider wrapper so app wiring stays unchanged
-export { GoogleAuthenticationWrapper } from "../services/authentication/index.ts";
+import { useSession } from "../../hooks/useSession.tsx";
 
 /**
  * Main Google authentication button component
  * Uses Dutch text per project plan
  */
 export function GoogleAuthenticationButton(): React.JSX.Element {
-  const { isLoading, login } = useUser();
+  const { isLoading, login } = useSession();
 
   if (isLoading) {
     return <div className="authentication-loading">Laden...</div>;

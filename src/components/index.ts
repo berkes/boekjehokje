@@ -1,5 +1,5 @@
+/**
+ * Components - public API
+ */
 export { CalendarView } from "./calendar/index.ts";
-export {
-  GoogleAuthenticationButton,
-  GoogleAuthenticationWrapper,
-} from "./GoogleAuthentication.tsx";
+export { GoogleAuthenticationButton } from "./authentication/GoogleAuthenticationButton.tsx";
