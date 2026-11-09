@@ -70,7 +70,7 @@ jobs:
   # known to work with Playwright (denoland/deno#27623, #31595).
   #
   # The mock runs as a service container. Service containers start before
-  # the job's steps, so e2e/wiremock cannot be mounted into it; instead a
+  # the job's steps, so tests/e2e/wiremock cannot be mounted into it; instead a
   # job step uploads the stubs through WireMock's admin API.
   e2e:
     runs-on: ubuntu-latest
@@ -93,8 +93,8 @@ jobs:
 
       - name: Type-check the E2E suite
         run: >
-          deno check e2e/playwright.config.ts e2e/fixtures/auth.ts
-          e2e/pages/*.ts e2e/tests/*.spec.ts
+          deno check tests/e2e/playwright.config.ts tests/e2e/fixtures/auth.ts
+          tests/e2e/pages/*.ts tests/e2e/tests/*.spec.ts
 
       - name: Install the Playwright browser
         run: deno run -A npm:@playwright/test install --with-deps chromium
@@ -113,12 +113,12 @@ jobs:
 
       - name: Load the Google API stubs into the mock
         run: |
-          for file in e2e/wiremock/__files/*; do
+          for file in tests/e2e/wiremock/__files/*; do
             curl -fsS -X PUT -H 'Content-Type: text/plain' \
               --data-binary @"$file" \
               "http://localhost:8081/__admin/files/$(basename "$file")"
           done
-          for mapping in e2e/wiremock/mappings/*.json; do
+          for mapping in tests/e2e/wiremock/mappings/*.json; do
             curl -fsS -X POST -H 'Content-Type: application/json' \
               --data-binary @"$mapping" \
               http://localhost:8081/__admin/mappings
