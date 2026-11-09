@@ -45,7 +45,7 @@ export function Faq(): React.JSX.Element {
       ),
     },
     {
-      vraag: "Moet ik de app gebruiken?",
+      vraag: "Moet ik écht deze app gebruiken?",
       antwoord: (
         <>
           Nee, dat hoeft niet. Je kunt de NYMA-agenda gewoon blijven gebruiken
@@ -75,6 +75,22 @@ export function Faq(): React.JSX.Element {
           expres direct aansluitend, zonder marge, dan krijg je daarvoor een
           waarschuwing die je mag negeren. Overlappende boekingen zijn nooit
           mogelijk.
+        </>
+      ),
+    },
+    {
+      vraag: "Waarom mag ik dubbel boeken?",
+      antwoord: (
+        <>
+          In de agenda, op google calendar, kan iedereen alles boeken. Ook
+          dubbel. Dat is soms onhandig, maar geeft ook vrijheid. BoekJeHokje wil
+          (en kan) die vrijheid niet wegnemen, maar wijst je wel op de mogelijke
+          problemen in je boekingen.
+
+          Zo kan het bijvoorbeeld zijn dat je duidelijk ziet dat iemand een
+          verkeerde boeking maakte (Bijvoorbeeld iemand die per ongeluk hun
+          privéafspraak in de NYMA agenda zet) en je zeker weet dat dubbel
+          boeken OK is.
         </>
       ),
     },
