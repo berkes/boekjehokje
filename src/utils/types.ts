@@ -10,6 +10,8 @@ export interface CalendarEvent {
   id: string;
   uid: string;
   summary: string;
+  /** Link to the event in the Google Calendar web UI, if the API provides one */
+  htmlLink?: string;
   creator: {
     email?: string;
   };

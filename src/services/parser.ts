@@ -17,6 +17,8 @@ export interface ParsedEvent {
   id: string;
   uid: string;
   summary: string;
+  /** Link to the event in the calendar's web UI, null when the source has none */
+  htmlLink: string | null;
   room: string;
   booker: string | null;
   creatorEmail: string;
@@ -89,6 +91,7 @@ export function parseEvent(event: CalendarEvent): ParsedEvent {
     id: event.id,
     uid: event.uid || "",
     summary: event.summary,
+    htmlLink: event.htmlLink ?? null,
     room,
     booker,
     creatorEmail: event.creator.email || "onbekend",

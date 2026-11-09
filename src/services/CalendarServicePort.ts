@@ -24,6 +24,12 @@ export interface Booking {
   id: string;
   uid: string;
   summary: string;
+  /**
+   * Link to the booking's event in the calendar source's web UI, null
+   * when the source does not provide one (then the day view of the
+   * start date is the fallback)
+   */
+  htmlLink: string | null;
   room: string;
   booker: string | null;
   /**

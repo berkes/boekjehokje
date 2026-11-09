@@ -6,9 +6,11 @@
  * title). Opened by clicking an event in the calendar.
  */
 import Box from "@mui/material/Box";
+import Link from "@mui/material/Link";
 import Typography from "@mui/material/Typography";
 import React from "react";
 import { type Booking } from "../../services/index.ts";
+import { bookingCalendarLink } from "./bookingLink.ts";
 import type { CalendarRoom } from "./utils.tsx";
 
 /**
@@ -45,7 +47,7 @@ export function BookingSidebar(
   const durationMinutes = Math.round((end.getTime() - start.getTime()) / 60000);
   const roomLabel = room ? `${booking.room} (${room.shortName})` : booking.room;
 
-  const entries: [string, string][] = [
+  const entries: [string, React.ReactNode][] = [
     [
       "Door",
       `${booking.booker ?? "Onbekend"} <${booking.details.author}>`,
@@ -55,6 +57,17 @@ export function BookingSidebar(
     ["Start", start.toLocaleString(LOCALE, FULL_DATE_TIME)],
     ["Eind", end.toLocaleString(LOCALE, FULL_DATE_TIME)],
     ["Duur", `${durationMinutes} minuten`],
+    [
+      "In Google Agenda",
+      <Link
+        key="google-agenda-link"
+        href={bookingCalendarLink(booking)}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Bekijk in Google Agenda
+      </Link>,
+    ],
   ];
 
   return (

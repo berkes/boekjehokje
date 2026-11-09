@@ -209,6 +209,7 @@ export class GoogleCalendarAdapter implements CalendarServicePort {
       id: parsed.id,
       uid: parsed.uid,
       summary: parsed.summary,
+      htmlLink: parsed.htmlLink,
       room: parsed.room,
       booker: parsed.booker,
       editable: this.canEdit(parsed.creatorEmail),

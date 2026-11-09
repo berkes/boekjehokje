@@ -38,6 +38,7 @@ function booking(overrides: Partial<Booking>): Booking {
     id: "id-1",
     uid: "uid-1",
     summary: "Summary",
+    htmlLink: null,
     room: "Kletshok 05",
     booker: null,
     editable: false,
