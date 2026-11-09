@@ -84,19 +84,22 @@ modules they belong to; repositories are the persistence-facing adapters.
 
 ### The service tree and the composition root
 
-The consistent list of services: **authentication**, **permissions**,
-**calendar**, **clock**, **preferences**. They interact: the calendar service's
-`getDay()` asks the permission service `may("update", booking)` to mark editable
-bookings (ADR-0004); the permission service reads the current user from the
-authentication service; the Google Calendar repository reads the OAuth token
-from the authentication service on every call; the demo page composes a subset
-tree with the demo repository.
+The consistent list of services: **authentication**, **calendar**, **clock**,
+**eventFormat**, **overlaps**, **permissions**, **preferences**, **rooms**. They
+interact: the calendar service's `getDay()` asks the permission service
+`may("update", booking)` to mark editable bookings (ADR-0004) and parses events
+through the event format service, which matches rooms through the rooms service;
+the permission service reads the current user from the authentication service;
+the Google Calendar repository reads the OAuth token from the authentication
+service on every call; the demo page composes a subset tree with the demo
+repository.
 
 The whole tree (services + repositories) is built once, on top level, in
 `App.tsx` (`AppServices`, under `GoogleOAuthProvider`, because the Google
-login-flow bridge is a hook), and provided through `ServicesProvider`.
-Underlying components reach the services only through the hooks. Subsets of the
-tree are composed the same way in tests (see ADR-0008) and in the demo page.
+login-flow bridge is a hook in `src/hooks/`), and provided through
+`ServicesProvider`. Underlying components reach the services only through the
+hooks. Subsets of the tree are composed the same way in tests (see ADR-0008) and
+in the demo page.
 
 ### Module layout (every service module the same)
 
@@ -106,19 +109,23 @@ services/<name>/
   <Name>Service.ts       # the service (class, deps injected on creation)
   <output port>.ts       # output port(s), if any
   <adapters>.ts          # output adapters / repositories
-  <private helpers>.ts   # parser, rooms, event format, …
   index.ts               # the module's whole public API (deep module)
-  __tests__/             # unit tests through the public interface
 ```
 
+Under `services/`, a module contains **only** port, service and adapter files
+plus its `index.ts` — no helper/util files: helpers stay private inside the
+service file, or become their own small service (the calendar domain is split
+into the `calendar`, `rooms`, `eventFormat` and `overlaps` services this way).
 Component modules have the same shape (`Component.tsx`, private helpers,
-`index.ts`, `__tests__/`). `src/services/index.ts` is the barrel for the service
-layer plus the `Services` type describing the tree.
+`index.ts`). `src/services/index.ts` is the barrel for the service layer plus
+the `Services` type describing the tree. All tests and test-utils live under
+`tests/` (see ADR-0008).
 
 ### Consequences
 
-- Good, because there is one way to do things: every module is a component, a
-  hook, or a service with ports/adapters; names and layout are predictable.
+- Good, because there is one way to do things: every module under `services/` is
+  a port, a service or an adapter with an index; names and layout are
+  predictable, and the calendar god-module is split into small services.
 - Good, because services are plain, React-free objects: any service can be
   unit-tested with fakes, and services compose (calendar → permissions →
   authentication).

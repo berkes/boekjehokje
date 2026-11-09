@@ -125,7 +125,7 @@ sequenceDiagram
   participant Permissions as PermissionService
   participant Repo as CalendarEventRepositoryPort
   participant Google as GoogleCalendarRepositoryAdapter
-  participant Parser as parser.ts (private to the calendar module)
+  participant Format as eventFormat service (parse/serialize)
   participant API as Google Calendar API
 
   User->>Board: open the day overview (today)
@@ -136,8 +136,8 @@ sequenceDiagram
   Google->>API: GET /calendars/&lt;id&gt;/events?timeMin=...&amp;timeMax=...
   API-->>Google: events (JSON, mapped to StoredEvent)
   Google-->>Service: StoredEvent[]
-  Service->>Parser: parseEvent(event) per event
-  Parser-->>Service: parsed events (room + booker from the summary)
+  Service->>Format: eventFormat.parse(event) per event
+  Format-->>Service: parsed events (room + booker from the summary)
   Service->>Permissions: may("update", booking) per booking (ADR-0004)
   Permissions-->>Service: editable flags
   Service-->>Hook: Room[] grouped by room, with editable flags
@@ -156,7 +156,7 @@ sequenceDiagram
   participant Form as BookingForm
   participant Board as CalendarView (components/calendar/Calendar.tsx)
   participant Service as CalendarService
-  participant Serializer as eventFormat.ts (bookingToEvent, private)
+  participant Format as eventFormat service
   participant Repo as CalendarEventRepositoryPort
   participant Google as GoogleCalendarRepositoryAdapter
   participant API as Google Calendar API
@@ -164,8 +164,8 @@ sequenceDiagram
   User->>Form: pick a slot, fill in contact, confirm
   Form->>Board: onSubmit(NewBooking)
   Board->>Service: createBooking(NewBooking)
-  Service->>Serializer: bookingToEvent(booking)
-  Serializer-->>Service: EventDraft (summary "KH 03 | Bèr", description = contact)
+  Service->>Format: eventFormat.serialize(booking)
+  Format-->>Service: EventDraft (summary "KH 03 | Bèr", description = contact)
   Service->>Repo: createEvent(draft)
   Repo->>Google: createEvent(draft)
   Google->>API: POST /calendars/&lt;id&gt;/events
@@ -212,25 +212,26 @@ sequenceDiagram
 
 ## The standardized event format
 
-Writes and reads meet in one format, defined by
-`src/services/calendar/eventFormat.ts` (writes: `bookingToEvent`) and
-`src/services/calendar/parser.ts` (reads: `parseEvent`):
+Writes and reads meet in one format, owned by the event format service
+(`src/services/eventformat/`): `EventFormatService.serialize` writes it,
+`EventFormatService.parse` reads it:
 
-- **summary**: `<room short name> | <booker>`, e.g. `KH 03 | Bèr` —
-  `bookingToEvent` (serializer) produces it, `parseEvent` reads the room and
-  booker back out of it; the round-trip is unit tested.
+- **summary**: `<room short name> | <booker>`, e.g. `KH 03 | Bèr` — `serialize`
+  produces it, `parse` reads the room and booker back out of it; the round-trip
+  is unit tested.
 - **description**: the booker's contact details (optional).
 - **start / end**: plain `Date`s in the repository port's `EventDraft` /
   `StoredEvent`; only `GoogleCalendarRepositoryAdapter` translates them to and
   from RFC 3339 `dateTime`.
 
 Events created outside the app (directly in Google Calendar) are parsed by the
-same `parseEvent`, so both flows land in the same domain model.
+same `parse`, so both flows land in the same domain model.
 
 ## Testing
 
-See [ADR-0008](adr/0008-testing-strategy-services.md): unit tests live in each
-module's `__tests__/` and inject fakes from the central `src/testing/` kit;
-integration tests in `tests/integration/` test exactly two real services
-together; the Playwright suite in `e2e/` covers the full tree against the
+See [ADR-0008](adr/0008-testing-strategy-services.md): all tests and test-utils
+live under `tests/` — unit tests in `tests/unit/` mirroring the src path and
+injecting fakes from the central `tests/utils/` kit, integration tests in
+`tests/integration/` testing exactly two real services together, and the
+Playwright suite in `tests/e2e/` covering the full tree against the
 WireMock-mocked Google APIs (see [docs/e2e.md](e2e.md)).

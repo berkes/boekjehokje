@@ -27,8 +27,8 @@
 ├── docs/               # Project documentation
 │   └── adr/            # Architecture Decision Records
 │   └── tasks/          # Per-issue task write-ups
-├── e2e/                # Playwright E2E suite (see docs/e2e.md)
-├── tests/              # Integration tests: two real services (see ADR-0008)
+├── tests/              # All tests: e2e/ (Playwright, see docs/e2e.md), integration/ (two real services),
+│                       #   unit/ (mirroring src paths), utils/ (central fakes) — see ADR-0008
 ├── src/                # Source code
 │   ├── App.tsx         # Composition root: builds the service tree, provides it
 │   ├── main.tsx        # Entry point
@@ -36,8 +36,7 @@
 │   ├── components/     # UI components (incl. pages/ and the calendar board)
 │   ├── hooks/          # React bridge: ServicesProvider, useServices, useSession, useCalendar, ...
 │   ├── services/       # Service modules: authentication, calendar, permissions, clock, preferences
-│   │   └── <name>/     #   <Name>Port.ts, <Name>Service.ts, output ports, adapters, index.ts, __tests__/
-│   ├── testing/        # Central test fakes & test-tree builders (tests only, not in the app build)
+│   │   └── <name>/     #   only <Name>Port.ts, <Name>Service.ts, adapters, index.ts (no other files)
 │   └── theme.ts        # MUI theme
 ├── package.json        # Dependencies & scripts
 ├── vite.config.ts      # Vite configuration
@@ -124,10 +123,12 @@ endpoints in the Google adapters, and pages under `components/pages/`.
 ### Module Design
 
 - The app is structured as components, hooks, services, ports and adapters
-  (ADR-0007): `src/components/`, `src/hooks/`, `src/services/<name>/`. Every
-  service module has the same layout: `<Name>Port.ts` (input port + domain
-  types), `<Name>Service.ts`, output ports, adapters/repositories, private
-  helpers, `index.ts` (the module's whole public API), `__tests__/`.
+  (ADR-0007): `src/components/`, `src/hooks/`, `src/services/<name>/`. Under
+  `services/`, a module contains ONLY port, service and adapter files plus its
+  `index.ts` (the whole public API) — no helper/util files: helpers are private
+  to the service file or become their own small service (e.g. rooms, overlaps,
+  eventFormat). Every service module has the same layout: `<Name>Port.ts`,
+  `<Name>Service.ts`, output ports, adapters, `index.ts`.
 - Limit public interfaces: only export what must be used outside the module
   (deep modules: the `index.ts` is the whole public API).
 - Services are objects with methods; all dependencies are passed in on creation
@@ -175,15 +176,17 @@ The app restores such a session without any Google interaction.
 
 ## Testing
 
-Strategy per ADR-0008: unit tests in each module's `__tests__/`, integration
-tests in `tests/integration/` (exactly two real services; e2e covers more), run
-everything with plain `deno test`.
+Strategy per ADR-0008: ALL tests and test-utils live under `tests/` —
+`tests/unit/` (mirroring the src path of what they test), `tests/integration/`
+(exactly two real services; e2e covers more), `tests/e2e/` (Playwright), and
+`tests/utils/` (the central fakes). Run everything with plain `deno test`.
 
 - Write unit tests for the public interface of modules (the module's `index.ts`
-  / port), never for private items
+  / port), never for private items; a unit test for `src/services/foo/bar.ts`
+  lives at `tests/unit/services/foo/bar.test.ts`
 - Keep tests simple, clean, and focused on behavior
 - Use dependency injection to mock external dependencies: complex fakes/spies
-  come from the central kit in `src/testing/` (`FakeClock`,
+  come from the central kit in `tests/utils/` (`FakeClock`,
   `FakeAuthenticationService`, `FakeAuthenticationProvider`,
   `InMemorySessionStorage`, `InMemoryKeyValueStore`,
   `FakeCalendarEventRepository`
@@ -193,31 +196,31 @@ everything with plain `deno test`.
   two real services (e.g. calendar + permissions) over the central fakes; never
   test more than two services there — e2e covers that
 - Test domain logic, not implementation details
-- `src/testing/` and `src/**/__tests__` are excluded from the app build
-  (`tsconfig.app.json`)
+- `tests/` is not part of the app build (`tsconfig.app.json` only includes
+  `src`)
 
 ### E2E tests
 
-The Playwright suite in `e2e/` runs against the WireMock-mocked Google APIs; see
-[docs/e2e.md](docs/e2e.md) for the full setup. Conventions:
+The Playwright suite in `tests/e2e/` runs against the WireMock-mocked Google
+APIs; see [docs/e2e.md](docs/e2e.md) for the full setup. Conventions:
 
 - Run `deno task test:google-mock` (the WireMock container) and
   `deno task test:e2e` (the suite) in separate terminals.
 - Every test carries a user-story comment (Given/When/Then plus "So that ...")
   and a user-view title. The body reads like the story: setup and `goto()` for
   Given, actions for When, `assert*` methods for Then.
-- Page objects in `e2e/pages/` hold the state and speak the app's domain
+- Page objects in `tests/e2e/pages/` hold the state and speak the app's domain
   language. Selectors, labels and shapes of expected strings live in the page
   objects — never in the tests. Expectations in actions bubble up.
 - Assertions are explicit and reproducible: tests pass the concrete strings they
   expect (bookings, bookers, durations, day labels), made stable by the fixed
-  clock in `e2e/fixtures/auth.ts` (`FIXED_NOW`). Never parse page content and
-  assert against the parsed value, and never depend on the real run date.
+  clock in `tests/e2e/fixtures/auth.ts` (`FIXED_NOW`). Never parse page content
+  and assert against the parsed value, and never depend on the real run date.
 - Booking specs cover the create, update and delete writes (POST/PATCH/DELETE to
   the mocked events endpoint, issue #14); the timed undo toast is issue #36.
-- `deno lint` and `deno fmt --check` cover `e2e/` with the rest of the repo; the
-  suite is type-checked by `deno check` (CI runs it on `e2e/`, since
-  `deno task build` only covers `src`).
+- `deno lint` and `deno fmt --check` cover `tests/e2e/` with the rest of the
+  repo; the suite is type-checked by `deno check` (CI runs it on `tests/e2e/`,
+  since `deno task build` only covers `src`).
 
 ## Getting Started
 
@@ -249,7 +252,7 @@ To retake them:
 1. Run `deno task dev`.
 2. Seed a fake authenticated session in the browser's localStorage under the key
    `boekjehokje_authentication` (shape as in "Authentication Architecture"
-   above; use the mock user from `e2e/fixtures/auth.ts`: name "Bèr", email
+   above; use the mock user from `tests/e2e/fixtures/auth.ts`: name "Bèr", email
    ber@boekjehokje.test). Optionally fix the clock to `FIXED_NOW` from the same
    file so the board shows a stable week.
 3. Open `/demo` (the demo board needs the seeded session) and screenshot the

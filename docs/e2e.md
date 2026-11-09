@@ -14,9 +14,10 @@ deno task test:google-mock   # terminal 1: the WireMock container on :8081
 deno task test:e2e          # terminal 2: the Playwright suite
 ```
 
-Playwright boots the app itself (`webServer` in `e2e/playwright.config.ts`) as a
-dedicated dev server on port 5174, with the Google API base URLs pointed at the
-container. A dev server on 5173 is left untouched.
+Playwright boots the app itself (`webServer` in
+`tests/e2e/playwright.config.ts`) as a dedicated dev server on port 5174, with
+the Google API base URLs pointed at the container. A dev server on 5173 is left
+untouched.
 
 In CI (`.github/workflows/build.yml`, job `e2e`) the mock runs as a service
 container. Service containers start before the checkout, so the stubs cannot be
@@ -33,9 +34,9 @@ API instead (`PUT /__admin/files/...` for the response template,
   `src/services/authentication/GoogleAuthenticationAdapter.ts`) and default to
   the real Google endpoints. The suite overrides them to
   `http://localhost:8081`.
-- **WireMock stubs** — `e2e/wiremock/` holds the mappings (calendar events read
-  plus the event write operations POST/PATCH/DELETE, the People API, and a CORS
-  preflight; the browser preflights the `Authorization` header) and the
+- **WireMock stubs** — `tests/e2e/wiremock/` holds the mappings (calendar events
+  read plus the event write operations POST/PATCH/DELETE, the People API, and a
+  CORS preflight; the browser preflights the `Authorization` header) and the
   Handlebars templates in `__files/` (`calendar-events.hbs` renders the
   bookings, `calendar-event-written.hbs` echoes a written event back). The
   bookings transcribe the current-week demo content of
@@ -49,10 +50,10 @@ API instead (`PUT /__admin/files/...` for the response template,
   user is Bèr (`ber@boekjehokje.test`); bookings created by that email are the
   ones the app renders as editable (ADR-0004).
 - **Fixed clock** — the fixture also pins the browser clock
-  (`page.clock.install`) to `FIXED_NOW` in `e2e/fixtures/auth.ts`: Wednesday 28
-  October 2026, 10:00 UTC. The app computes its selected day from the clock, so
-  it always requests the same day, the stubs always render the same bookings,
-  and the board always opens on the same Wednesday.
+  (`page.clock.install`) to `FIXED_NOW` in `tests/e2e/fixtures/auth.ts`:
+  Wednesday 28 October 2026, 10:00 UTC. The app computes its selected day from
+  the clock, so it always requests the same day, the stubs always render the
+  same bookings, and the board always opens on the same Wednesday.
 
 ## Writing specs
 
@@ -64,9 +65,9 @@ The conventions, in short:
 - The **test body reads like the story**: Given is the setup and `goto()`, When
   are actions (`openBookingDetails`, `hideRoom`, `nextDay`), Then are `assert*`
   methods — one line per step.
-- **Page objects** (`e2e/pages/`) hold the state of the visit and speak the
-  app's domain language: rooms, bookings, days. Selectors, Dutch labels, and the
-  shapes of expected strings live in the page objects — never in the tests.
+- **Page objects** (`tests/e2e/pages/`) hold the state of the visit and speak
+  the app's domain language: rooms, bookings, days. Selectors, Dutch labels, and
+  the shapes of expected strings live in the page objects — never in the tests.
   Actions may contain intermediate expectations (they must bubble up so the
   runner reports them); assertions hold the detailed `expect` calls.
 - **Assertions are explicit.** Tests pass the concrete strings they expect —
@@ -80,11 +81,11 @@ The conventions, in short:
   the standardized event to the mocked events endpoint (issue #14); the
   update/delete UI flows are issue #13.
 
-`deno lint` and `deno fmt --check` cover `e2e/` together with the rest of the
-repository. Type-checking does not: `deno task build` (tsc) only covers `src`,
-so the suite gets its own `deno check` in CI (and locally:
+`deno lint` and `deno fmt --check` cover `tests/e2e/` together with the rest of
+the repository. Type-checking does not: `deno task build` (tsc) only covers
+`src`, so the suite gets its own `deno check` in CI (and locally:
 `deno
-check e2e/playwright.config.ts e2e/fixtures/auth.ts e2e/pages/*.ts
+check tests/e2e/playwright.config.ts e2e/fixtures/auth.ts e2e/pages/*.ts
 e2e/tests/*.spec.ts`).
 
 ## Agent-driven browsing
@@ -138,7 +139,7 @@ A token-efficient CLI alternative for coding agents is Playwright's CLI + skills
   1.64.1, a combination verified to work (Deno and Playwright have hit
   version-specific breakages: denoland/deno#27623, denoland/deno#31595). CI pins
   the Deno version. The documented fallback is
-  `npx playwright test --config e2e/playwright.config.ts`.
+  `npx playwright test --config tests/e2e/playwright.config.ts`.
 - **Stub drift** — the stubs model the real Google APIs by hand. When the client
   code starts calling new endpoints or fields, regenerate the fixtures from real
   responses. The stub data derives from the demo bookings; when the seeds

@@ -30,31 +30,41 @@ unit, integration and e2e tests of the service tree.
 
 ## Decision Outcome
 
-Chosen option: **three test layers with a central fake kit**:
+Chosen option: **all tests and test-utils under `tests/`, in three layers plus a
+central fake kit**:
 
-1. **Central test support** — `src/testing/` holds the fakes, fixtures and
+```
+tests/
+  e2e/           # Playwright suite (ADR-0001), WireMock-mocked Google APIs
+  integration/   # two real services composed over the fakes
+  unit/          # unit tests mirroring the src path: tests/unit/services/foo/bar.test.ts tests src/services/foo/bar.ts
+  utils/         # the central fake kit (test-utils)
+```
+
+1. **Central test support** — `tests/utils/` holds the fakes, fixtures and
    test-tree builders: `FakeClock`, `FakeAuthenticationService`,
    `FakeAuthenticationProvider`, `InMemorySessionStorage`,
    `InMemoryKeyValueStore`, `InMemoryBrowserStorage`,
    `FakeCalendarEventRepository` + the `storedEvent` factory, and
    `buildTestServices()` which composes a subset of the real service tree over
-   the fakes (the same shape the composition root builds in `App.tsx`). It is
-   excluded from the app build (`tsconfig.app.json`) and imported only by tests.
-2. **Unit tests** — in each module's `__tests__/`, through the module's public
-   interface. A unit test exercises one real service (or pure module) and
-   injects fakes for everything else — from `src/testing/` when complex, or a
-   simple inline mock when trivial (e.g. `{ may: () => false }`).
+   the fakes (the same shape the composition root builds in `App.tsx`). `tests/`
+   is not part of the app build (`tsconfig.app.json` only includes `src`).
+2. **Unit tests** — `tests/unit/`, mirroring the src path of the module under
+   test, through the module's public interface. A unit test exercises one real
+   service (or pure module) and injects fakes for everything else — from
+   `tests/utils/` when complex, or a simple inline mock when trivial (e.g.
+   `{ may: () => false }`).
 3. **Integration tests** — `tests/integration/`, composing subsets of actual
    trees: exactly two real services plus fakes for their repositories.
    Currently: calendar service + permission service
    (`calendar-permissions.test.ts`) and authentication service + permission
    service (`authentication-permissions.test.ts`). More than two real services
    in one test is left to e2e.
-4. **E2E** — the Playwright suite (ADR-0001) covers the full tree against the
-   WireMock-mocked Google APIs.
+4. **E2E** — `tests/e2e/`, the Playwright suite (ADR-0001), covers the full tree
+   against the WireMock-mocked Google APIs.
 
-Run everything with plain `deno test` (it collects `src/**` and `tests/`; the
-e2e specs are type-checked separately in CI).
+Run everything with plain `deno test` (it collects `tests/unit` and
+`tests/integration`; the e2e specs are type-checked separately in CI).
 
 ### Consequences
 
@@ -63,15 +73,15 @@ e2e specs are type-checked separately in CI).
 - Good, because two-service interaction (e.g. `getDay` marking bookings editable
   via the permission service) is tested with real code on both sides, without
   dragging in the whole tree.
-- Bad, because `src/testing/` adds a directory that must be kept out of the app
-  build.
+- Bad, because `tests/` adds a top-level directory that must be kept out of the
+  app build (it is, via `tsconfig.app.json`).
 
 ## Validation
 
-- `deno test` — unit + integration tests pass (197 tests).
-- `deno task build` (tsc excludes `src/**/__tests__` and `src/testing`),
-  `deno lint`, `deno fmt --check` pass; CI type-checks `e2e/` and runs the
-  Playwright suite.
+- `deno test` — unit + integration tests pass.
+- `deno task build` (`tsconfig.app.json` only includes `src`, so `tests/` is not
+  in the app build), `deno lint`, `deno fmt --check` pass; CI type-checks
+  `tests/e2e/` and runs the Playwright suite.
 
 ## More Information
 

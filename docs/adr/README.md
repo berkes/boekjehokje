@@ -7,16 +7,16 @@ link to its replacement.
 
 ## Index
 
-| Number                                                   | Title                                                                                                             | Status   |
-| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | -------- |
-| [0001](0001-playwright-e2e-and-agent-browser-testing.md) | Use Playwright for E2E testing, with containerized Google API mocks and agent-driven browser tooling              | accepted |
-| [0002](0002-hybrid-booking-workflow.md)                  | Support both room-first and time-first booking through a hybrid overview dashboard                                | accepted |
-| [0003](0003-pure-frontend-tech-stack.md)                 | Adopt a pure-frontend React 19 + TypeScript stack with MUI, DayPilot Lite, and Google Calendar as source of truth | accepted |
-| [0004](0004-editability-ownership.md)                    | Determine editability by creator-email ownership                                                                  | approved |
-| [0005](0005-super-calendar-migration.md)                 | Replace DayPilot Lite with super-calendar for the resource calendar view                                          | approved |
-| [0006](0006-default-click-slot-55-minutes.md)            | Encourage a five-minute margin between bookings (defaults: whole hour to five to the hour)                        | proposed |
-| [0007](0007-components-services-ports-adapters.md)       | Structure the app as components, hooks, services, ports and adapters, with the service tree composed in App.tsx   | proposed |
-| [0008](0008-testing-strategy-services.md)                | Test services with central fakes (src/testing), two-service integration tests (tests/integration), and e2e        | proposed |
+| Number                                                   | Title                                                                                                                   | Status   |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | -------- |
+| [0001](0001-playwright-e2e-and-agent-browser-testing.md) | Use Playwright for E2E testing, with containerized Google API mocks and agent-driven browser tooling                    | accepted |
+| [0002](0002-hybrid-booking-workflow.md)                  | Support both room-first and time-first booking through a hybrid overview dashboard                                      | accepted |
+| [0003](0003-pure-frontend-tech-stack.md)                 | Adopt a pure-frontend React 19 + TypeScript stack with MUI, DayPilot Lite, and Google Calendar as source of truth       | accepted |
+| [0004](0004-editability-ownership.md)                    | Determine editability by creator-email ownership                                                                        | approved |
+| [0005](0005-super-calendar-migration.md)                 | Replace DayPilot Lite with super-calendar for the resource calendar view                                                | approved |
+| [0006](0006-default-click-slot-55-minutes.md)            | Encourage a five-minute margin between bookings (defaults: whole hour to five to the hour)                              | proposed |
+| [0007](0007-components-services-ports-adapters.md)       | Structure the app as components, hooks, services, ports and adapters, with the service tree composed in App.tsx         | proposed |
+| [0008](0008-testing-strategy-services.md)                | All tests and test-utils under tests/ (e2e, integration, unit, utils with central fakes), two-service integration tests | proposed |
 
 ## Format
 
