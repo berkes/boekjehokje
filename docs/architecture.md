@@ -61,7 +61,7 @@ flowchart TB
 
   subgraph auth["Authentication (src/services/authentication)"]
     authPort["AuthenticationServicePort (port)"]
-    googleAuth["GoogleAuthenticationAdapter + useGoogleLoginFlow<br/>OAuth scopes incl. calendar.events"]
+    googleAuthentication["GoogleAuthenticationAdapter + useGoogleLoginFlow<br/>OAuth scopes incl. calendar.events"]
     session["SessionStoragePort / LocalSessionStorageAdapter<br/>(localStorage)"]
   end
 
@@ -80,9 +80,9 @@ flowchart TB
   clientPort -. implements .-> googleClient
   googleClient -->|"OAuth Bearer token"| googleAPI
   useUser --> authPort
-  authPort -. implements .-> googleAuth
-  googleAuth --> session
-  googleAuth -->|"profile"| peopleAPI
+  authPort -. implements .-> googleAuthentication
+  googleAuthentication --> session
+  googleAuthentication -->|"profile"| peopleAPI
 ```
 
 ## Sequence: how events get on screen
