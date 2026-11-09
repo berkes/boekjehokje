@@ -9,9 +9,9 @@ ADR).
 
 ## Status
 
-Implemented on branch `vibe/conflict-warnings-<hash>`, on top of `main` with the
-booking form of issue #15 (which had made overlaps an error that disabled the
-confirm button).
+Implemented on branch `vibe/conflict-warnings-d9d6ca` (PR #47, merged), on top
+of `main` with the booking form of issue #15 (which had made overlaps an error
+that disabled the confirm button).
 
 ## What was built
 
@@ -61,12 +61,11 @@ confirm button).
 
 ## Deliberately out of scope (per the issue)
 
-- Live feedback _while dragging_ on the board (the DayPilot
-  `onTimeRangeSelecting` suggestion in the issue): super-calendar's
+- Live feedback _while dragging_ on the board: tracked as follow-up issue
+  [#49](https://github.com/berkes/boekjehokje/issues/49). super-calendar's
   `ResourceTimeline` has no selecting callback — only `onCreateEvent` at drag
-  end — so this is a follow-up if the board ever grows a drag-preview. The
-  conflict cue appears as soon as the range lands in the form (warning) and on
-  the board (red preview block).
+  end. The conflict cue appears as soon as the range lands in the form (alert)
+  and on the board (red preview block).
 - Hard blocking of overlapping bookings: rejected per ADR-0002 — users may book
   directly in Google Calendar anyway, so a block in the app only creates a false
   sense of safety. This reverses the issue #15 behavior (overlap error +
