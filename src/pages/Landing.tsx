@@ -11,7 +11,7 @@ import AlertTitle from "@mui/material/AlertTitle";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 import { Link as RouterLink } from "react-router-dom";
-import { GoogleAuthButton } from "../components/index.ts";
+import { GoogleAuthenticationButton } from "../components/index.ts";
 import overviewDesktop from "../assets/overview-desktop.png";
 import overviewMobile from "../assets/overview-mobile.png";
 
@@ -78,7 +78,7 @@ export function Landing(): React.JSX.Element {
           spacing={3}
           sx={{ mt: 3, alignItems: "center", flexWrap: "wrap" }}
         >
-          <GoogleAuthButton />
+          <GoogleAuthenticationButton />
           <Typography variant="body1">
             Nog vragen?{" "}
             <Link component={RouterLink} to="/faq">

@@ -11,7 +11,10 @@ import React from "react";
 import { BrowserRouter as Router, Link, Route, Routes } from "react-router-dom";
 import "./App.scss";
 import logoUrl from "./assets/logo.svg";
-import { CalendarView, GoogleAuthWrapper } from "./components/index.ts";
+import {
+  CalendarView,
+  GoogleAuthenticationWrapper,
+} from "./components/index.ts";
 import { ProfileMenu } from "./components/ProfileMenu.tsx";
 import { ProtectedRoute } from "./components/ProtectedRoute.tsx";
 import { UserProvider } from "./context/UserContext.tsx";
@@ -27,7 +30,7 @@ import { appTheme } from "./theme.ts";
 
 /**
  * Main application component
- * Wrapped with UserProvider and GoogleAuthWrapper
+ * Wrapped with UserProvider and GoogleAuthenticationWrapper
  */
 function App(): React.JSX.Element {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
@@ -36,7 +39,7 @@ function App(): React.JSX.Element {
     <ThemeProvider theme={appTheme}>
       <CssBaseline enableColorScheme />
       <Router basename={import.meta.env.BASE_URL}>
-        <GoogleAuthWrapper clientId={clientId}>
+        <GoogleAuthenticationWrapper clientId={clientId}>
           <UserProvider>
             <AppBar position="static" color="primary" enableColorOnDark>
               <Toolbar>
@@ -81,7 +84,7 @@ function App(): React.JSX.Element {
               </Routes>
             </Container>
           </UserProvider>
-        </GoogleAuthWrapper>
+        </GoogleAuthenticationWrapper>
       </Router>
     </ThemeProvider>
   );
