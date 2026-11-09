@@ -26,9 +26,12 @@ API instead (`PUT /__admin/files/...` for the response template,
 
 ## How the harness works
 
-- **Configurable base URLs** — `src/config/googleApi.ts` reads
-  `VITE_GOOGLE_CALENDAR_API_BASE` and `VITE_GOOGLE_PEOPLE_API_BASE` and defaults
-  to the real Google endpoints. The suite overrides them to
+- **Configurable base URLs** — the Google adapters read
+  `VITE_GOOGLE_CALENDAR_API_BASE` (in
+  `src/services/calendar/GoogleCalendarRepositoryAdapter.ts`) and
+  `VITE_GOOGLE_PEOPLE_API_BASE` (in
+  `src/services/authentication/GoogleAuthenticationAdapter.ts`) and default to
+  the real Google endpoints. The suite overrides them to
   `http://localhost:8081`.
 - **WireMock stubs** — `e2e/wiremock/` holds the mappings (calendar events read
   plus the event write operations POST/PATCH/DELETE, the People API, and a CORS
@@ -36,10 +39,10 @@ API instead (`PUT /__admin/files/...` for the response template,
   Handlebars templates in `__files/` (`calendar-events.hbs` renders the
   bookings, `calendar-event-written.hbs` echoes a written event back). The
   bookings transcribe the current-week demo content of
-  `src/services/DemoCalendarAdapter.ts`; dates are not hardcoded but templated
-  relative to the Monday of the week of the day the app requests (`timeMin`, the
-  start of the selected day — the app fetches one day at a time), so day
-  navigation in the UI keeps hitting the same week pattern.
+  `src/services/calendar/DemoCalendarRepositoryAdapter.ts`; dates are not
+  hardcoded but templated relative to the Monday of the week of the day the app
+  requests (`timeMin`, the start of the selected day — the app fetches one day
+  at a time), so day navigation in the UI keeps hitting the same week pattern.
 - **Fake session** — the `authedPage` fixture seeds the session the
   AuthenticationService restores from localStorage
   (`boekjehokje_authentication`, the seam documented in AGENTS.md). The mocked

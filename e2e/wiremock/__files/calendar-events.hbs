@@ -3,7 +3,7 @@
   template transformer.
 
   The bookings transcribe the "current week" of the demo content in
-  src/services/DemoCalendarAdapter.ts: the same rooms, bookers and times,
+  src/services/calendar/DemoCalendarRepositoryAdapter.ts: the same rooms, bookers and times,
   one line per booking. Dates are not hardcoded: every event is placed
   relative to the Monday of the week the requested day (the timeMin query
   parameter) falls in — the app fetches one day at a time, so timeMin is
