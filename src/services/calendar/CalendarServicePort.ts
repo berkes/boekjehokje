@@ -8,7 +8,7 @@
  * only depends on this module, never on a repository adapter.
  */
 
-import { endOfDay, startOfDay } from "../clock/dates.ts";
+import { endOfDay, startOfDay } from "../clock/index.ts";
 
 /**
  * A booking represents a room reservation. Editability is decided by

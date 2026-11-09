@@ -9,10 +9,9 @@
  */
 import { assertEquals } from "@std/assert";
 import type { Booking } from "../../../../src/services/calendar/CalendarServicePort.ts";
-import {
-  findOverlaps,
-  rangesOverlap,
-} from "../../../../src/services/calendar/overlaps.ts";
+import { OverlapsService } from "../../../../src/services/overlaps/index.ts";
+
+const service = new OverlapsService();
 
 function booking(overrides: Partial<Booking>): Booking {
   return {
