@@ -22,17 +22,23 @@ confirm button).
   (`start < booking.end && end > booking.start`, so a zero-minute gap is not an
   overlap), sorted by start. An inverted/empty range or an unknown room overlaps
   nothing. Unit tested in `src/services/__tests__/overlaps.test.ts`.
-- **Booking form warning**: `BookingForm` shows a Dutch warning when the draft
-  overlaps one or more existing bookings, listing them by booker (or summary):
-  "Let op: deze boeking overlapt met "Willem" in deze ruimte. Je kunt desondanks
-  boeken." The confirm button stays enabled — the user can always book anyway
-  (guide, do not enforce). While editing a booking, the booking being edited
-  never counts as an overlap with itself.
-- **Board cue**: free-slot blocks (the selected slot and the form's preview
-  block) whose range overlaps an existing booking are marked red
-  (`markConflictingSlots` in `src/components/calendar/utils.tsx`, conflict
-  styles `FREE_SLOT_CONFLICT_*`), with the tooltip "Overlapt met een bestaande
-  boeking" and a `data-slot-conflict` attribute.
+- **Booking form alerts**: `BookingForm` shows every warning and error as a MUI
+  `Alert` (review feedback on PR #47): the overlap warning lists the overlapping
+  bookings by booker (or summary) — "Let op: deze boeking overlapt met "Willem"
+  in deze ruimte. Je kunt desondanks boeken." — and the confirm button stays
+  enabled; the user can always book anyway (guide, do not enforce). The
+  zero-margin, long-booking and inverted-range messages and the save error are
+  alerts too (`severity="warning"` / `"error"`). While editing a booking, the
+  booking being edited never counts as an overlap with itself.
+- **Board cues**: `markConflicts` in `src/components/calendar/utils.tsx` marks
+  every event whose range overlaps another booking of its room red (issue #16):
+  booking bars of existing double bookings (`CONFLICT_EVENT_*`,
+  `data-booking-conflict`) as well as free-slot blocks (the selected slot and
+  the form's preview block, `FREE_SLOT_CONFLICT_*`, tooltip "Overlapt met een
+  bestaande boeking", `data-slot-conflict`). The demo data already carries one
+  overlapping pair per weekday, so the demo page shows conflicts on every day;
+  the landing page screenshots (`src/assets/overview-*.png`) were retaken
+  accordingly (AGENTS.md).
 - `checkMargin` in `utils.tsx` now only reports the zero-minute gap (ADR-0006);
   overlap detection lives in the domain (`findOverlaps`).
 
@@ -41,13 +47,17 @@ confirm button).
 - Unit (`deno test`): `findOverlaps`/`rangesOverlap` in
   `src/services/__tests__/overlaps.test.ts` (overlap, multiple overlaps,
   boundaries, other rooms, unknown room, inverted range, no mutation);
-  `checkMargin` zero-gap and `markConflictingSlots` in
-  `src/components/calendar/__tests__/utils.test.ts`.
-- E2E (`e2e/tests/create-booking.spec.ts`, against the WireMock Google API
-  mock): setting a range that overlaps Willem's booking shows the warning naming
-  "Willem", marks the preview block as conflicting
-  (`assertConflictSlotIsShownIn`), keeps the confirm button enabled, and
-  confirming still writes the booking (POST) to the calendar API.
+  `checkMargin` zero-gap and `markConflicts` (free-slot blocks and booking
+  pairs) in `src/components/calendar/__tests__/utils.test.ts`.
+- E2E (`e2e/`, against the WireMock Google API mock): form messages are asserted
+  as alerts (`role="alert"`); `create-booking.spec.ts` sets a range overlapping
+  Willem's booking and asserts the alert names "Willem", the preview block is
+  conflict-marked, the confirm button stays enabled and the booking is still
+  written (POST); `booking.spec.ts` asserts both bars of Kletshok 05's double
+  booking on Wednesday are conflict-marked (`assertConflictBookingsIn`).
+- Landing page screenshots retaken per AGENTS.md (seeded session, FIXED_NOW
+  clock, `/demo`, 1440x900 and 430x932 at 2x) so they show the red conflict bars
+  of the demo week.
 
 ## Deliberately out of scope (per the issue)
 

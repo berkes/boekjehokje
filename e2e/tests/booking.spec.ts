@@ -43,3 +43,16 @@ test("User can only edit their own booking 'Stilteruimte - Bèr'", async ({ auth
   await overview.assertBookingIsEditable("Stilteruimte - Bèr");
   await overview.assertBookingIsReadOnly("Kletshok 03 - Willem");
 });
+
+/**
+ * Given the board shows Wednesday with Kletshok 05 double-booked:
+ * Fatima 10:00-12:00 and Ozan 11:00-13:00 overlap
+ * When I look at Kletshok 05's lane
+ * Then both bars of the overlapping pair are marked as conflicting
+ * So that I can see the double booking on the board (issue #16).
+ */
+test("User sees the conflicting bookings of a double-booked room marked", async ({ authedPage }) => {
+  const overview = await new OverviewPage(authedPage).goto();
+
+  await overview.assertConflictBookingsIn("Kletshok 05", 2);
+});

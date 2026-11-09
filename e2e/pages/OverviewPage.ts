@@ -476,28 +476,34 @@ export class OverviewPage {
   }
 
   /**
-   * Assert the form warns that there is no five-minute margin to an
-   * adjacent booking (ADR-0006: encouraged, never enforced).
+   * Assert the form shows an alert (MUI Alert, role="alert") matching the
+   * given text.
    */
-  async assertMarginWarningIsShown(): Promise<void> {
+  private async assertAlertIsShown(pattern: RegExp): Promise<void> {
     await expect(
-      this.page.getByText(
-        /geen 5 minuten tussen deze en een aansluitende boeking/i,
-      ),
+      this.page.getByRole("alert").filter({ hasText: pattern }),
     ).toBeVisible();
   }
 
   /**
-   * Assert the form warns that the range overlaps the named bookings
-   * (issue #16: overlaps are warned about, never blocked).
+   * Assert the form warns in an alert that there is no five-minute margin
+   * to an adjacent booking (ADR-0006: encouraged, never enforced).
+   */
+  async assertMarginWarningIsShown(): Promise<void> {
+    await this.assertAlertIsShown(
+      /geen 5 minuten tussen deze en een aansluitende boeking/i,
+    );
+  }
+
+  /**
+   * Assert the form warns in an alert that the range overlaps the named
+   * bookings (issue #16: overlaps are warned about, never blocked).
    */
   async assertOverlapWarningIsShown(...bookingNames: string[]): Promise<void> {
     const names = bookingNames.map((name) =>
       `"${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`
     ).join(", ");
-    await expect(
-      this.page.getByText(new RegExp(`overlapt met ${names}`)),
-    ).toBeVisible();
+    await this.assertAlertIsShown(new RegExp(`overlapt met ${names}`));
   }
 
   /**
@@ -510,6 +516,18 @@ export class OverviewPage {
         `[data-resource-id="${room}"] [data-slot-conflict="true"]`,
       ),
     ).toHaveCount(1);
+  }
+
+  /**
+   * Assert the given number of booking bars in a room's lane are marked
+   * as conflicting with another booking (issue #16).
+   */
+  async assertConflictBookingsIn(room: string, count: number): Promise<void> {
+    await expect(
+      this.page.locator(
+        `[data-resource-id="${room}"] [data-booking-conflict="true"]`,
+      ),
+    ).toHaveCount(count);
   }
 
   /**
@@ -586,21 +604,18 @@ export class OverviewPage {
   }
 
   /**
-   * Assert the form warns that the booking is very long (> 3 hours).
+   * Assert the form warns in an alert that the booking is very long
+   * (> 3 hours).
    */
   async assertLongBookingWarningIsShown(): Promise<void> {
-    await expect(
-      this.page.getByText(/deze boeking is erg lang/i),
-    ).toBeVisible();
+    await this.assertAlertIsShown(/deze boeking is erg lang/i);
   }
 
   /**
-   * Assert the form warns that Van must be before Tot.
+   * Assert the form shows an error alert that Van must be before Tot.
    */
   async assertInvertedRangeWarningIsShown(): Promise<void> {
-    await expect(
-      this.page.getByText(/Van moet vóór Tot liggen/i),
-    ).toBeVisible();
+    await this.assertAlertIsShown(/Van moet vóór Tot liggen/i);
   }
 
   /**

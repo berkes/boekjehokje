@@ -64,7 +64,7 @@ export interface BoardEventMeta {
   preview?: boolean;
   /** Free-slot blocks are disabled while the booking form is open */
   disabled?: boolean;
-  /** The block's range overlaps an existing booking (issue #16): warn, never block */
+  /** The event's range overlaps another booking of the room (issue #16): warn, never block */
   conflict?: boolean;
 }
 
@@ -366,25 +366,28 @@ export function checkMargin(
 }
 
 /**
- * Mark the free-slot blocks whose range overlaps an existing booking of
- * their room as conflicting (issue #16), so the board shows the conflict
- * in red next to the form warning. Booking events are never marked. The
- * booking with `excludeBookingId` (the one being edited) never counts as
- * an overlap with itself.
+ * Mark the events whose range overlaps an existing booking of their room
+ * as conflicting (issue #16), so the board shows the conflict in red next
+ * to the form warning: booking events that overlap another booking (the
+ * double bookings already on the calendar) as well as free-slot blocks
+ * (the selected slot and the form's preview) whose range overlaps one.
+ * An event never conflicts with its own booking; the booking with
+ * `excludeBookingId` (the one being edited) never counts as an overlap.
  */
-export function markConflictingSlots(
+export function markConflicts(
   events: BoardEvent[],
   rooms: ReadonlyArray<{ canonicalName: string; bookings: Booking[] }>,
   excludeBookingId?: string,
 ): BoardEvent[] {
   return events.map((event) => {
-    if (!event.freeSlot) return event;
+    if (!event.freeSlot && !event.booking) return event;
+    const selfId = event.booking?.id ?? excludeBookingId;
     const overlaps = findOverlaps(
       rooms,
       event.resourceId,
       event.start,
       event.end,
-    ).filter((booking) => booking.id !== excludeBookingId);
+    ).filter((booking) => booking.id !== selfId);
     return overlaps.length > 0 ? { ...event, conflict: true } : event;
   });
 }
@@ -468,6 +471,18 @@ export const FREE_SLOT_CONFLICT_BACKGROUND = "rgba(211, 47, 47, 0.2)";
  * Border of a conflicting free-slot block: solid and strong
  */
 export const FREE_SLOT_CONFLICT_BORDER = "rgba(183, 28, 28, 0.9)";
+
+/**
+ * Background of a booking event that overlaps another booking of its
+ * room (issue #16): a warning red, distinct from the editable green and
+ * the read-only grey
+ */
+export const CONFLICT_EVENT_BACKGROUND = "rgba(211, 47, 47, 0.35)";
+
+/**
+ * Border of a conflicting booking event
+ */
+export const CONFLICT_EVENT_BORDER = "rgba(183, 28, 28, 0.9)";
 
 /**
  * Minimal MUI palette shape needed to theme the board

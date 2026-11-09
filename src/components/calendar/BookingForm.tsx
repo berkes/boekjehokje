@@ -10,6 +10,7 @@
  * form edits that booking instead (prefilled with its values, issue #14):
  * confirming updates the existing event rather than creating one.
  */
+import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
@@ -17,7 +18,6 @@ import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
-import Typography from "@mui/material/Typography";
 import React, { useEffect, useState } from "react";
 import { useUser } from "../../context/useUser.ts";
 import {
@@ -199,30 +199,28 @@ export function BookingForm(
         fullWidth
       />
       {overlaps.length > 0 && (
-        <Typography color="warning.main">
+        <Alert severity="warning">
           Let op: deze boeking overlapt met{" "}
           {overlaps.map((b) => `"${b.booker || b.summary}"`).join(", ")}{" "}
           in deze ruimte. Je kunt desondanks boeken.
-        </Typography>
+        </Alert>
       )}
       {invertedRange && (
-        <Typography color="error">
-          Van moet vóór Tot liggen.
-        </Typography>
+        <Alert severity="error">Van moet vóór Tot liggen.</Alert>
       )}
       {!invertedRange && longBooking && (
-        <Typography color="warning.main">
+        <Alert severity="warning">
           Let op: deze boeking is erg lang. Als dit de bedoeling is, is dat
           prima, maar check even dubbel of dit klopt.
-        </Typography>
+        </Alert>
       )}
       {overlaps.length === 0 && margin.zeroGap && (
-        <Typography color="warning.main">
+        <Alert severity="warning">
           Let op: er zit geen 5 minuten tussen deze en een aansluitende boeking
           in deze ruimte.
-        </Typography>
+        </Alert>
       )}
-      {error && <Typography color="error">Opslaan mislukt: {error}</Typography>}
+      {error && <Alert severity="error">Opslaan mislukt: {error}</Alert>}
       <Button
         type="submit"
         variant="contained"

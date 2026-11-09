@@ -48,6 +48,8 @@ import {
   type BoardEvent,
   type BoardEventMeta,
   type CalendarRoom,
+  CONFLICT_EVENT_BACKGROUND,
+  CONFLICT_EVENT_BORDER,
   defaultSlotAt,
   EDITABLE_EVENT_BACKGROUND,
   findBooking,
@@ -60,7 +62,7 @@ import {
   FREE_SLOT_SELECTED_BACKGROUND,
   FREE_SLOT_SELECTED_BORDER,
   isCalendarResource,
-  markConflictingSlots,
+  markConflicts,
   type MovedEvent,
   READ_ONLY_EVENT_BACKGROUND,
   READ_ONLY_EVENT_BORDER,
@@ -145,7 +147,8 @@ const BoardActionsContext = createContext<BoardActions | null>(null);
 
 /**
  * Event bar with the booking name and the info, edit and delete buttons.
- * Own bookings get a green background; others a muted grey one (issue #13).
+ * Own bookings get a green background; others a muted grey one (issue #13);
+ * a booking overlapping another booking of the room is red (issue #16).
  *
  * Rendered inside the library's event button, so the icon buttons render as
  * spans (nested buttons are invalid HTML) and stop pointer events from
@@ -169,19 +172,27 @@ function BoardEventBar(
     throw new Error("BoardEventBar got a non-booking event without freeSlot");
   }
   const editable = event.editable ?? false;
+  const conflict = event.conflict === true;
 
   return (
     <Box
       title={booking.summary}
+      data-booking-conflict={conflict ? "true" : undefined}
       sx={{
         height: "100%",
         p: "2px 6px",
         borderRadius: 0.5,
         overflow: "hidden",
-        backgroundColor: editable
+        backgroundColor: conflict
+          ? CONFLICT_EVENT_BACKGROUND
+          : editable
           ? EDITABLE_EVENT_BACKGROUND
           : READ_ONLY_EVENT_BACKGROUND,
-        border: editable ? undefined : `1px solid ${READ_ONLY_EVENT_BORDER}`,
+        border: conflict
+          ? `1px solid ${CONFLICT_EVENT_BORDER}`
+          : editable
+          ? undefined
+          : `1px solid ${READ_ONLY_EVENT_BORDER}`,
       }}
     >
       <Typography
@@ -189,7 +200,11 @@ function BoardEventBar(
         component="div"
         noWrap
         sx={{
-          color: editable ? "text.primary" : "text.secondary",
+          color: conflict
+            ? "error.dark"
+            : editable
+            ? "text.primary"
+            : "text.secondary",
         }}
       >
         {event.title}
@@ -299,7 +314,8 @@ function FreeSlotBar(
  * pressing or dragging empty lane space, opens the booking form in the same
  * sidebar (issue #15); the edit icon opens the same form prefilled with
  * the booking's values and the delete icon deletes immediately (#14).
- * Free-slot blocks whose range overlaps an existing booking are marked
+ * Events whose range overlaps another booking of the room — existing
+ * double bookings as well as the selected or previewed slot — are marked
  * red on the board, next to the form's overlap warning (issue #16).
  */
 export function Calendar(
@@ -355,7 +371,7 @@ export function Calendar(
 
   const events = useMemo(
     () =>
-      markConflictingSlots(
+      markConflicts(
         [
           ...applyMovedEvents(toEvents(visibleRooms), moved),
           ...toFreeSlotEvents(
