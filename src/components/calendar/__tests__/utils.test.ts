@@ -21,7 +21,7 @@ import {
   isLongBooking,
   LONG_BOOKING_MINUTES,
   MARGIN_MINUTES,
-  markConflictingSlots,
+  markConflicts,
   READ_ONLY_EVENT_BACKGROUND,
   roomDescription,
   roomLabel,
@@ -357,7 +357,7 @@ Deno.test("checkMargin passes a booking with a five-minute margin on both sides"
   assertEquals(result, { zeroGap: false });
 });
 
-Deno.test("markConflictingSlots flags a free-slot block that overlaps a booking (issue #16)", () => {
+Deno.test("markConflicts flags a free-slot block that overlaps a booking (issue #16)", () => {
   const rooms = [{
     canonicalName: "Kletshok 03",
     shortName: "KH 03",
@@ -382,14 +382,14 @@ Deno.test("markConflictingSlots flags a free-slot block that overlaps a booking 
     draggable: false,
   }];
 
-  const marked = markConflictingSlots(events, rooms);
+  const marked = markConflicts(events, rooms);
 
   assertEquals(marked[0].conflict, true);
   // The original event stays untouched
   assertEquals(events[0].conflict, undefined);
 });
 
-Deno.test("markConflictingSlots leaves free-slot blocks without an overlap unmarked", () => {
+Deno.test("markConflicts leaves free-slot blocks without an overlap unmarked", () => {
   const rooms = [{
     canonicalName: "Kletshok 03",
     shortName: "KH 03",
@@ -414,10 +414,37 @@ Deno.test("markConflictingSlots leaves free-slot blocks without an overlap unmar
     draggable: false,
   }];
 
-  assertEquals(markConflictingSlots(events, rooms)[0].conflict, undefined);
+  assertEquals(markConflicts(events, rooms)[0].conflict, undefined);
 });
 
-Deno.test("markConflictingSlots never marks booking events and never the excluded booking (issue #16)", () => {
+Deno.test("markConflicts marks both bookings of an overlapping pair, but never a booking against itself (issue #16)", () => {
+  const rooms = [{
+    canonicalName: "Kletshok 03",
+    shortName: "KH 03",
+    bookings: [
+      booking({
+        id: "willem",
+        booker: "Willem",
+        start: new Date(2026, 9, 28, 10, 0),
+        end: new Date(2026, 9, 28, 12, 0),
+      }),
+      booking({
+        id: "sanne",
+        booker: "Sanne",
+        start: new Date(2026, 9, 28, 11, 0),
+        end: new Date(2026, 9, 28, 13, 0),
+      }),
+    ],
+  }];
+  const events = toEvents(rooms);
+
+  const marked = markConflicts(events, rooms);
+
+  assertEquals(marked[0].conflict, true);
+  assertEquals(marked[1].conflict, true);
+});
+
+Deno.test("markConflicts never marks the booking being edited against its own draft (issue #16)", () => {
   const rooms = [{
     canonicalName: "Kletshok 03",
     shortName: "KH 03",
@@ -445,12 +472,14 @@ Deno.test("markConflictingSlots never marks booking events and never the exclude
     draggable: false,
   };
 
-  const marked = markConflictingSlots(
+  const marked = markConflicts(
     [bookingEvent, slotEvent],
     rooms,
     "willem",
   );
 
+  // The edited booking never conflicts with itself, and the draft in its
+  // own range does not count as an overlap with it either
   assertEquals(marked[0].conflict, undefined);
   assertEquals(marked[1].conflict, undefined);
 });
