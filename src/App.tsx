@@ -30,6 +30,7 @@ import {
   AuthenticationService,
   CALENDAR_ID,
   CalendarService,
+  ClockService,
   GoogleAuthenticationAdapter,
   GoogleCalendarRepositoryAdapter,
   LocalSessionStorageAdapter,
@@ -37,7 +38,6 @@ import {
   PermissionService,
   PreferencesService,
   type Services,
-  SystemClock,
 } from "./services/index.ts";
 import { useGoogleLoginFlow } from "./services/authentication/index.ts";
 
@@ -117,7 +117,7 @@ function AppServices({ children }: { children: ReactNode }): React.JSX.Element {
   const initiateLogin = useGoogleLoginFlow();
 
   const services = useMemo<Services>(() => {
-    const clock = new SystemClock();
+    const clock = new ClockService();
     const sessionStorage = new LocalSessionStorageAdapter();
     const authentication = new AuthenticationService({
       provider: new GoogleAuthenticationAdapter({ initiateLogin }),

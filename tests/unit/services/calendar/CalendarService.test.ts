@@ -23,7 +23,7 @@ import {
   type NewBooking,
 } from "../../../../src/services/calendar/CalendarServicePort.ts";
 import type { PermissionServicePort } from "../../../../src/services/permissions/PermissionServicePort.ts";
-import { isSameDay } from "../../../../src/services/clock/dates.ts";
+import { isSameDay } from "../../../../src/services/clock/index.ts";
 import { ROOMS } from "../../../../src/services/calendar/rooms.ts";
 
 /**

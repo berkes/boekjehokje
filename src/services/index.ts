@@ -62,7 +62,7 @@ export type {
 export { PermissionService } from "./permissions/PermissionService.ts";
 
 export type { ClockPort } from "./clock/ClockPort.ts";
-export { SystemClock } from "./clock/SystemClock.ts";
+export { ClockService } from "./clock/ClockService.ts";
 export {
   endOfDay,
   isSameDay,
@@ -71,7 +71,7 @@ export {
   startOfWeek,
   type WeekdayOption,
   weekdayOptions,
-} from "./clock/dates.ts";
+} from "./clock/ClockService.ts";
 
 export type { KeyValueStorePort } from "./preferences/KeyValueStorePort.ts";
 export { LocalStorageAdapter } from "./preferences/LocalStorageAdapter.ts";

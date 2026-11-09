@@ -1,12 +1,22 @@
 /**
- * Pure date helpers
+ * Clock service
  *
- * The domain language of dates in this app: day ranges, week math and
- * Dutch date labels. Pure functions over plain Date values, shared by the
- * services (day ranges) and the components (toolbar labels); the current
- * time itself comes from the ClockPort (see ClockPort.ts / SystemClock.ts),
- * so date-dependent logic can be tested deterministically.
+ * The production ClockPort: reads the real current time. The module also
+ * carries the pure date helpers (day ranges, week math, Dutch labels) —
+ * the domain language of dates — as exported functions of the service
+ * file, so this module has no files beyond the port, the service and the
+ * index.
  */
+import type { ClockPort } from "./ClockPort.ts";
+
+/**
+ * The system clock service, reading the real current time
+ */
+export class ClockService implements ClockPort {
+  now(): Date {
+    return new Date();
+  }
+}
 
 /**
  * Check whether two dates are on the same calendar day
