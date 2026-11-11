@@ -45,6 +45,42 @@ export class SettingsPage {
   }
 
   /**
+   * Assert the editable booking details (issue #18) show the given
+   * booker name and contact.
+   */
+  async assertShowsBookerDetails(name: string, contact: string): Promise<void> {
+    await expect(this.page.getByLabel("Boeker")).toHaveValue(name);
+    await expect(this.page.getByLabel("Contact")).toHaveValue(contact);
+  }
+
+  /**
+   * Fill the editable booker name field.
+   */
+  async fillBookerName(name: string): Promise<this> {
+    await this.page.getByLabel("Boeker").fill(name);
+    return this;
+  }
+
+  /**
+   * Fill the editable contact field.
+   */
+  async fillContactDetails(contact: string): Promise<this> {
+    await this.page.getByLabel("Contact").fill(contact);
+    return this;
+  }
+
+  /**
+   * Save the booking details and wait for the confirmation.
+   */
+  async saveBookerDetails(): Promise<this> {
+    await this.page.getByRole("button", { name: "Opslaan" }).click();
+    await expect(
+      this.page.getByText("Boekingsgegevens opgeslagen"),
+    ).toBeVisible();
+    return this;
+  }
+
+  /**
    * End the session and return to the landing page.
    */
   async logout(): Promise<LandingPage> {
