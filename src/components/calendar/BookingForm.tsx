@@ -3,7 +3,10 @@
  *
  * Rendered inside the SidebarShell when a free slot was selected on the
  * board, by click or drag (issue #15). Pre-filled with the selected room
- * and time range; the booker is the signed-in user and stays read-only.
+ * and time range; the booker is the name from the user's booking
+ * preferences (issue #18), falling back to the signed-in user's Google
+ * profile name, and stays read-only. The contact is pre-filled from the
+ * last-used value in the preferences.
  * The summary preview shows the event title the booking will get in the
  * calendar source. Confirming hands the booking to the calendar service,
  * which writes it to the calendar source. With a `booking` prop the same
@@ -83,7 +86,7 @@ export function BookingForm(
   const roomsService = useRoomsService();
   const overlaps = useOverlapsService();
   const eventFormat = useEventFormatService();
-  const booker = user?.name ?? "";
+  const booker = preferences.getBookerName() || user?.name || "";
 
   const [room, setRoom] = useState(initialRoom);
   const [from, setFrom] = useState(() => formatDateTimeLocal(initialStart));

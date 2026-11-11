@@ -1,7 +1,7 @@
 /**
  * Unit tests for the preferences service
  *
- * The preferences (last-used booker contact, hidden room columns) are user
+ * The preferences (booker name and contact, hidden room columns) are user
  * preferences, stored through the injected key-value store repository
  * (never business data). Tests use the central in-memory fake from
  * tests/utils and never touch real localStorage.
@@ -14,6 +14,34 @@ import { PreferencesService } from "../../../../src/services/preferences/Prefere
 function makeService(store: KeyValueStorePort = new InMemoryKeyValueStore()) {
   return { service: new PreferencesService({ store }), store };
 }
+
+Deno.test("getBookerName returns an empty name when nothing is stored", () => {
+  assertEquals(makeService().service.getBookerName(), "");
+});
+
+Deno.test("saveBookerName persists the name and getBookerName reads it back", () => {
+  const { service } = makeService();
+
+  service.saveBookerName("Bèr de Tester");
+
+  assertEquals(service.getBookerName(), "Bèr de Tester");
+});
+
+Deno.test("getBookerName returns an empty name for invalid stored data", () => {
+  const store = new InMemoryKeyValueStore();
+  store.write("boekjehokje_booker_name", "{not json");
+  const { service } = makeService(store);
+
+  assertEquals(service.getBookerName(), "");
+});
+
+Deno.test("getBookerName returns an empty name for a non-string value", () => {
+  const store = new InMemoryKeyValueStore();
+  store.write("boekjehokje_booker_name", JSON.stringify(42));
+  const { service } = makeService(store);
+
+  assertEquals(service.getBookerName(), "");
+});
 
 Deno.test("getBookerContact returns an empty contact when nothing is stored", () => {
   assertEquals(makeService().service.getBookerContact(), "");
@@ -118,8 +146,10 @@ Deno.test("the service does not throw when the store fails", () => {
   const { service } = makeService(failing);
 
   try {
+    service.saveBookerName("Bèr de Tester");
     service.saveBookerContact("ber@boekjehokje.test");
     service.saveHiddenRooms(new Set(["Kletshok 03"]));
+    assertEquals(service.getBookerName(), "");
     assertEquals(service.getBookerContact(), "");
     assertEquals(service.getHiddenRooms(), new Set());
   } catch {

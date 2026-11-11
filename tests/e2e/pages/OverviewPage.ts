@@ -435,6 +435,14 @@ export class OverviewPage {
   }
 
   /**
+   * Assert the booking form's contact field is pre-filled with the given
+   * value (the last-used contact from the preferences, issue #18).
+   */
+  async assertContactPrefilled(contact: string): Promise<void> {
+    await expect(this.page.getByLabel("Contact")).toHaveValue(contact);
+  }
+
+  /**
    * Confirm the create booking form.
    */
   async submitBookingForm(): Promise<this> {
