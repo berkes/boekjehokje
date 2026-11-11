@@ -34,7 +34,8 @@ const ROOM_OPTIONS = [
  * When I click the green free-slot block at 10:30 in Kletshok 03's column
  * Then the booking form opens in the sidebar, pre-filled with the block
  * "Kletshok 03 (03 KH)", van "2026-10-28T10:00", tot "2026-10-28T10:55",
- * the read-only booker "Bèr" and the summary preview "03 KH | Bèr"
+ * the editable booker "Bèr" (the Google profile name, issue #18) and the
+ * summary preview "03 KH | Bèr"
  * So that I can book the room without leaving the app.
  */
 test("User can open the booking form by clicking a free-slot block", async ({ authedPage }) => {

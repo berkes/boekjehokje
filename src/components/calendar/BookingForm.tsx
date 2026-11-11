@@ -3,10 +3,11 @@
  *
  * Rendered inside the SidebarShell when a free slot was selected on the
  * board, by click or drag (issue #15). Pre-filled with the selected room
- * and time range; the booker is the name from the user's booking
- * preferences (issue #18), falling back to the signed-in user's Google
- * profile name, and stays read-only. The contact is pre-filled from the
- * last-used value in the preferences.
+ * and time range; the editable booker name comes from the user's booking
+ * preferences (issue #18), initially the signed-in user's Google profile
+ * name, and is stored back on confirm. When editing a booking, it
+ * pre-fills from that booking's booker. The contact is pre-filled from
+ * the last-used value in the preferences.
  * The summary preview shows the event title the booking will get in the
  * calendar source. Confirming hands the booking to the calendar service,
  * which writes it to the calendar source. With a `booking` prop the same
@@ -86,11 +87,12 @@ export function BookingForm(
   const roomsService = useRoomsService();
   const overlaps = useOverlapsService();
   const eventFormat = useEventFormatService();
-  const booker = preferences.getBookerName() || user?.name || "";
-
   const [room, setRoom] = useState(initialRoom);
   const [from, setFrom] = useState(() => formatDateTimeLocal(initialStart));
   const [to, setTo] = useState(() => formatDateTimeLocal(initialEnd));
+  const [booker, setBooker] = useState(() =>
+    booking?.booker ?? (preferences.getBookerName() || user?.name || "")
+  );
   const [contact, setContact] = useState(() => preferences.getBookerContact());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -124,17 +126,19 @@ export function BookingForm(
     setError(null);
     setIsSubmitting(true);
     try {
+      const trimmedBooker = booker.trim();
       const trimmedContact = contact.trim();
       await onSubmit(
         {
           room,
-          booker,
+          booker: trimmedBooker,
           contact: trimmedContact,
           start: new Date(from),
           end: new Date(to),
         },
         booking?.id,
       );
+      preferences.saveBookerName(trimmedBooker);
       preferences.saveBookerContact(trimmedContact);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -182,7 +186,8 @@ export function BookingForm(
       <TextField
         label="Boeker"
         value={booker}
-        disabled
+        onChange={(event) => setBooker(event.target.value)}
+        helperText="Deze naam wordt bij je boekingen opgeslagen"
         fullWidth
       />
       <TextField
@@ -195,7 +200,7 @@ export function BookingForm(
       <TextField
         label="Samenvatting"
         value={preview}
-        slotProps={{ htmlInput: { readOnly: true } }}
+        disabled
         fullWidth
       />
       {conflicting.length > 0 && (
