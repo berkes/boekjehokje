@@ -20,9 +20,9 @@ import { OverviewPage } from "../pages/OverviewPage.ts";
  * short name in brackets, without the Unknown group.
  */
 const ROOM_OPTIONS = [
-  "Kletshok 03 (KH 03)",
-  "Kletshok 04 (KH 04)",
-  "Kletshok 05 (KH 05)",
+  "Kletshok 03 (03 KH)",
+  "Kletshok 04 (04 KH)",
+  "Kletshok 05 (05 KH)",
   "Stilteruimte (Stilteruimte)",
   "Tuinkamer (TK)",
   "Vergaderruimte C3 (VG C3)",
@@ -33,8 +33,8 @@ const ROOM_OPTIONS = [
  * free in the morning
  * When I click the green free-slot block at 10:30 in Kletshok 03's column
  * Then the booking form opens in the sidebar, pre-filled with the block
- * "Kletshok 03 (KH 03)", van "2026-10-28T10:00", tot "2026-10-28T10:55",
- * the read-only booker "Bèr" and the summary preview "KH 03 | Bèr"
+ * "Kletshok 03 (03 KH)", van "2026-10-28T10:00", tot "2026-10-28T10:55",
+ * the read-only booker "Bèr" and the summary preview "03 KH | Bèr"
  * So that I can book the room without leaving the app.
  */
 test("User can open the booking form by clicking a free-slot block", async ({ authedPage }) => {
@@ -43,11 +43,11 @@ test("User can open the booking form by clicking a free-slot block", async ({ au
   await overview.clickFreeSlot("Kletshok 03", "10:30");
 
   await overview.assertBookingFormIsOpen({
-    room: "Kletshok 03 (KH 03)",
+    room: "Kletshok 03 (03 KH)",
     from: "2026-10-28T10:00",
     to: "2026-10-28T10:55",
     booker: "Bèr",
-    summary: "KH 03 | Bèr",
+    summary: "03 KH | Bèr",
   });
   await overview.assertSelectedSlotIsHighlighted("Kletshok 03");
 });
@@ -72,21 +72,21 @@ test("Free slots are painted as 55-minute blocks with margins around bookings", 
 
   await overview.clickFreeSlotBlock("Kletshok 03", 0);
   await overview.assertBookingFormIsOpen({
-    room: "Kletshok 03 (KH 03)",
+    room: "Kletshok 03 (03 KH)",
     from: "2026-10-28T10:00",
     to: "2026-10-28T10:55",
     booker: "Bèr",
-    summary: "KH 03 | Bèr",
+    summary: "03 KH | Bèr",
   });
 
   await overview.closeBookingDetails();
   await overview.clickFreeSlotBlock("Kletshok 03", 1);
   await overview.assertBookingFormIsOpen({
-    room: "Kletshok 03 (KH 03)",
+    room: "Kletshok 03 (03 KH)",
     from: "2026-10-28T15:05",
     to: "2026-10-28T16:00",
     booker: "Bèr",
-    summary: "KH 03 | Bèr",
+    summary: "03 KH | Bèr",
   });
 });
 
@@ -104,11 +104,11 @@ test("Click after a booking ending at the whole hour opens the block with a five
   await overview.clickFreeSlot("Kletshok 04", "13:30");
 
   await overview.assertBookingFormIsOpen({
-    room: "Kletshok 04 (KH 04)",
+    room: "Kletshok 04 (04 KH)",
     from: "2026-10-28T13:05",
     to: "2026-10-28T14:00",
     booker: "Bèr",
-    summary: "KH 04 | Bèr",
+    summary: "04 KH | Bèr",
   });
 });
 
@@ -125,11 +125,11 @@ test("User can open the booking form by dragging a free range", async ({ authedP
   await overview.dragFreeRange("Kletshok 03", "18:30", "19:30");
 
   await overview.assertBookingFormIsOpen({
-    room: "Kletshok 03 (KH 03)",
+    room: "Kletshok 03 (03 KH)",
     from: "2026-10-28T18:30",
     to: "2026-10-28T19:30",
     booker: "Bèr",
-    summary: "KH 03 | Bèr",
+    summary: "03 KH | Bèr",
   });
 });
 
@@ -165,7 +165,7 @@ test("User can pick another room in the booking form", async ({ authedPage }) =>
  * Then the form warns that there is no five-minute margin (ADR-0006)
  * And when I fill in my contact and confirm anyway
  * Then the booking is written to the calendar API (POST) with summary
- * "KH 03 | Bèr", the contact in the description, start
+ * "03 KH | Bèr", the contact in the description, start
  * "2026-10-28T10:00:00.000Z" and end "2026-10-28T11:00:00.000Z", and the
  * form closes
  * So that I can deliberately book without a margin after seeing the warning.
@@ -177,11 +177,11 @@ test("User is warned when booking without a margin, but can still confirm", asyn
   await overview.setDateTime("Tot", "2026-10-28T11:00");
 
   await overview.assertBookingFormIsOpen({
-    room: "Kletshok 03 (KH 03)",
+    room: "Kletshok 03 (03 KH)",
     from: "2026-10-28T10:00",
     to: "2026-10-28T11:00",
     booker: "Bèr",
-    summary: "KH 03 | Bèr",
+    summary: "03 KH | Bèr",
   });
   await overview.assertMarginWarningIsShown();
 
@@ -189,7 +189,7 @@ test("User is warned when booking without a margin, but can still confirm", asyn
   await overview.submitBookingForm();
   await overview.assertBookingWasWritten({
     method: "POST",
-    summary: "KH 03 | Bèr",
+    summary: "03 KH | Bèr",
     description: "ber@boekjehokje.test",
     start: "2026-10-28T10:00:00.000Z",
     end: "2026-10-28T11:00:00.000Z",
@@ -219,11 +219,11 @@ test("User is warned about an overlap but can still confirm", async ({ authedPag
   await overview.setDateTime("Tot", "2026-10-28T11:30");
 
   await overview.assertBookingFormIsOpen({
-    room: "Kletshok 03 (KH 03)",
+    room: "Kletshok 03 (03 KH)",
     from: "2026-10-28T10:30",
     to: "2026-10-28T11:30",
     booker: "Bèr",
-    summary: "KH 03 | Bèr",
+    summary: "03 KH | Bèr",
   });
   await overview.assertOverlapWarningIsShown("Willem");
   await overview.assertConflictSlotIsShownIn("Kletshok 03");
@@ -233,7 +233,7 @@ test("User is warned about an overlap but can still confirm", async ({ authedPag
   await overview.submitBookingForm();
   await overview.assertBookingWasWritten({
     method: "POST",
-    summary: "KH 03 | Bèr",
+    summary: "03 KH | Bèr",
     description: "ber@boekjehokje.test",
     start: "2026-10-28T10:30:00.000Z",
     end: "2026-10-28T11:30:00.000Z",
@@ -272,7 +272,7 @@ test("The board previews the form's draft and drops it for a hidden room", async
  * Given the booking form is open for Kletshok 03 at 10:00-10:55
  * When I fill in my contact "ber@boekjehokje.test" and confirm the booking
  * Then the booking is written to the calendar API (POST) with summary
- * "KH 03 | Bèr", the contact in the description, start
+ * "03 KH | Bèr", the contact in the description, start
  * "2026-10-28T10:00:00.000Z" and end "2026-10-28T10:55:00.000Z", and the
  * form closes
  * So that my booking is registered on the shared calendar (#14).
@@ -286,7 +286,7 @@ test("User can confirm a booking, which is written to the calendar API", async (
 
   await overview.assertBookingWasWritten({
     method: "POST",
-    summary: "KH 03 | Bèr",
+    summary: "03 KH | Bèr",
     description: "ber@boekjehokje.test",
     start: "2026-10-28T10:00:00.000Z",
     end: "2026-10-28T10:55:00.000Z",
@@ -308,22 +308,22 @@ test("While the booking form is open, other slots are disabled and do nothing", 
 
   await overview.clickFreeSlotBlock("Kletshok 03", 0);
   await overview.assertBookingFormIsOpen({
-    room: "Kletshok 03 (KH 03)",
+    room: "Kletshok 03 (03 KH)",
     from: "2026-10-28T10:00",
     to: "2026-10-28T10:55",
     booker: "Bèr",
-    summary: "KH 03 | Bèr",
+    summary: "03 KH | Bèr",
   });
   await overview.assertAllSlotsDisabled("Kletshok 03");
 
   await overview.clickFreeSlotBlock("Kletshok 03", 1);
   await overview.clickFreeSlot("Kletshok 03", "09:30");
   await overview.assertBookingFormIsOpen({
-    room: "Kletshok 03 (KH 03)",
+    room: "Kletshok 03 (03 KH)",
     from: "2026-10-28T10:00",
     to: "2026-10-28T10:55",
     booker: "Bèr",
-    summary: "KH 03 | Bèr",
+    summary: "03 KH | Bèr",
   });
 
   await overview.closeBookingDetails();

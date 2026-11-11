@@ -315,7 +315,7 @@ Deno.test("getDay groups events per room and routes unmatched ones to Unknown", 
       b,
     ) => a.localeCompare(b)),
   );
-  assertEquals(byName.get("Kletshok 05")?.shortName, "KH 05");
+  assertEquals(byName.get("Kletshok 05")?.shortName, "05 KH");
   assertEquals(byName.get("Kletshok 05")?.bookings.map((b) => b.id), [
     "event-1",
   ]);
@@ -375,7 +375,7 @@ Deno.test("createBooking writes the standardized event format to the repository"
   assertEquals(repo.writes.length, 1);
   assertEquals(repo.writes[0].kind, "create");
   assertEquals(repo.writes[0].draft, {
-    summary: "KH 03 | Bèr",
+    summary: "03 KH | Bèr",
     description: "ber@boekjehokje.test",
     start: new Date("2026-10-28T10:00:00Z"),
     end: new Date("2026-10-28T10:55:00Z"),

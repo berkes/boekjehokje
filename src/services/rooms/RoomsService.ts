@@ -16,7 +16,7 @@ import {
 const ROOM_CONFIGS: RoomDefinition[] = [
   {
     canonicalName: "Kletshok 03",
-    shortName: "KH 03",
+    shortName: "03 KH",
     aliases: [
       "kletshok 03",
       "kletshok 3",
@@ -38,7 +38,7 @@ const ROOM_CONFIGS: RoomDefinition[] = [
   },
   {
     canonicalName: "Kletshok 04",
-    shortName: "KH 04",
+    shortName: "04 KH",
     aliases: [
       "kletshok 04",
       "kletshok 4",
@@ -60,7 +60,7 @@ const ROOM_CONFIGS: RoomDefinition[] = [
   },
   {
     canonicalName: "Kletshok 05",
-    shortName: "KH 05",
+    shortName: "05 KH",
     aliases: [
       "kletshok 05",
       "kletshok 5",

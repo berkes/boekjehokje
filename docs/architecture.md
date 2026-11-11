@@ -165,7 +165,7 @@ sequenceDiagram
   Form->>Board: onSubmit(NewBooking)
   Board->>Service: createBooking(NewBooking)
   Service->>Format: eventFormat.serialize(booking)
-  Format-->>Service: EventDraft (summary "KH 03 | Bèr", description = contact)
+  Format-->>Service: EventDraft (summary "03 KH | Bèr", description = contact)
   Service->>Repo: createEvent(draft)
   Repo->>Google: createEvent(draft)
   Google->>API: POST /calendars/&lt;id&gt;/events
@@ -216,7 +216,7 @@ Writes and reads meet in one format, owned by the event format service
 (`src/services/eventformat/`): `EventFormatService.serialize` writes it,
 `EventFormatService.parse` reads it:
 
-- **summary**: `<room short name> | <booker>`, e.g. `KH 03 | Bèr` — `serialize`
+- **summary**: `<room short name> | <booker>`, e.g. `03 KH | Bèr` — `serialize`
   produces it, `parse` reads the room and booker back out of it; the round-trip
   is unit tested.
 - **description**: the booker's contact details (optional).

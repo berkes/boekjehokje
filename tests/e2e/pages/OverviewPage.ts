@@ -5,9 +5,9 @@ import { SettingsPage } from "./SettingsPage.ts";
  * The rooms of the makersplaats and their column headers on the board.
  */
 const ROOM_COLUMNS: Readonly<Record<string, string>> = {
-  "Kletshok 03": "KH 03",
-  "Kletshok 04": "KH 04",
-  "Kletshok 05": "KH 05",
+  "Kletshok 03": "03 KH",
+  "Kletshok 04": "04 KH",
+  "Kletshok 05": "05 KH",
   "Stilteruimte": "Stilteruimte",
   "Tuinkamer": "TK",
   "Vergaderruimte C3": "VG C3",
@@ -29,7 +29,7 @@ const HOUR_HEIGHT_PX = 48;
  * The booking form as it opens from a selected free slot.
  */
 interface BookingFormValues {
-  /** Room shown in the select, e.g. "Kletshok 03 (KH 03)" */
+  /** Room shown in the select, e.g. "Kletshok 03 (03 KH)" */
   room: string;
   /** Value of the "Van" field, e.g. "2026-10-28T10:00" */
   from: string;

@@ -64,11 +64,11 @@ function booking(overrides: Partial<Booking>): Booking {
 
 Deno.test("toResources maps rooms to lanes with short name and description", () => {
   const resources = toResources([
-    { canonicalName: "Kletshok 05", shortName: "KH05", bookings: [] },
+    { canonicalName: "Kletshok 05", shortName: "05 KH", bookings: [] },
   ]);
   assertEquals(resources, [{
     id: "Kletshok 05",
-    title: "KH05",
+    title: "05 KH",
     description: "Kletshok 05",
   }]);
 });
@@ -76,7 +76,7 @@ Deno.test("toResources maps rooms to lanes with short name and description", () 
 Deno.test("toResources sorts the unknown room last", () => {
   const resources = toResources([
     { canonicalName: "Unknown", shortName: "?", bookings: [] },
-    { canonicalName: "Kletshok 05", shortName: "KH05", bookings: [] },
+    { canonicalName: "Kletshok 05", shortName: "05 KH", bookings: [] },
   ]);
   assertEquals(resources.map((r) => r.id), ["Kletshok 05", "Unknown"]);
 });
@@ -84,7 +84,7 @@ Deno.test("toResources sorts the unknown room last", () => {
 Deno.test("withUnknownLast moves the unknown room to the end", () => {
   const rooms = [
     { canonicalName: "Unknown", shortName: "?", bookings: [] },
-    { canonicalName: "Kletshok 05", shortName: "KH05", bookings: [] },
+    { canonicalName: "Kletshok 05", shortName: "05 KH", bookings: [] },
   ];
   assertEquals(withUnknownLast(rooms).map((r) => r.canonicalName), [
     "Kletshok 05",
@@ -95,7 +95,7 @@ Deno.test("withUnknownLast moves the unknown room to the end", () => {
 Deno.test("withUnknownLast keeps the order of the known rooms", () => {
   const rooms = [
     { canonicalName: "Tuinkamer", shortName: "TK", bookings: [] },
-    { canonicalName: "Kletshok 05", shortName: "KH05", bookings: [] },
+    { canonicalName: "Kletshok 05", shortName: "05 KH", bookings: [] },
   ];
   assertEquals(withUnknownLast(rooms).map((r) => r.canonicalName), [
     "Tuinkamer",
@@ -106,7 +106,7 @@ Deno.test("withUnknownLast keeps the order of the known rooms", () => {
 Deno.test("withUnknownLast does not change the input rooms", () => {
   const rooms = [
     { canonicalName: "Unknown", shortName: "?", bookings: [] },
-    { canonicalName: "Kletshok 05", shortName: "KH05", bookings: [] },
+    { canonicalName: "Kletshok 05", shortName: "05 KH", bookings: [] },
   ];
   withUnknownLast(rooms);
   assertEquals(rooms.map((r) => r.canonicalName), [
@@ -119,7 +119,7 @@ Deno.test("toEvents maps bookings to events on the room's resource", () => {
   const events = toEvents([
     {
       canonicalName: "Kletshok 05",
-      shortName: "KH05",
+      shortName: "05 KH",
       bookings: [
         booking({ booker: "Alice", summary: "Overleg" }),
       ],
@@ -137,7 +137,7 @@ Deno.test("toEvents keeps editable bookings editable and draggable", () => {
   const events = toEvents([
     {
       canonicalName: "Kletshok 05",
-      shortName: "KH05",
+      shortName: "05 KH",
       bookings: [booking({ booker: "Alice", editable: true })],
     },
   ]);
@@ -149,7 +149,7 @@ Deno.test("toEvents keeps read-only bookings locked", () => {
   const events = toEvents([
     {
       canonicalName: "Kletshok 05",
-      shortName: "KH05",
+      shortName: "05 KH",
       bookings: [booking({ booker: "Alice", editable: false })],
     },
   ]);
@@ -161,7 +161,7 @@ Deno.test("toEvents falls back to the summary when there is no booker", () => {
   const events = toEvents([
     {
       canonicalName: "Kletshok 05",
-      shortName: "KH05",
+      shortName: "05 KH",
       bookings: [booking({ booker: null, summary: "Overleg" })],
     },
   ]);
@@ -172,7 +172,7 @@ Deno.test("applyMovedEvents overrides time and room of a dragged booking", () =>
   const events = toEvents([
     {
       canonicalName: "Kletshok 05",
-      shortName: "KH05",
+      shortName: "05 KH",
       bookings: [booking({ id: "id-1", editable: true })],
     },
   ]);
@@ -204,8 +204,8 @@ Deno.test("findBooking finds a booking by id across rooms", () => {
   const bob = booking({ id: "id-2", booker: "Bob" });
   const found = findBooking(
     [
-      { canonicalName: "Kletshok 05", shortName: "KH05", bookings: [alice] },
-      { canonicalName: "Kletshok 04", shortName: "KH04", bookings: [bob] },
+      { canonicalName: "Kletshok 05", shortName: "05 KH", bookings: [alice] },
+      { canonicalName: "Kletshok 04", shortName: "05 KH", bookings: [bob] },
     ],
     "id-2",
   );
@@ -215,7 +215,7 @@ Deno.test("findBooking finds a booking by id across rooms", () => {
 Deno.test("findBooking returns null for an unknown id", () => {
   assertEquals(
     findBooking(
-      [{ canonicalName: "Kletshok 05", shortName: "KH05", bookings: [] }],
+      [{ canonicalName: "Kletshok 05", shortName: "05 KH", bookings: [] }],
       "missing",
     ),
     null,
@@ -236,7 +236,7 @@ Deno.test("roomDescription uses the canonical name for known rooms", () => {
 
 Deno.test("roomLabel uses the full canonical name for known rooms", () => {
   assertEquals(
-    roomLabel({ canonicalName: "Kletshok 05", shortName: "KH 05" }),
+    roomLabel({ canonicalName: "Kletshok 05", shortName: "05 KH" }),
     "Kletshok 05",
   );
 });
@@ -250,15 +250,15 @@ Deno.test("roomLabel uses the short name for the unknown room", () => {
 
 Deno.test("isCalendarResource accepts resources with a description", () => {
   const resource: CalendarResource = {
-    id: "KH05",
-    title: "KH05",
+    id: "05 KH",
+    title: "05 KH",
     description: "Kletshok 05",
   };
   assert(isCalendarResource(resource));
 });
 
 Deno.test("isCalendarResource rejects plain resources", () => {
-  assertEquals(isCalendarResource({ id: "KH05", title: "KH05" }), false);
+  assertEquals(isCalendarResource({ id: "05 KH", title: "05 KH" }), false);
 });
 
 Deno.test("defaultSlotAt without a preceding booking starts at the whole hour and ends five to the next hour (ADR-0006)", () => {
@@ -371,7 +371,7 @@ Deno.test("checkMargin passes a booking with a five-minute margin on both sides"
 Deno.test("markConflicts flags a free-slot block that overlaps a booking (issue #16)", () => {
   const rooms = [{
     canonicalName: "Kletshok 03",
-    shortName: "KH 03",
+    shortName: "03 KH",
     bookings: [
       booking({
         id: "willem",
@@ -403,7 +403,7 @@ Deno.test("markConflicts flags a free-slot block that overlaps a booking (issue 
 Deno.test("markConflicts leaves free-slot blocks without an overlap unmarked", () => {
   const rooms = [{
     canonicalName: "Kletshok 03",
-    shortName: "KH 03",
+    shortName: "03 KH",
     bookings: [
       booking({
         id: "willem",
@@ -431,7 +431,7 @@ Deno.test("markConflicts leaves free-slot blocks without an overlap unmarked", (
 Deno.test("markConflicts marks both bookings of an overlapping pair, but never a booking against itself (issue #16)", () => {
   const rooms = [{
     canonicalName: "Kletshok 03",
-    shortName: "KH 03",
+    shortName: "03 KH",
     bookings: [
       booking({
         id: "willem",
@@ -458,7 +458,7 @@ Deno.test("markConflicts marks both bookings of an overlapping pair, but never a
 Deno.test("markConflicts never marks the booking being edited against its own draft (issue #16)", () => {
   const rooms = [{
     canonicalName: "Kletshok 03",
-    shortName: "KH 03",
+    shortName: "03 KH",
     bookings: [
       booking({
         id: "willem",
@@ -528,7 +528,7 @@ Deno.test("toDomTheme maps the MUI palette onto theme tokens", () => {
 Deno.test("toPreviewEvent renders the draft as a preview block in a visible room", () => {
   const rooms = [{
     canonicalName: "Kletshok 03",
-    shortName: "KH 03",
+    shortName: "03 KH",
     bookings: [],
   }];
   const draft = {
@@ -549,7 +549,7 @@ Deno.test("toPreviewEvent renders the draft as a preview block in a visible room
 Deno.test("toPreviewEvent returns null when the draft room is hidden", () => {
   const rooms = [{
     canonicalName: "Kletshok 03",
-    shortName: "KH 03",
+    shortName: "03 KH",
     bookings: [],
   }];
   const draft = {
@@ -564,7 +564,7 @@ Deno.test("toPreviewEvent returns null when the draft room is hidden", () => {
 Deno.test("toPreviewEvent returns null while the draft equals the selected slot", () => {
   const rooms = [{
     canonicalName: "Kletshok 03",
-    shortName: "KH 03",
+    shortName: "03 KH",
     bookings: [],
   }];
   const selected = {

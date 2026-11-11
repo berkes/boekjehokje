@@ -57,13 +57,13 @@ Deno.test("normalize maps canonical names, short names and aliases", () => {
 
   assertEquals(service.normalize("Kletshok 05"), "Kletshok 05");
   assertEquals(service.normalize("kh5"), "Kletshok 05");
-  assertEquals(service.normalize("KH 05"), "Kletshok 05");
+  assertEquals(service.normalize("05 KH"), "Kletshok 05");
   assertEquals(service.normalize("Kletskubus 05"), "Kletshok 05");
   assertEquals(service.normalize("stilteruimte"), "Stilteruimte");
   assertEquals(service.normalize("tuin kamer"), "Tuinkamer");
   assertEquals(service.normalize("VG C3"), "Vergaderruimte C3");
   assertEquals(service.normalize("iets anders"), UNKNOWN_ROOM);
-  assertEquals(service.normalize("  KH 03  "), "Kletshok 03");
+  assertEquals(service.normalize("  03 KH  "), "Kletshok 03");
 });
 
 Deno.test("findMention finds the first room mention in a text", () => {

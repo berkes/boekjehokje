@@ -11,7 +11,7 @@ import { OverviewPage } from "../pages/OverviewPage.ts";
  * Given the week overview shows the booking "Kletshok 04 - Dirk"
  * When I click it
  * Then a sidebar opens describing "Kletshok 04 - Dirk", booked by Dirk
- * (dirk@boekjehokje.test) in the room Kletshok 04 (KH 04), lasting
+ * (dirk@boekjehokje.test) in the room Kletshok 04 (04 KH), lasting
  * 180 minuten
  * And when I close the sidebar
  * Then the details disappear
@@ -23,7 +23,7 @@ test("User can view the details of the booking 'Kletshok 04 - Dirk'", async ({ a
   await overview.openBookingDetails("Kletshok 04 - Dirk");
   await overview.assertDetailsDescribe("Kletshok 04 - Dirk");
   await overview.assertShowsBooker("Dirk", "dirk@boekjehokje.test");
-  await overview.assertShowsRoomOfBooking("Kletshok 04", "KH 04");
+  await overview.assertShowsRoomOfBooking("Kletshok 04", "04 KH");
   await overview.assertShowsDuration("180 minuten");
 
   await overview.closeBookingDetails();

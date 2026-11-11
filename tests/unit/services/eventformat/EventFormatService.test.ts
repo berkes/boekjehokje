@@ -60,7 +60,7 @@ Deno.test.each(
       expected: "Kletshok 05",
     },
     {
-      input: "KH 05",
+      input: "05 KH",
       expected: "Kletshok 05",
     },
     {
@@ -279,7 +279,7 @@ Deno.test.each(
     },
     {
       name: "Only a room: no name left",
-      input: "KH 03",
+      input: "03 KH",
       expected: null,
     },
   ],
@@ -335,7 +335,7 @@ Deno.test("serialize produces the standardized format that parse reads back", ()
     end: new Date("2026-10-28T10:55:00Z"),
   });
 
-  assertEquals(event.summary, "KH 03 | Bèr");
+  assertEquals(event.summary, "03 KH | Bèr");
   assertEquals(event.description, "ber@boekjehokje.test");
   assertEquals(event.start, new Date("2026-10-28T10:00:00Z"));
   assertEquals(event.end, new Date("2026-10-28T10:55:00Z"));

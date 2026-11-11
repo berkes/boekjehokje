@@ -17,13 +17,13 @@ function booking(overrides: Partial<Booking>): Booking {
   return {
     id: "id-1",
     uid: "uid-1",
-    summary: "KH 03 | Willem",
+    summary: "03 KH | Willem",
     htmlLink: null,
     room: "Kletshok 03",
     booker: "Willem",
     editable: false,
     details: {
-      originalName: "KH 03 | Willem",
+      originalName: "03 KH | Willem",
       author: "willem@example.com",
     },
     start: new Date(2026, 9, 28, 11, 0, 0),
@@ -36,10 +36,10 @@ const ROOMS = [
   {
     canonicalName: "Kletshok 03",
     bookings: [
-      booking({ id: "willem", summary: "KH 03 | Willem", booker: "Willem" }),
+      booking({ id: "willem", summary: "03 KH | Willem", booker: "Willem" }),
       booking({
         id: "anneke",
-        summary: "KH 03 | Anneke",
+        summary: "03 KH | Anneke",
         booker: "Anneke",
         start: new Date(2026, 9, 28, 13, 0, 0),
         end: new Date(2026, 9, 28, 14, 0, 0),
@@ -51,7 +51,7 @@ const ROOMS = [
     bookings: [
       booking({
         id: "dirk",
-        summary: "KH 04 | Dirk",
+        summary: "04 KH | Dirk",
         booker: "Dirk",
         room: "Kletshok 04",
         start: new Date(2026, 9, 28, 11, 0, 0),

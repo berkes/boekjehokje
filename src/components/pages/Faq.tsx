@@ -100,7 +100,7 @@ export function Faq(): React.JSX.Element {
         <>
           Een fictieve ruimte waarin we alle boekingen zetten die we niet konden
           koppelen aan een echte ruimte. Bijvoorbeeld door een typefout
-          ('Ketshok 03'), een niet-bestaande ruimte ('KH 06'), of omdat de
+          ('Ketshok 03'), een niet-bestaande ruimte ('06 KH'), of omdat de
           boeking zich niet houdt aan de afspraken over het opmaken van
           boekingen.
         </>
