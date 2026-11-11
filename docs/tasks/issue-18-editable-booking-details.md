@@ -25,12 +25,15 @@ Implemented on branch `vibe/issue-18-booking-details-0459b8`, on top of `main`.
   telefoonnummer"), pre-filled from the preferences, falling back to the Google
   profile name/e-mail, and an "Opslaan" button that stores both as preferences
   and confirms with "Boekingsgegevens opgeslagen".
-- **Booking form** (`src/components/calendar/BookingForm.tsx`): the read-only
-  "Boeker" field is now pre-filled from `preferences.getBookerName()`, falling
-  back to the signed-in user's Google profile name; the editable "Contact" field
-  keeps its last-used preference pre-fill. Both flow into the standardized event
-  format as before: the booker name in the summary ("[short name] | [booker]"),
-  the contact in the description. Changes in settings take effect for the next
+- **Booking form** (`src/components/calendar/BookingForm.tsx`): the "Boeker"
+  field is editable (not greyed out) and pre-filled from
+  `preferences.getBookerName()`, initially the signed-in user's Google profile
+  name until the user changes it; confirming stores the edited name back as the
+  preference (next to the last-used contact). When editing an existing booking,
+  the field pre-fills from that booking's booker. The "Samenvatting" preview is
+  disabled (greyed out). Both booker and contact flow into the standardized
+  event format as before: the booker name in the summary ("[short name] |
+  [booker]"), the contact in the description. Changes take effect for the next
   booking without re-login, because the form reads the preferences when it
   opens.
 
@@ -53,12 +56,14 @@ preferences service (`LocalStorageAdapter` in production, the central
   details, the next booking form is pre-filled with them (booker "Bèr de
   Tester", contact "bèr@voorbeeld.nl", summary preview "03 KH | Bèr de Tester"),
   and confirming writes the POST with that summary and the contact in the
-  description.
+  description. "User can change the booker name in the booking form, which is
+  stored as a preference" — the editable "Boeker" field is changed to "Sanne",
+  the written POST carries "03 KH | Sanne", and the settings page then shows
+  "Sanne" as the saved booker name. The shared form assertion now expects the
+  "Boeker" field editable and the "Samenvatting" preview disabled.
 
 ## Deliberately out of scope
 
-- Making the "Boeker" field of the booking form editable per booking: the issue
-  asks for editability in settings; the form pre-fills from the preferences and
-  stays read-only (the e2e suite asserts the field is disabled).
-- Validating the contact (e-mail vs phone): the form's helper text already
-  accepts either; the app guides, it does not enforce (ADR-0002).
+- Validating the booker name (e.g. requiring a non-empty name) or the contact
+  (e-mail vs phone): the form's helper texts already say what is expected; the
+  app guides, it does not enforce (ADR-0002).

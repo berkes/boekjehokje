@@ -35,9 +35,9 @@ interface BookingFormValues {
   from: string;
   /** Value of the "Tot" field */
   to: string;
-  /** Value of the read-only "Boeker" field */
+  /** Value of the editable "Boeker" field */
   booker: string;
-  /** Value of the read-only "Samenvatting" preview */
+  /** Value of the disabled "Samenvatting" preview */
   summary: string;
 }
 
@@ -393,10 +393,10 @@ export class OverviewPage {
     await expect(this.page.getByLabel("Tot")).toHaveValue(values.to);
     const booker = this.page.getByLabel("Boeker");
     await expect(booker).toHaveValue(values.booker);
-    await expect(booker).toBeDisabled();
+    await expect(booker).toBeEditable();
     const summary = this.page.getByLabel("Samenvatting");
     await expect(summary).toHaveValue(values.summary);
-    await expect(summary).not.toBeEditable();
+    await expect(summary).toBeDisabled();
   }
 
   /**
@@ -423,6 +423,14 @@ export class OverviewPage {
   async selectRoom(label: string): Promise<this> {
     await this.roomSelect().click();
     await this.page.getByRole("option", { name: label }).click();
+    return this;
+  }
+
+  /**
+   * Fill the editable booker name field of the booking form (issue #18).
+   */
+  async fillBooker(name: string): Promise<this> {
+    await this.page.getByLabel("Boeker").fill(name);
     return this;
   }
 

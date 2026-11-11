@@ -66,6 +66,33 @@ test("User can set the name and contact used for their bookings", async ({ authe
 });
 
 /**
+ * Given I am signed in as Bèr and the booking form is open for the 10:00
+ * block in Kletshok 03, pre-filled with my Google profile name
+ * When I change the booker name to "Sanne" and confirm the booking
+ * Then the event is written to the calendar API with summary "03 KH | Sanne"
+ * And the settings page shows "Sanne" as the saved booker name
+ * So that the name I type in the form is the one stored for my next
+ * bookings (#18).
+ */
+test("User can change the booker name in the booking form, which is stored as a preference", async ({ authedPage }) => {
+  const overview = await new OverviewPage(authedPage).goto();
+
+  await overview.clickFreeSlot("Kletshok 03", "10:30");
+  await overview.fillBooker("Sanne");
+  await overview.submitBookingForm();
+
+  await overview.assertBookingWasWritten({
+    method: "POST",
+    summary: "03 KH | Sanne",
+    start: "2026-10-28T10:00:00.000Z",
+    end: "2026-10-28T10:55:00.000Z",
+  });
+
+  const settings = await overview.openSettingsViaProfileMenu();
+  await settings.assertShowsBookerDetails("Sanne", MOCK_USER.email);
+});
+
+/**
  * Given I am signed in
  * When I press "Uitloggen" on the settings page
  * Then I return to the landing page with the sign-in invitation
