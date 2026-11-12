@@ -76,6 +76,8 @@ jobs:
   # job step uploads the stubs through WireMock's admin API.
   e2e:
     runs-on: ubuntu-24.04
+    # Fail fast on a hang instead of burning the default 360 minutes.
+    timeout-minutes: 15
     services:
       google-mock:
         image: wiremock/wiremock:3x
