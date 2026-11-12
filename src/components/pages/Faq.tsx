@@ -47,6 +47,19 @@ export function Faq(): React.JSX.Element {
       ),
     },
     {
+      vraag:
+        "Wat slaan jullie op, verzamelen jullie of waartoe hebben jullie toegang?",
+      antwoord: (
+        <>
+          Niets. Boekjehokje draait alleen in je eigen browser en niet op
+          servers van ons: er gaan dus geen gegevens naar ons toe. Je inlog en
+          voorkeuren blijven in je browser staan, en alle boekingen staan in de
+          gedeelde NYMA-agenda bij Google. Wij kunnen dus niets zien, verzamelen
+          of bewaren.
+        </>
+      ),
+    },
+    {
       vraag: "Ik ben ingelogd met mijn Google-account, maar zie niks.",
       antwoord: (
         <>
