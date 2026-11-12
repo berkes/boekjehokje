@@ -24,11 +24,6 @@ permissions:
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment
-concurrency:
-  group: pages
-  cancel-in-progress: true
-
 jobs:
   # Pin the runner image: ubuntu-latest floats (it rolled to Ubuntu 26.04,
   # which broke the e2e job's apt-based browser install); bump deliberately.
@@ -170,6 +165,13 @@ jobs:
     needs: build
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-24.04
+    # Allow only one concurrent deployment per ref (re-tagging vX.Y.Z cancels
+    # the previous deploy of that tag). Scoped to the deploy job and the ref,
+    # so it never cancels in-progress runs of other branches or PRs — the
+    # workflow-level group "pages" did exactly that.
+    concurrency:
+      group: pages-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
