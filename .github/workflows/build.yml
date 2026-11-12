@@ -98,9 +98,21 @@ jobs:
           deno check tests/e2e/playwright.config.ts tests/e2e/fixtures/auth.ts
           tests/e2e/pages/*.ts tests/e2e/tests/*.spec.ts
 
-      # No --with-deps: the ubuntu-latest runner image already ships the
-      # Chromium system libraries, and the apt install that --with-deps runs
-      # is fragile (DNS to the Ubuntu archives flakes on the runner, failing
+      # The browser binaries are big (~190 MiB); cache them keyed on the
+      # lockfile (it pins the resolved @playwright/test version). A stale
+      # cache entry is safe: 'playwright install' re-downloads what is
+      # missing.
+      - name: Cache the Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-browsers-${{ hashFiles('deno.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-browsers-
+
+      # No --with-deps: the pinned runner image already ships the Chromium
+      # system libraries, and the apt install that --with-deps runs is
+      # fragile (DNS to the Ubuntu archives flakes on the runner, failing
       # the whole job on optional font packages).
       - name: Install the Playwright browser
         run: deno run -A npm:@playwright/test install chromium
