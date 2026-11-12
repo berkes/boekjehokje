@@ -33,6 +33,20 @@ export function Faq(): React.JSX.Element {
       ),
     },
     {
+      vraag: "Waarom moet ik toegang geven tot al mijn agenda's?",
+      antwoord: (
+        <>
+          Daar kunnen wij helaas niets aan doen: Google kent geen 'toegang tot
+          één agenda'. Bij het inloggen kies je óf alles, óf niets — een knop
+          voor alleen de NYMA-agenda bestaat nu eenmaal niet. ;)
+
+          We gebruiken de toegang alleen om de gedeelde NYMA-agenda te lezen en
+          er boekingen in te zetten. Je privé-afspraken blijven privé: die lezen
+          we niet en slaan we nergens op.
+        </>
+      ),
+    },
+    {
       vraag: "Ik ben ingelogd met mijn Google-account, maar zie niks.",
       antwoord: (
         <>
