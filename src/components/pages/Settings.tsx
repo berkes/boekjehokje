@@ -91,8 +91,9 @@ export function Settings(): React.JSX.Element {
           Boekingsgegevens
         </Typography>
         <Typography>
-          Deze gegevens worden bij je boekingen gebruikt. Ze staan los van je
-          Google-profiel.
+          Deze gegevens worden aan je boeking in Google Agenda toegevoegd. Zo
+          weten anderen wie de ruimte heeft geboekt en hoe ze je kunnen
+          bereiken.
         </Typography>
         <Stack
           component="form"
