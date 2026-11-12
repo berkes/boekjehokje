@@ -83,6 +83,14 @@ jobs:
         image: wiremock/wiremock:3x
         ports:
           - 8081:8080
+        # The image ships curl and its own HEALTHCHECK; declare it so the
+        # runner waits for the mock to be healthy before the first step.
+        options: >-
+          --health-cmd "curl -f http://localhost:8080/__admin/health || exit 1"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-start-period 5s
+          --health-retries 10
     steps:
       - name: Setup repo
         uses: actions/checkout@v4
@@ -119,9 +127,10 @@ jobs:
       - name: Install the Playwright browser
         run: deno run -A npm:@playwright/test install chromium
 
+      # Safety net on top of the container healthcheck: up to 60s.
       - name: Wait for the mock to become healthy
         run: |
-          for _ in $(seq 1 30); do
+          for _ in $(seq 1 60); do
             if curl -fsS http://localhost:8081/__admin/health > /dev/null; then
               echo "WireMock is healthy"
               exit 0
