@@ -25,10 +25,11 @@ permissions:
   id-token: write
 
 jobs:
-  # Pin the runner image: ubuntu-latest floats (it rolled to Ubuntu 26.04,
-  # which broke the e2e job's apt-based browser install); bump deliberately.
+  # Pin the runner image instead of floating ubuntu-latest (an unannounced
+  # roll to a new Ubuntu once broke CI); bump deliberately when a new LTS
+  # lands. 26.04 is fine now: the e2e job no longer runs apt (no --with-deps).
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     steps:
       - name: Setup repo
@@ -70,7 +71,7 @@ jobs:
   # the job's steps, so tests/e2e/wiremock cannot be mounted into it; instead a
   # job step uploads the stubs through WireMock's admin API.
   e2e:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     # Fail fast on a hang instead of burning the default 360 minutes.
     timeout-minutes: 15
     services:
@@ -164,7 +165,7 @@ jobs:
   deploy:
     needs: build
     if: startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     # Allow only one concurrent deployment per ref (re-tagging vX.Y.Z cancels
     # the previous deploy of that tag). Scoped to the deploy job and the ref,
     # so it never cancels in-progress runs of other branches or PRs — the
