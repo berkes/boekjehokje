@@ -96,8 +96,12 @@ jobs:
           deno check tests/e2e/playwright.config.ts tests/e2e/fixtures/auth.ts
           tests/e2e/pages/*.ts tests/e2e/tests/*.spec.ts
 
+      # No --with-deps: the ubuntu-latest runner image already ships the
+      # Chromium system libraries, and the apt install that --with-deps runs
+      # is fragile (DNS to the Ubuntu archives flakes on the runner, failing
+      # the whole job on optional font packages).
       - name: Install the Playwright browser
-        run: deno run -A npm:@playwright/test install --with-deps chromium
+        run: deno run -A npm:@playwright/test install chromium
 
       - name: Wait for the mock to become healthy
         run: |
