@@ -29,9 +29,9 @@ Layers, top to bottom:
   `AuthenticationProviderPort` + `SessionStoragePort`), **permissions**
   (`PermissionService`, deciding editability per ADR-0004, reading the current
   user from the authentication service), **calendar** (`CalendarService` over a
-  `CalendarEventRepositoryPort` + the permission service + the clock), **clock**
-  (`SystemClock`), **preferences** (`PreferencesService` over a
-  `KeyValueStorePort`).
+  `CalendarEventRepositoryPort` + the authentication service + the permission
+  service + the clock), **clock** (`SystemClock`), **preferences**
+  (`PreferencesService` over a `KeyValueStorePort`).
 - **Adapters / repositories** — inside the service modules:
   `GoogleCalendarRepositoryAdapter` (REST GET/POST/PATCH/DELETE
   `.../calendars/{id}/events` against `CALENDAR_ID`, reading the OAuth token
@@ -72,7 +72,7 @@ flowchart TB
     permService["permissions/PermissionService"]
     authPort["authentication/AuthenticationServicePort (input port)"]
     authService["authentication/AuthenticationService"]
-    providerPort["authentication/AuthenticationProviderPort (output port)<br/>login, fetchProfile"]
+    providerPort["authentication/AuthenticationProviderPort (output port)<br/>login, refreshAccessToken, fetchProfile"]
     clockPort["clock/ClockPort"]
     prefPort["preferences/PreferencesPort"]
     prefService["preferences/PreferencesService"]
@@ -101,6 +101,7 @@ flowchart TB
   calService -. implements .-> calPort
   calService --> eventsPort
   calService --> permService
+  calService --> authService
   permService --> authService
   authService -. implements .-> authPort
   authService --> providerPort
@@ -146,6 +147,47 @@ sequenceDiagram
   User->>Board: switch day (previous/next/today/quick button)
   Board->>Hook: load(newDay)
   Hook->>Service: getDay(newDay) (only the selected day is fetched)
+```
+
+## Sequence: how an expired session is recovered (issue #23)
+
+Access tokens live about an hour and the implicit OAuth flow issues no refresh
+tokens, so the only refresh path is a silent access-token re-request
+(`requestAccessToken()` with an empty prompt) while the Google session is
+active. The stored token expiry is checked on every read
+(`AuthenticationService` discards expired sessions), so a known-expired token is
+never sent; when the calendar source still answers 401, the calendar service
+re-establishes the session once and retries the operation a single time;
+otherwise the session is ended and the app returns to the anonymous homepage
+with a Dutch message — the raw API error never reaches the UI.
+
+```mermaid
+sequenceDiagram
+  actor User
+  participant Hook as useCalendar (hook)
+  participant Service as CalendarService
+  participant Auth as AuthenticationService
+  participant Repo as CalendarEventRepositoryPort
+  participant API as Google Calendar API
+
+  Hook->>Service: getDay(day)
+  Service->>Repo: fetchEvents(range)
+  Repo->>API: GET .../events (Bearer token)
+  API-->>Repo: 401 (token rejected)
+  Repo-->>Service: CalendarApiError(status 401)
+  Service->>Auth: refreshSession()
+  alt provider session still active
+    Auth-->>Service: true (fresh token stored)
+    Service->>Repo: fetchEvents(range) (single retry)
+    Repo->>API: GET .../events (fresh Bearer token)
+    API-->>Service: events
+    Service-->>Hook: Room[]
+  else no silent token possible
+    Auth-->>Service: false (stored session discarded)
+    Service-->>Hook: SessionExpiredError
+    Hook->>Hook: expireSession() - sign out, Dutch message
+    Hook-->>User: anonymous homepage ("Je sessie is verlopen. Log opnieuw in.")
+  end
 ```
 
 ## Sequence: how a booking is created

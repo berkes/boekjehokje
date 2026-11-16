@@ -123,6 +123,65 @@ Deno.test("logout clears the stored session", async () => {
   assertEquals(service.getTokens(), null);
 });
 
+Deno.test("refreshSession stores the fresh tokens and keeps the stored user", async () => {
+  const storage = new InMemorySessionStorage();
+  storage.save({
+    user: fakeUser,
+    tokens: { ...fakeTokens(), expiresAt: NOW - 1_000 },
+  });
+  const provider = new FakeAuthenticationProvider({
+    tokens: {
+      ...fakeTokens(),
+      accessToken: "fresh-token",
+      expiresAt: NOW + 3_600_000,
+    },
+  });
+  const { service } = makeService(provider, storage);
+
+  const refreshed = await service.refreshSession();
+
+  assertEquals(refreshed, true);
+  assertEquals(storage.load(), {
+    user: fakeUser,
+    tokens: {
+      ...fakeTokens(),
+      accessToken: "fresh-token",
+      expiresAt: NOW + 3_600_000,
+    },
+  });
+  assert(service.isAuthenticated());
+  assertEquals(service.getTokens()?.accessToken, "fresh-token");
+});
+
+Deno.test("refreshSession fetches the profile when there is no stored session", async () => {
+  const provider = new FakeAuthenticationProvider({
+    tokens: { ...fakeTokens(), accessToken: "fresh-token" },
+  });
+  const { service, storage } = makeService(provider);
+
+  const refreshed = await service.refreshSession();
+
+  assertEquals(refreshed, true);
+  assertEquals(storage.load()?.user, fakeUser);
+  assertEquals(storage.load()?.tokens.accessToken, "fresh-token");
+});
+
+Deno.test("refreshSession discards the session and returns false when the provider cannot refresh", async () => {
+  const storage = new InMemorySessionStorage();
+  storage.save({ user: fakeUser, tokens: fakeTokens() });
+  const provider = new FakeAuthenticationProvider({
+    refreshError: new Error("no active Google session"),
+  });
+  const { service } = makeService(provider, storage);
+
+  const refreshed = await service.refreshSession();
+
+  assertEquals(refreshed, false);
+  assertEquals(storage.load(), null);
+  assertEquals(service.isAuthenticated(), false);
+  assertEquals(service.getTokens(), null);
+});
+
 Deno.test("fetchProfile delegates to the provider", async () => {
   const { service } = makeService();
 

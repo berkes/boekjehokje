@@ -46,12 +46,21 @@ export type GoogleOAuthResponse =
 export type GoogleLoginInitiator = () => Promise<GoogleOAuthResponse>;
 
 /**
+ * Silently re-requests an access token (GIS token model's
+ * `requestAccessToken()` with an empty prompt) and resolves with Google's
+ * response
+ */
+export type GoogleTokenRequester = () => Promise<GoogleOAuthResponse>;
+
+/**
  * The dependencies of the Google authentication adapter, passed in on
  * creation
  */
 export interface GoogleAuthenticationAdapterDeps {
   /** Bridge to the Google login flow (see useGoogleLoginFlow.ts) */
   initiateLogin: GoogleLoginInitiator;
+  /** Bridge to the silent access-token re-request (see useGoogleLoginFlow.ts) */
+  requestAccessToken: GoogleTokenRequester;
   /** Clock in epoch milliseconds, injectable for testing */
   now?: () => number;
   /** People API base URL override (defaults to the Google People API base) */
@@ -70,17 +79,20 @@ export class GoogleAuthenticationAdapter implements AuthenticationProviderPort {
   private static readonly PEOPLE_API_FIELDS = "names,emailAddresses,photos";
 
   private initiateLogin: GoogleLoginInitiator;
+  private requestAccessToken: GoogleTokenRequester;
   private now: () => number;
   private peopleApiBase: string;
 
   /**
    * Create a new Google authentication adapter
    *
-   * @param deps - The injected dependencies: login flow bridge, optional
-   *               clock and People API base URL override
+   * @param deps - The injected dependencies: login flow bridge, silent
+   *               token re-request bridge, optional clock and People API
+   *               base URL override
    */
   constructor(deps: GoogleAuthenticationAdapterDeps) {
     this.initiateLogin = deps.initiateLogin;
+    this.requestAccessToken = deps.requestAccessToken;
     this.now = deps.now ?? Date.now;
     this.peopleApiBase = deps.peopleApiBase ?? PEOPLE_API_BASE;
   }
@@ -94,6 +106,18 @@ export class GoogleAuthenticationAdapter implements AuthenticationProviderPort {
    */
   async login(): Promise<AuthenticationTokens> {
     const response = await this.initiateLogin();
+    return this.normalizeTokens(response);
+  }
+
+  /**
+   * Silently re-request an access token through the GIS token client and
+   * normalize the response into domain tokens.
+   *
+   * @returns The fresh session tokens in domain terms
+   * @throws Error when no token can be issued without user interaction
+   */
+  async refreshAccessToken(): Promise<AuthenticationTokens> {
+    const response = await this.requestAccessToken();
     return this.normalizeTokens(response);
   }
 

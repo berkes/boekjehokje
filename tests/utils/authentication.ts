@@ -48,6 +48,12 @@ export function fakeSession(
 export class FakeAuthenticationService implements AuthenticationServicePort {
   private user: AuthenticatedUser | null;
   private tokens: AuthenticationTokens | null;
+  /** Whether refreshSession succeeds (default: true) */
+  refreshSucceeds = true;
+  /** The tokens refreshSession issues (default: fresh fake tokens) */
+  refreshedTokens: AuthenticationTokens | null = null;
+  /** How often refreshSession was called */
+  refreshCount = 0;
 
   constructor(session: AuthenticationSession | null = fakeSession()) {
     this.user = session?.user ?? null;
@@ -66,6 +72,16 @@ export class FakeAuthenticationService implements AuthenticationServicePort {
 
   logout(): void {
     this.signIn(null);
+  }
+
+  refreshSession(): Promise<boolean> {
+    this.refreshCount++;
+    if (!this.refreshSucceeds) {
+      this.signIn(null);
+      return Promise.resolve(false);
+    }
+    this.tokens = this.refreshedTokens ?? fakeTokens();
+    return Promise.resolve(true);
   }
 
   getAuthenticatedUser(): AuthenticatedUser | null {
@@ -93,20 +109,30 @@ export class FakeAuthenticationProvider implements AuthenticationProviderPort {
   tokens: AuthenticationTokens;
   user: AuthenticatedUser;
   profileError: Error | null = null;
+  refreshError: Error | null = null;
 
   constructor(
     options: {
       tokens?: AuthenticationTokens;
       user?: AuthenticatedUser;
       profileError?: Error;
+      refreshError?: Error;
     } = {},
   ) {
     this.tokens = options.tokens ?? fakeTokens();
     this.user = options.user ?? fakeUser;
     this.profileError = options.profileError ?? null;
+    this.refreshError = options.refreshError ?? null;
   }
 
   login(): Promise<AuthenticationTokens> {
+    return Promise.resolve(this.tokens);
+  }
+
+  refreshAccessToken(): Promise<AuthenticationTokens> {
+    if (this.refreshError) {
+      return Promise.reject(this.refreshError);
+    }
     return Promise.resolve(this.tokens);
   }
 

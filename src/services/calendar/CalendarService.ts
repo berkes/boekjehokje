@@ -14,6 +14,7 @@
  * asking the permission service.
  */
 
+import type { AuthenticationServicePort } from "../authentication/AuthenticationServicePort.ts";
 import type { ClockPort } from "../clock/ClockPort.ts";
 import type {
   EventFormatPort,
@@ -29,8 +30,10 @@ import {
   getDayRange,
   type NewBooking,
   type Room,
+  SessionExpiredError,
 } from "./CalendarServicePort.ts";
 import {
+  CalendarApiError,
   type CalendarEventRepositoryPort,
   type StoredEvent,
 } from "./CalendarEventRepositoryPort.ts";
@@ -78,6 +81,8 @@ function isIgnoredEvent(summary: string): boolean {
 export interface CalendarServiceDeps {
   /** The calendar event repository (output port) to read/write events on */
   events: CalendarEventRepositoryPort;
+  /** The authentication service, re-establishing the session on a 401 (#23) */
+  authentication: AuthenticationServicePort;
   /** The permission service, deciding editability (ADR-0004) */
   permissions: PermissionServicePort;
   /** The clock, defaulting "today" to the current instant */
@@ -98,6 +103,7 @@ export interface CalendarServiceDeps {
  */
 export class CalendarService implements CalendarServicePort {
   private events: CalendarEventRepositoryPort;
+  private authentication: AuthenticationServicePort;
   private permissions: PermissionServicePort;
   private clock: ClockPort;
   private eventFormat: EventFormatPort;
@@ -106,11 +112,12 @@ export class CalendarService implements CalendarServicePort {
   /**
    * Create a new calendar service
    *
-   * @param deps - The injected dependencies: event repository, permission
-   *               service and clock
+   * @param deps - The injected dependencies: event repository,
+   *               authentication service, permission service and clock
    */
   constructor(deps: CalendarServiceDeps) {
     this.events = deps.events;
+    this.authentication = deps.authentication;
     this.permissions = deps.permissions;
     this.clock = deps.clock;
     this.eventFormat = deps.eventFormat;
@@ -132,7 +139,9 @@ export class CalendarService implements CalendarServicePort {
    */
   async getDay(day: Date = this.clock.now()): Promise<Room[]> {
     const range = getDayRange(day);
-    const events = await this.events.fetchEvents(range);
+    const events = await this.withFreshSession(() =>
+      this.events.fetchEvents(range)
+    );
     return this.buildRooms(events, range);
   }
 
@@ -143,8 +152,8 @@ export class CalendarService implements CalendarServicePort {
    * source stored it.
    */
   async createBooking(booking: NewBooking): Promise<Booking> {
-    const stored = await this.events.createEvent(
-      this.eventFormat.serialize(booking),
+    const stored = await this.withFreshSession(() =>
+      this.events.createEvent(this.eventFormat.serialize(booking))
     );
     return this.toBooking(this.eventFormat.parse(stored));
   }
@@ -155,9 +164,8 @@ export class CalendarService implements CalendarServicePort {
    */
   async updateBooking(booking: BookingUpdate): Promise<Booking> {
     const { id, ...fields } = booking;
-    const stored = await this.events.updateEvent(
-      id,
-      this.eventFormat.serialize(fields),
+    const stored = await this.withFreshSession(() =>
+      this.events.updateEvent(id, this.eventFormat.serialize(fields))
     );
     return this.toBooking(this.eventFormat.parse(stored));
   }
@@ -166,7 +174,45 @@ export class CalendarService implements CalendarServicePort {
    * Delete a booking: remove the event through the event repository
    */
   async deleteBooking(bookingId: string): Promise<void> {
-    await this.events.deleteEvent(bookingId);
+    await this.withFreshSession(() => this.events.deleteEvent(bookingId));
+  }
+
+  /**
+   * Run a repository operation, recovering once from an authentication
+   * failure: when the calendar source rejects the access token
+   * (CalendarApiError with status 401), the session is re-established
+   * silently through the authentication service and the operation is
+   * retried a single time. When the session cannot be re-established — or
+   * the retry is rejected again — the session has expired and a
+   * SessionExpiredError is thrown, so callers never see the raw API error
+   * (issue #23).
+   */
+  private async withFreshSession<T>(
+    operation: () => Promise<T>,
+  ): Promise<T> {
+    try {
+      return await operation();
+    } catch (error) {
+      if (!(error instanceof CalendarApiError && error.statusCode === 401)) {
+        throw error;
+      }
+
+      if (!await this.authentication.refreshSession()) {
+        throw new SessionExpiredError();
+      }
+
+      try {
+        return await operation();
+      } catch (retryError) {
+        if (
+          retryError instanceof CalendarApiError &&
+          retryError.statusCode === 401
+        ) {
+          throw new SessionExpiredError();
+        }
+        throw retryError;
+      }
+    }
   }
 
   /**

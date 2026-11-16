@@ -32,7 +32,10 @@ export type {
   NewBooking,
   Room,
 } from "./calendar/CalendarServicePort.ts";
-export { getDayRange } from "./calendar/CalendarServicePort.ts";
+export {
+  getDayRange,
+  SessionExpiredError,
+} from "./calendar/CalendarServicePort.ts";
 export type {
   CalendarEventRepositoryPort,
   EventDraft,

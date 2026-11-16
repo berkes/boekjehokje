@@ -25,12 +25,21 @@ function makeAdapter(
     expires_in: 3600,
   },
   loginError: Error | null = null,
+  refreshResponse: GoogleOAuthResponse = {
+    access_token: "fresh-token-456",
+    expires_in: 3600,
+  },
+  refreshError: Error | null = null,
 ) {
   return new GoogleAuthenticationAdapter({
     initiateLogin: () =>
       loginError !== null
         ? Promise.reject(loginError)
         : Promise.resolve(loginResponse),
+    requestAccessToken: () =>
+      refreshError !== null
+        ? Promise.reject(refreshError)
+        : Promise.resolve(refreshResponse),
     now: () => NOW,
   });
 }
@@ -74,10 +83,37 @@ Deno.test("login rejects when the login flow fails", async () => {
   );
 });
 
+Deno.test("refreshAccessToken normalizes the silent token response into domain tokens", async () => {
+  const adapter = makeAdapter();
+
+  assertEquals(await adapter.refreshAccessToken(), {
+    accessToken: "fresh-token-456",
+    expiresAt: NOW + 3_600_000,
+    tokenType: "Bearer",
+  });
+});
+
+Deno.test("refreshAccessToken rejects when no token can be issued without interaction", async () => {
+  const adapter = makeAdapter(
+    undefined,
+    null,
+    undefined,
+    new Error("popup_failed_to_open"),
+  );
+
+  await assertRejects(
+    () => adapter.refreshAccessToken(),
+    Error,
+    "popup_failed_to_open",
+  );
+});
+
 /** Creates an adapter with the real (People API) fetchProfile */
 function createPeopleApiAdapter(): GoogleAuthenticationAdapter {
   return new GoogleAuthenticationAdapter({
     initiateLogin: () => Promise.resolve({ access_token: "unused" }),
+    requestAccessToken: () =>
+      Promise.resolve({ access_token: "fresh-token-456" }),
     now: () => NOW,
   });
 }

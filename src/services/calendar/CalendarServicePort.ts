@@ -82,6 +82,21 @@ export interface BookingUpdate extends NewBooking {
 }
 
 /**
+ * Thrown by the calendar service when the session expired and could not be
+ * re-established: the calendar source rejected the access token (401) and
+ * a silent refresh was not possible. Callers end the session on this error
+ * instead of surfacing the raw API error (issue #23).
+ */
+export class SessionExpiredError extends Error {
+  constructor(
+    message = "The session expired and could not be re-established",
+  ) {
+    super(message);
+    this.name = "SessionExpiredError";
+  }
+}
+
+/**
  * A day range for querying bookings: local midnight to local midnight
  */
 export interface DayRange {

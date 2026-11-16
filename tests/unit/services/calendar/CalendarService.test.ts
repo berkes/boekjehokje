@@ -10,6 +10,7 @@
 
 import { assert, assertEquals, assertRejects } from "@std/assert";
 import {
+  FakeAuthenticationService,
   FakeCalendarEventRepository,
   FakeClock,
   storedEvent,
@@ -22,6 +23,7 @@ import {
   type BookingUpdate,
   getDayRange,
   type NewBooking,
+  SessionExpiredError,
 } from "../../../../src/services/calendar/CalendarServicePort.ts";
 import type { PermissionServicePort } from "../../../../src/services/permissions/PermissionServicePort.ts";
 import { isSameDay } from "../../../../src/services/clock/index.ts";
@@ -53,18 +55,20 @@ function makeService(
   events: StoredEvent[] = [],
   permissionsPort: PermissionServicePort = permissions(false),
   now: Date = DAY,
+  authentication: FakeAuthenticationService = new FakeAuthenticationService(),
 ) {
   const clock = new FakeClock(now);
   const repo = new FakeCalendarEventRepository(events);
   const rooms = new RoomsService();
   const service = new CalendarService({
     events: repo,
+    authentication,
     permissions: permissionsPort,
     clock,
     eventFormat: new EventFormatService({ rooms }),
     rooms,
   });
-  return { service, repo, clock };
+  return { service, repo, clock, authentication };
 }
 
 Deno.test("getDayRange returns the local midnight-to-midnight range of the day", () => {
@@ -447,4 +451,105 @@ Deno.test("write operations propagate repository errors to the caller", async ()
   };
 
   await assertRejects(() => service.createBooking(booking), CalendarApiError);
+});
+
+Deno.test("a 401 on fetch silently re-establishes the session and retries the fetch once", async () => {
+  const authentication = new FakeAuthenticationService();
+  const { service, repo } = makeService(
+    [storedEvent(
+      "event-1",
+      "05 kletshok - Peter",
+      at(6, "10:00"),
+      at(6, "11:00"),
+    )],
+    undefined,
+    DAY,
+    authentication,
+  );
+  repo.fetchError = new CalendarApiError("Unauthorized", 401);
+  // The silent refresh succeeds and the retry goes through
+  authentication.refreshSession = () => {
+    repo.fetchError = null;
+    return Promise.resolve(true);
+  };
+
+  const rooms = await service.getDay(DAY);
+
+  assertEquals(repo.fetches.length, 2, "the fetch is retried exactly once");
+  assertEquals(
+    rooms.flatMap((room) => room.bookings).map((b) => b.id),
+    ["event-1"],
+  );
+});
+
+Deno.test("a 401 with an unrecoverable session throws SessionExpiredError, not the raw API error", async () => {
+  const authentication = new FakeAuthenticationService();
+  authentication.refreshSucceeds = false;
+  const { service, repo } = makeService([], undefined, DAY, authentication);
+  repo.fetchError = new CalendarApiError(
+    "Google Calendar API request failed: 401 - Request had invalid authentication credentials.",
+    401,
+  );
+
+  const error = await assertRejects(
+    () => service.getDay(DAY),
+    SessionExpiredError,
+  );
+
+  assertEquals(repo.fetches.length, 1, "no retry without a fresh session");
+  assertEquals(authentication.refreshCount, 1);
+  assert(
+    !error.message.includes("Google"),
+    "the raw API message must not leak",
+  );
+});
+
+Deno.test("a 401 on the retry after a successful refresh also throws SessionExpiredError", async () => {
+  const { service, repo, authentication } = makeService();
+  repo.fetchError = new CalendarApiError("Unauthorized", 401);
+
+  await assertRejects(() => service.getDay(DAY), SessionExpiredError);
+
+  assertEquals(repo.fetches.length, 2, "a single retry after the refresh");
+  assertEquals(authentication.refreshCount, 1);
+});
+
+Deno.test("non-401 repository errors propagate unchanged and never trigger a refresh", async () => {
+  const { service, repo, authentication } = makeService();
+  repo.fetchError = new CalendarApiError("Server error", 500);
+
+  await assertRejects(
+    () => service.getDay(DAY),
+    CalendarApiError,
+    "Server error",
+  );
+
+  assertEquals(authentication.refreshCount, 0);
+  assertEquals(repo.fetches.length, 1);
+});
+
+Deno.test("write operations recover from a 401 the same way", async () => {
+  const authentication = new FakeAuthenticationService();
+  const { service, repo } = makeService([], undefined, DAY, authentication);
+  const booking: NewBooking = {
+    room: "Kletshok 03",
+    booker: "Bèr",
+    contact: "",
+    start: new Date("2026-10-28T10:00:00Z"),
+    end: new Date("2026-10-28T10:55:00Z"),
+  };
+  const unauthorized = new CalendarApiError("Unauthorized", 401);
+  let calls = 0;
+  const originalCreate = repo.createEvent.bind(repo);
+  repo.createEvent = (draft) => {
+    calls++;
+    if (calls === 1) return Promise.reject(unauthorized);
+    return originalCreate(draft);
+  };
+
+  const created = await service.createBooking(booking);
+
+  assertEquals(calls, 2, "the write is retried once after the refresh");
+  assertEquals(authentication.refreshCount, 1);
+  assertEquals(created.room, "Kletshok 03");
 });
