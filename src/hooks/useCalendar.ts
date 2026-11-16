@@ -13,8 +13,10 @@ import {
   CalendarApiError,
   type CalendarServicePort,
   type Room,
+  SessionExpiredError,
 } from "../services/index.ts";
 import { useCalendarService } from "./useServices.ts";
+import { useSession } from "./useSession.tsx";
 
 /**
  * Return type for useCalendar hook
@@ -54,13 +56,18 @@ export function useCalendar(
 ): UseCalendarReturn {
   const contextService = useCalendarService();
   const calendar = service ?? contextService;
+  const { expireSession } = useSession();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   /**
    * Load the calendar data for the given day through the calendar
-   * service port
+   * service port. When the session expired and could not be
+   * re-established silently (the service reports a 401 it cannot recover
+   * from), the session is ended here instead of surfacing the raw API
+   * error: the app returns to the anonymous homepage with a message
+   * (issue #23).
    */
   const load = useCallback(async (day: Date) => {
     // Clear previous error
@@ -72,8 +79,13 @@ export function useCalendar(
       const roomsWithBookings = await calendar.getDay(day);
       setRooms(roomsWithBookings);
     } catch (err: unknown) {
-      // Handle CalendarApiError and other errors
-      if (err instanceof CalendarApiError) {
+      if (
+        err instanceof SessionExpiredError ||
+        (err instanceof CalendarApiError && err.statusCode === 401)
+      ) {
+        console.error("Session expired:", err);
+        expireSession();
+      } else if (err instanceof CalendarApiError) {
         console.error("Calendar API error:", err.message, err.originalError);
         setError(err);
       } else if (err instanceof Error) {
@@ -87,7 +99,7 @@ export function useCalendar(
     } finally {
       setIsLoading(false);
     }
-  }, [calendar]);
+  }, [calendar, expireSession]);
 
   /**
    * Get bookings for a specific room (from already loaded data)

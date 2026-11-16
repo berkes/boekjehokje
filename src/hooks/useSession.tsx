@@ -38,6 +38,12 @@ export interface SessionState {
 export interface SessionContextType extends SessionState {
   login: () => Promise<void>;
   logout: () => void;
+  /**
+   * End the session because it expired and could not be re-established
+   * silently (issue #23): the user is signed out and sees a message on
+   * the anonymous homepage
+   */
+  expireSession: () => void;
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
@@ -119,10 +125,26 @@ export function SessionProvider(
     });
   }, [service]);
 
+  // Expire the session: it ended (e.g. the access token expired and could
+  // not be refreshed silently) - sign out and tell the user why, so the
+  // anonymous homepage shows the message next to the login button
+  const expireSession = useCallback((): void => {
+    service.logout();
+
+    setState({
+      user: null,
+      tokens: null,
+      isLoggedIn: false,
+      isLoading: false,
+      error: "Je sessie is verlopen. Log opnieuw in.",
+    });
+  }, [service]);
+
   const value: SessionContextType = {
     ...state,
     login,
     logout,
+    expireSession,
   };
 
   return (

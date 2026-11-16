@@ -25,6 +25,7 @@ export {
   type GoogleAuthenticationAdapterDeps,
   type GoogleLoginInitiator,
   type GoogleOAuthResponse,
+  type GoogleTokenRequester,
 } from "./GoogleAuthenticationAdapter.ts";
 export {
   SessionStorageError,

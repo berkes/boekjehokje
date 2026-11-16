@@ -43,6 +43,7 @@ export function DemoCalendar(): React.JSX.Element {
       ...services,
       calendar: new CalendarService({
         events,
+        authentication: services.authentication,
         permissions: services.permissions,
         clock: services.clock,
         eventFormat: services.eventFormat,

@@ -82,6 +82,7 @@ export function buildTestServices(
   const overlaps = new OverlapsService();
   const calendar = new CalendarService({
     events,
+    authentication,
     permissions,
     clock,
     eventFormat,

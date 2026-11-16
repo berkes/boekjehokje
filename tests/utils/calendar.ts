@@ -7,10 +7,11 @@
  * need no spies or HTTP stubs. The storedEvent factory builds fixture
  * events in the port's neutral language.
  */
-import type {
-  CalendarEventRepositoryPort,
-  EventDraft,
-  StoredEvent,
+import {
+  CalendarApiError,
+  type CalendarEventRepositoryPort,
+  type EventDraft,
+  type StoredEvent,
 } from "../../src/services/calendar/CalendarEventRepositoryPort.ts";
 import type { DayRange } from "../../src/services/calendar/CalendarServicePort.ts";
 
@@ -65,6 +66,8 @@ export class FakeCalendarEventRepository
   readonly writes: RecordedWrite[] = [];
   /** Every fetched range, in order */
   readonly fetches: DayRange[] = [];
+  /** When set, fetchEvents rejects with this error (e.g. a 401, #23) */
+  fetchError: CalendarApiError | null = null;
 
   constructor(events: StoredEvent[] = []) {
     this.events = [...events];
@@ -77,6 +80,9 @@ export class FakeCalendarEventRepository
 
   fetchEvents(range: DayRange): Promise<StoredEvent[]> {
     this.fetches.push(range);
+    if (this.fetchError) {
+      return Promise.reject(this.fetchError);
+    }
     return Promise.resolve(
       this.events.filter((event) =>
         event.start < range.end && event.end > range.start

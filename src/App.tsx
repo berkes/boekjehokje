@@ -117,13 +117,16 @@ function App(): React.JSX.Element {
  * top, via SessionProvider).
  */
 function AppServices({ children }: { children: ReactNode }): React.JSX.Element {
-  const initiateLogin = useGoogleLoginFlow();
+  const { initiateLogin, requestAccessToken } = useGoogleLoginFlow();
 
   const services = useMemo<Services>(() => {
     const clock = new ClockService();
     const sessionStorage = new LocalSessionStorageAdapter();
     const authentication = new AuthenticationService({
-      provider: new GoogleAuthenticationAdapter({ initiateLogin }),
+      provider: new GoogleAuthenticationAdapter({
+        initiateLogin,
+        requestAccessToken,
+      }),
       sessionStorage,
     });
     const permissions = new PermissionService({ authentication });
@@ -136,6 +139,7 @@ function AppServices({ children }: { children: ReactNode }): React.JSX.Element {
     const overlaps = new OverlapsService();
     const calendar = new CalendarService({
       events,
+      authentication,
       permissions,
       clock,
       eventFormat,
@@ -154,7 +158,7 @@ function AppServices({ children }: { children: ReactNode }): React.JSX.Element {
       clock,
       preferences,
     };
-  }, [initiateLogin]);
+  }, [initiateLogin, requestAccessToken]);
 
   return (
     <ServicesProvider services={services}>

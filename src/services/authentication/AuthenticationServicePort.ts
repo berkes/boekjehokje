@@ -64,6 +64,18 @@ export interface AuthenticationServicePort {
   /** End the session and discard the stored credentials. */
   logout(): void;
   /**
+   * Silently re-establish the session: ask the provider for a fresh access
+   * token without user interaction and persist it (with the current user).
+   * This is the refresh path of the pure-frontend app: the implicit flow
+   * issues no refresh tokens, so a silent access-token re-request is the
+   * only way to recover an expired token (issue #23).
+   *
+   * @returns true when a fresh session was stored; false when the session
+   *          could not be re-established (the stored session is then
+   *          discarded)
+   */
+  refreshSession(): Promise<boolean>;
+  /**
    * Restore the session and return the authenticated user, or null when
    * there is no session or it has expired.
    */

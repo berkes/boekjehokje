@@ -11,6 +11,7 @@ import AlertTitle from "@mui/material/AlertTitle";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 import { Link as RouterLink } from "react-router-dom";
+import { useSession } from "../../hooks/useSession.tsx";
 import { GoogleAuthenticationButton } from "../index.ts";
 import overviewDesktop from "../../assets/overview-desktop.png";
 import overviewMobile from "../../assets/overview-mobile.png";
@@ -23,6 +24,7 @@ import overviewMobile from "../../assets/overview-mobile.png";
 export function Landing(): React.JSX.Element {
   const theme = useTheme();
   const isNarrow = useMediaQuery(theme.breakpoints.down("md"));
+  const { error } = useSession();
 
   return (
     <Box sx={{ maxWidth: 860, mx: "auto", py: { xs: 4, md: 8 } }}>
@@ -37,6 +39,12 @@ export function Landing(): React.JSX.Element {
         één helder overzicht van alle ruimtes. Je ziet direct welk hokje wanneer
         vrij is en boekt het in een paar klikken.
       </Typography>
+
+      {error && (
+        <Alert severity="warning" sx={{ mt: 2, maxWidth: 640 }}>
+          {error}
+        </Alert>
+      )}
 
       <Box component="section" sx={{ mt: 6 }}>
         <Typography variant="h5" component="h2" sx={{ mb: 1 }}>

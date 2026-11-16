@@ -81,6 +81,32 @@ export class AuthenticationService implements AuthenticationServicePort {
   }
 
   /**
+   * Silently re-establish the session: re-request an access token through
+   * the provider (no user interaction while the provider session is
+   * active) and persist it with the current user — or, when there is no
+   * stored session anymore, with a freshly fetched profile.
+   *
+   * @returns true when a fresh session was stored; false when the session
+   *          could not be re-established, in which case the stored session
+   *          is discarded
+   */
+  async refreshSession(): Promise<boolean> {
+    const stored = this.sessionStorage.load();
+
+    try {
+      const tokens = await this.provider.refreshAccessToken();
+      const user = stored?.user ??
+        await this.fetchUserProfile(tokens.accessToken);
+      this.sessionStorage.save({ user, tokens });
+      return true;
+    } catch (error) {
+      console.error("Silent re-authentication failed:", error);
+      this.sessionStorage.clear();
+      return false;
+    }
+  }
+
+  /**
    * Restore the session and return the authenticated user, or null when
    * there is no session or it has expired.
    */

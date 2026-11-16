@@ -10,8 +10,9 @@
  * Must be used below GoogleOAuthProvider.
  */
 
-import { useCallback, useRef } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { useGoogleLogin } from "@react-oauth/google";
+import type { OverridableTokenClientConfig } from "@react-oauth/google";
 import type { GoogleOAuthResponse } from "../services/authentication/GoogleAuthenticationAdapter.ts";
 
 /**
@@ -32,10 +33,23 @@ interface PendingLogin {
 }
 
 /**
- * Returns a function that initiates the Google login flow and resolves with
- * Google's OAuth response, or rejects when the flow fails.
+ * The two bridges into the Google login flow: the full login (popup when
+ * needed) and the silent access-token re-request (no prompt while the
+ * user's Google session is active — the token model's only refresh path,
+ * since the implicit flow issues no refresh tokens, issue #23)
  */
-export function useGoogleLoginFlow(): () => Promise<GoogleOAuthResponse> {
+export interface GoogleLoginFlow {
+  /** Initiate the full login flow; resolves with Google's OAuth response */
+  initiateLogin: () => Promise<GoogleOAuthResponse>;
+  /** Silently re-request an access token; resolves with Google's response */
+  requestAccessToken: () => Promise<GoogleOAuthResponse>;
+}
+
+/**
+ * Returns the bridges into the Google login flow that resolve with Google's
+ * OAuth response, or reject when the flow fails.
+ */
+export function useGoogleLoginFlow(): GoogleLoginFlow {
   const pending = useRef<PendingLogin | null>(null);
 
   const login = useGoogleLogin({
@@ -51,12 +65,22 @@ export function useGoogleLoginFlow(): () => Promise<GoogleOAuthResponse> {
     },
   });
 
-  return useCallback(
-    () =>
+  const run = useCallback(
+    (overrideConfig?: OverridableTokenClientConfig) =>
       new Promise<GoogleOAuthResponse>((resolve, reject) => {
         pending.current = { resolve, reject };
-        login();
+        login(overrideConfig);
       }),
     [login],
+  );
+
+  return useMemo(
+    () => ({
+      initiateLogin: () => run(),
+      // An empty prompt asks the token client for a token without any UI;
+      // it only succeeds while the user's Google session is still active
+      requestAccessToken: () => run({ prompt: "" }),
+    }),
+    [run],
   );
 }
