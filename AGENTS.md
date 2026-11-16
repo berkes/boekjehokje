@@ -26,7 +26,6 @@
 .
 ├── docs/               # Project documentation
 │   └── adr/            # Architecture Decision Records
-│   └── tasks/          # Per-issue task write-ups
 ├── tests/              # All tests: e2e/ (Playwright, see docs/e2e.md), integration/ (two real services),
 │                       #   unit/ (mirroring src paths), utils/ (central fakes) — see ADR-0008
 ├── src/                # Source code
