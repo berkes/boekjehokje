@@ -12,7 +12,9 @@
  * calendar source. Confirming hands the booking to the calendar service,
  * which writes it to the calendar source. With a `booking` prop the same
  * form edits that booking instead (prefilled with its values, issue #14):
- * confirming updates the existing event rather than creating one.
+ * confirming updates the existing event rather than creating one, and a
+ * delete button in the form deletes it immediately (issue #63: the board
+ * bars carry no action icons anymore, the form carries the delete).
  */
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
@@ -61,6 +63,8 @@ export interface BookingFormProps {
   onSubmit: (booking: NewBooking, bookingId?: string) => Promise<void>;
   /** Called whenever the draft (room/start/end) changes, so the board can preview it */
   onDraftChange?: (draft: { room: string; start: Date; end: Date }) => void;
+  /** Delete the booking being edited immediately, without confirmation (#14, undo is #36); only offered in edit mode */
+  onDelete?: (bookingId: string) => void;
 }
 
 /**
@@ -80,6 +84,7 @@ export function BookingForm(
     initialEnd,
     onSubmit,
     onDraftChange,
+    onDelete,
   }: BookingFormProps,
 ): React.JSX.Element {
   const { user } = useSession();
@@ -226,13 +231,27 @@ export function BookingForm(
         </Alert>
       )}
       {error && <Alert severity="error">Opslaan mislukt: {error}</Alert>}
-      <Button
-        type="submit"
-        variant="contained"
-        disabled={isSubmitting || invertedRange}
-      >
-        {booking ? "Boeking bijwerken" : "Boeking aanmaken"}
-      </Button>
+      <Stack direction="row" spacing={1}>
+        <Button
+          type="submit"
+          variant="contained"
+          disabled={isSubmitting || invertedRange}
+          sx={{ flex: 1 }}
+        >
+          {booking ? "Boeking bijwerken" : "Boeking aanmaken"}
+        </Button>
+        {booking && onDelete && (
+          <Button
+            type="button"
+            variant="outlined"
+            color="error"
+            disabled={isSubmitting}
+            onClick={() => onDelete(booking.id)}
+          >
+            Verwijderen
+          </Button>
+        )}
+      </Stack>
     </Stack>
   );
 }

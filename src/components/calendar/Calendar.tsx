@@ -12,23 +12,15 @@ import {
   type ResourceEventArgs,
   ResourceTimeline,
 } from "@super-calendar/dom";
-import { Add, Delete, Edit, Info } from "@mui/icons-material";
+import { Add } from "@mui/icons-material";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
-import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
 import { useTheme } from "@mui/material/styles";
 import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useCalendar } from "../../hooks/useCalendar.ts";
 import {
   useCalendarService,
@@ -132,31 +124,11 @@ type SidebarState = {
 } | null;
 
 /**
- * Actions an event bar can invoke, provided to the event renderer
- */
-interface BoardActions {
-  /** Show the booking details in the sidebar */
-  openSidebar: (bookingId: string) => void;
-  /** Open the booking form prefilled with the booking's values (#14) */
-  editBooking: (booking: Booking) => void;
-  /** Delete a booking immediately, no confirmation (undo is #36) */
-  deleteBooking: (booking: Booking) => void;
-}
-
-/**
- * Passes the board actions to the event renderer without changing its
- * identity, so super-calendar can treat it as a stable component.
- */
-const BoardActionsContext = createContext<BoardActions | null>(null);
-
-/**
- * Event bar with the booking name and the info, edit and delete buttons.
- * Own bookings get a green background; others a muted grey one (issue #13);
- * a booking overlapping another booking of the room is red (issue #16).
- *
- * Rendered inside the library's event button, so the icon buttons render as
- * spans (nested buttons are invalid HTML) and stop pointer events from
- * starting a bar drag.
+ * Event bar with the booking name. Own bookings get a green background;
+ * others a muted grey one (issue #13); a booking overlapping another
+ * booking of the room is red (issue #16). There are no action icons
+ * (issue #63): pressing the bar is context-aware — own bookings open the
+ * edit form, others open the details (see onPressBoardEvent).
  */
 function BoardEventBar(
   { event }: ResourceEventArgs<BoardEventMeta>,
@@ -164,13 +136,6 @@ function BoardEventBar(
   if (event.freeSlot) {
     return <FreeSlotBar event={event} />;
   }
-  const actions = useContext(BoardActionsContext);
-  if (actions === null) {
-    throw new Error(
-      "BoardEventBar renders only inside BoardActionsContext.Provider",
-    );
-  }
-  const { openSidebar, editBooking, deleteBooking } = actions;
   const booking = event.booking;
   if (!booking) {
     throw new Error("BoardEventBar got a non-booking event without freeSlot");
@@ -212,44 +177,6 @@ function BoardEventBar(
         }}
       >
         {event.title}
-        <IconButton
-          component="span"
-          aria-label="delete"
-          size="small"
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            deleteBooking(booking);
-          }}
-          sx={{ display: editable ? "inline-flex" : "none" }}
-        >
-          <Delete fontSize="inherit" />
-        </IconButton>
-        <IconButton
-          component="span"
-          aria-label="edit"
-          size="small"
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            editBooking(booking);
-          }}
-          sx={{ display: editable ? "inline-flex" : "none" }}
-        >
-          <Edit fontSize="inherit" />
-        </IconButton>
-        <IconButton
-          component="span"
-          aria-label="info"
-          size="small"
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            openSidebar(booking.id);
-          }}
-        >
-          <Info fontSize="inherit" />
-        </IconButton>
       </Typography>
     </Box>
   );
@@ -314,10 +241,11 @@ function FreeSlotBar(
  * Calendar component
  * Maps rooms to super-calendar resources and bookings to board events, and
  * paints every bookable free slot as a green block (ADR-0006). Pressing a
- * booking opens its details in the sidebar; pressing a free-slot block, or
- * pressing or dragging empty lane space, opens the booking form in the same
- * sidebar (issue #15); the edit icon opens the same form prefilled with
- * the booking's values and the delete icon deletes immediately (#14).
+ * booking is context-aware (issue #63): own bookings open the edit form
+ * prefilled with the booking's values (which carries the delete button,
+ * #14), others open their details in the sidebar. Pressing a free-slot
+ * block, or pressing or dragging empty lane space, opens the booking
+ * form in the same sidebar (issue #15).
  * Events whose range overlaps another booking of the room — existing
  * double bookings as well as the selected or previewed slot — are marked
  * red on the board, next to the form's overlap warning (issue #16).
@@ -420,8 +348,10 @@ export function Calendar(
   );
 
   /**
-   * Pressing a booking opens its details; pressing a free-slot block opens
-   * the booking form with exactly that block's range
+   * Context-aware press (issue #63): pressing a free-slot block opens the
+   * booking form with exactly that block's range; pressing an own booking
+   * opens the edit form prefilled with its values, pressing someone
+   * else's booking opens its details (ADR-0004)
    */
   const onPressBoardEvent = useCallback(
     (event: BoardEvent): void => {
@@ -436,7 +366,18 @@ export function Calendar(
           slot: { room: event.resourceId, ...event.freeSlot },
         });
       } else if (event.booking) {
-        openSidebar(event.booking.id);
+        const booking = event.booking;
+        if (event.editable) {
+          setSidebarState({
+            mode: "edit",
+            booking,
+            room: booking.room,
+            start: booking.start,
+            end: booking.end,
+          });
+        } else {
+          openSidebar(booking.id);
+        }
       }
     },
     [openSidebar, formOpen],
@@ -515,35 +456,17 @@ export function Calendar(
   );
 
   /**
-   * The edit icon opens the same form as create, prefilled with the
-   * booking's values; the delete icon deletes immediately, without
-   * confirmation (a timed undo is issue #36)
+   * The delete button of the edit form deletes the booking immediately,
+   * without confirmation, and closes the sidebar (a timed undo is
+   * issue #36)
    */
-  const boardActions = useMemo<BoardActions>(
-    () => ({
-      openSidebar,
-      editBooking: (booking: Booking) => {
-        setSidebarState({
-          mode: "edit",
-          booking,
-          room: booking.room,
-          start: booking.start,
-          end: booking.end,
-        });
-      },
-      deleteBooking: (booking: Booking) => {
-        onDeleteBooking(booking.id)
-          .catch((err: unknown) => console.error("Verwijderen mislukt:", err))
-          .then(() =>
-            setSidebarState((prev) =>
-              prev?.mode === "details" && prev.booking.id === booking.id
-                ? null
-                : prev
-            )
-          );
-      },
-    }),
-    [openSidebar, onDeleteBooking],
+  const handleDeleteBooking = useCallback(
+    (booking: Booking): void => {
+      onDeleteBooking(booking.id)
+        .catch((err: unknown) => console.error("Verwijderen mislukt:", err))
+        .then(() => setSidebarState(null));
+    },
+    [onDeleteBooking],
   );
 
   /**
@@ -624,6 +547,9 @@ export function Calendar(
         initialEnd={sidebarState.end}
         onDraftChange={handleDraftChange}
         onSubmit={handleFormSubmit}
+        onDelete={sidebarState.mode === "edit"
+          ? () => handleDeleteBooking(sidebarState.booking)
+          : undefined}
       />
     );
 
@@ -657,23 +583,21 @@ export function Calendar(
         clock={clock}
       />
       <RoomVisibilityControls rooms={rooms} hidden={hidden} onToggle={toggle} />
-      <BoardActionsContext.Provider value={boardActions}>
-        <ResourceTimeline<BoardEventMeta>
-          orientation="vertical"
-          date={selectedDate}
-          startHour={START_HOUR}
-          resources={resources}
-          events={events}
-          theme={domTheme}
-          style={{ height: BOARD_HEIGHT }}
-          renderEvent={BoardEventBar}
-          renderResourceHeader={renderResourceHeader}
-          onPressEvent={onPressBoardEvent}
-          onDragEvent={onDragEvent}
-          onPressCell={onPressCell}
-          onCreateEvent={onCreateEvent}
-        />
-      </BoardActionsContext.Provider>
+      <ResourceTimeline<BoardEventMeta>
+        orientation="vertical"
+        date={selectedDate}
+        startHour={START_HOUR}
+        resources={resources}
+        events={events}
+        theme={domTheme}
+        style={{ height: BOARD_HEIGHT }}
+        renderEvent={BoardEventBar}
+        renderResourceHeader={renderResourceHeader}
+        onPressEvent={onPressBoardEvent}
+        onDragEvent={onDragEvent}
+        onPressCell={onPressCell}
+        onCreateEvent={onCreateEvent}
+      />
     </React.Fragment>
   );
 
