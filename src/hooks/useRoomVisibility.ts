@@ -2,15 +2,21 @@
  * Room column visibility state
  *
  * Keeps track of which room columns the user has hidden, starting from
- * the preference stored through the preferences service. Toggling a column
- * persists the new preference immediately. Hiding every column is
- * allowed; the calendar then renders an empty grid.
+ * the preference stored through the preferences service. When no
+ * preference was stored yet, the Unknown room is hidden by default
+ * (issue #63) until the user enables it. Toggling a column persists the
+ * new preference immediately. Hiding every column is allowed; the
+ * calendar then renders an empty grid.
  */
 import { useCallback, useMemo, useState } from "react";
 import { usePreferences } from "./useServices.ts";
-import { toggleHiddenRoom, visibleRooms } from "./roomVisibility.ts";
+import {
+  defaultHiddenRooms,
+  toggleHiddenRoom,
+  visibleRooms,
+} from "./roomVisibility.ts";
 
-export { toggleHiddenRoom, visibleRooms };
+export { defaultHiddenRooms, toggleHiddenRoom, visibleRooms };
 
 /**
  * State and actions for room column visibility
@@ -32,7 +38,7 @@ export function useRoomVisibility<T extends { canonicalName: string }>(
 ): RoomVisibility<T> {
   const preferences = usePreferences();
   const [hidden, setHidden] = useState<ReadonlySet<string>>(() =>
-    preferences.getHiddenRooms()
+    preferences.getHiddenRooms() ?? defaultHiddenRooms()
   );
 
   const toggle = useCallback(

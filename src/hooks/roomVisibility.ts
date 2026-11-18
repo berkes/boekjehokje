@@ -2,9 +2,20 @@
  * Room column visibility helpers
  *
  * Pure functions behind the useRoomVisibility hook: toggling a room in
- * the hidden set and filtering rooms down to the visible ones. Kept
- * React-free so they stay unit-testable without a React environment.
+ * the hidden set, the default hidden set and filtering rooms down to the
+ * visible ones. Kept React-free so they stay unit-testable without a
+ * React environment.
  */
+import { UNKNOWN_ROOM } from "../services/index.ts";
+
+/**
+ * The rooms hidden when the user has stored no preference yet: the
+ * Unknown room stays out of the board until the user enables it
+ * (issue #63)
+ */
+export function defaultHiddenRooms(): ReadonlySet<string> {
+  return new Set([UNKNOWN_ROOM]);
+}
 
 /**
  * Toggle a single room in the hidden set (pure)

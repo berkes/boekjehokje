@@ -22,10 +22,10 @@ export interface PreferencesPort {
   /** Store the last-used booker contact */
   saveBookerContact(contact: string): void;
   /**
-   * The canonical names of the hidden room columns, or an empty set when
-   * nothing (valid) was stored
+   * The canonical names of the hidden room columns, or null when nothing
+   * (valid) was stored yet — the caller then applies its own default
    */
-  getHiddenRooms(): ReadonlySet<string>;
+  getHiddenRooms(): ReadonlySet<string> | null;
   /** Store the set of hidden room columns */
   saveHiddenRooms(hidden: ReadonlySet<string>): void;
 }

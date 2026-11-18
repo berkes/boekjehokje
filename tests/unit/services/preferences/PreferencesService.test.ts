@@ -71,8 +71,16 @@ Deno.test("getBookerContact returns an empty contact for a non-string value", ()
   assertEquals(service.getBookerContact(), "");
 });
 
-Deno.test("getHiddenRooms returns an empty set when nothing is stored", () => {
-  assertEquals(makeService().service.getHiddenRooms(), new Set());
+Deno.test("getHiddenRooms returns null when nothing is stored", () => {
+  assertEquals(makeService().service.getHiddenRooms(), null);
+});
+
+Deno.test("getHiddenRooms returns an empty set when an empty array was stored", () => {
+  const store = new InMemoryKeyValueStore();
+  store.write("boekjehokje_hidden_rooms", "[]");
+  const { service } = makeService(store);
+
+  assertEquals(service.getHiddenRooms(), new Set());
 });
 
 Deno.test("getHiddenRooms returns the stored room ids", () => {
@@ -89,20 +97,20 @@ Deno.test("getHiddenRooms returns the stored room ids", () => {
   );
 });
 
-Deno.test("getHiddenRooms returns an empty set for invalid JSON", () => {
+Deno.test("getHiddenRooms returns null for invalid JSON", () => {
   const store = new InMemoryKeyValueStore();
   store.write("boekjehokje_hidden_rooms", "[not json");
   const { service } = makeService(store);
 
-  assertEquals(service.getHiddenRooms(), new Set());
+  assertEquals(service.getHiddenRooms(), null);
 });
 
-Deno.test("getHiddenRooms returns an empty set for a non-array value", () => {
+Deno.test("getHiddenRooms returns null for a non-array value", () => {
   const store = new InMemoryKeyValueStore();
   store.write("boekjehokje_hidden_rooms", '"Kletshok 03"');
   const { service } = makeService(store);
 
-  assertEquals(service.getHiddenRooms(), new Set());
+  assertEquals(service.getHiddenRooms(), null);
 });
 
 Deno.test("getHiddenRooms ignores non-string entries", () => {
@@ -151,7 +159,7 @@ Deno.test("the service does not throw when the store fails", () => {
     service.saveHiddenRooms(new Set(["Kletshok 03"]));
     assertEquals(service.getBookerName(), "");
     assertEquals(service.getBookerContact(), "");
-    assertEquals(service.getHiddenRooms(), new Set());
+    assertEquals(service.getHiddenRooms(), null);
   } catch {
     assert(false, "preference operations should not throw");
   }

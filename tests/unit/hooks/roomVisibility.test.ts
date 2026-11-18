@@ -5,10 +5,16 @@
  * hidden set and filtering rooms down to the visible ones.
  */
 import { assertEquals } from "@std/assert";
+import { UNKNOWN_ROOM } from "../../../src/services/index.ts";
 import {
+  defaultHiddenRooms,
   toggleHiddenRoom,
   visibleRooms,
 } from "../../../src/hooks/roomVisibility.ts";
+
+Deno.test("defaultHiddenRooms hides only the Unknown room (issue #63)", () => {
+  assertEquals(defaultHiddenRooms(), new Set([UNKNOWN_ROOM]));
+});
 
 function room(canonicalName: string) {
   return { canonicalName, shortName: canonicalName, bookings: [] };
