@@ -130,63 +130,77 @@ export class OverviewPage {
   }
 
   /**
-   * Open the slide-in navigation drawer (mobile layout, issue #63).
+   * Toggle the collapsible navigation block (the chevron in its
+   * expanded/collapsed state, review of #63).
    */
-  async openNavigationMenu(): Promise<this> {
-    await this.page.getByRole("button", { name: "Menu openen" }).click();
+  async toggleNavigation(): Promise<this> {
+    await this.navigationToggle().click();
     return this;
   }
 
   /**
-   * Assert the navigation drawer is open, with the long date, the
-   * previous/today/next buttons and the day buttons in it.
+   * Assert the navigation block is expanded: the chevron says so and
+   * the previous/today/next and day buttons are visible.
    */
-  async assertNavigationDrawerIsOpen(): Promise<void> {
-    const drawer = this.navigationDrawer();
-    await expect(drawer).toBeVisible();
+  async assertNavigationIsOpen(): Promise<void> {
+    await expect(this.navigationToggle()).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
     await expect(
-      drawer.getByRole("button", { name: "Vorige" }),
+      this.page.getByRole("button", { name: "Vorige" }),
     ).toBeVisible();
     await expect(
-      drawer.getByRole("button", { name: "Vandaag" }),
+      this.page.getByRole("button", { name: "Vandaag" }),
     ).toBeVisible();
     await expect(
-      drawer.getByRole("button", { name: "Volgende" }),
+      this.page.getByRole("button", { name: "Volgende" }),
     ).toBeVisible();
     // The day buttons of the current week, labelled with the full date
     await expect(
-      drawer.getByRole("button", { name: "maandag 26 oktober 2026" }),
+      this.page.getByRole("button", { name: "maandag 26 oktober 2026" }),
     ).toBeVisible();
   }
 
   /**
-   * Assert the navigation drawer is closed.
+   * Assert the navigation block is collapsed: the chevron says so and
+   * the navigation buttons are hidden.
    */
-  async assertNavigationDrawerIsClosed(): Promise<void> {
-    await expect(this.navigationDrawer()).toHaveCount(0);
+  async assertNavigationIsClosed(): Promise<void> {
+    await expect(this.navigationToggle()).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    await expect(
+      this.page.getByRole("button", { name: "Vandaag" }),
+    ).toBeHidden();
   }
 
   /**
-   * Press a day button in the open navigation drawer; the drawer closes.
-   * The day buttons carry the full date as their accessible name; when
-   * the label matches the shown day too, the day button is the last
-   * match (the long date button comes first in the drawer).
+   * Press a day button of the expanded navigation block. The day
+   * buttons carry the full date as their accessible name; when the
+   * label matches the shown day too, the day button is the last match
+   * (the long date button in the header comes first).
    */
-  async selectDayInNavigation(label: string): Promise<this> {
-    await this.navigationDrawer().getByRole("button", { name: label }).last()
-      .click();
+  async selectDay(label: string): Promise<this> {
+    await this.page.getByRole("button", { name: label }).last().click();
     return this;
   }
 
   /**
-   * Tap the long date in the open navigation drawer; it jumps to today
-   * and the drawer closes (issue #63). The long date button is the
-   * first button in the drawer.
+   * Tap the long date in the navigation header; it jumps to today. The
+   * header's date button is the first button carrying that name.
    */
-  async tapLongDateInNavigation(label: string): Promise<this> {
-    await this.navigationDrawer().getByRole("button", { name: label }).first()
-      .click();
+  async tapLongDate(label: string): Promise<this> {
+    await this.page.getByRole("button", { name: label }).first().click();
     return this;
+  }
+
+  /**
+   * Assert no empty <header> element is rendered (review of #63).
+   */
+  async assertNoEmptyHeader(): Promise<void> {
+    await expect(this.page.locator("header:empty")).toHaveCount(0);
   }
 
   /**
@@ -854,22 +868,19 @@ export class OverviewPage {
   }
 
   /**
-   * The toolbar of the loaded overview: proof the board is up. On
-   * desktop that is the "Vandaag" button, on mobile the menu button of
-   * the slide-in navigation drawer (issue #63).
+   * The toolbar of the loaded overview: proof the board is up. The
+   * chevron of the collapsible navigation block is visible on every
+   * viewport, expanded or not (review of #63).
    */
   private toolbar(): Locator {
-    return this.page.getByRole("button", { name: "Vandaag" }).or(
-      this.page.getByRole("button", { name: "Menu openen" }),
-    );
+    return this.navigationToggle();
   }
 
   /**
-   * The slide-in navigation drawer (mobile layout); a temporary MUI
-   * Drawer unmounts while closed, so it exists only when open.
+   * The chevron toggling the collapsible navigation block.
    */
-  private navigationDrawer(): Locator {
-    return this.page.locator(".MuiDrawer-paper");
+  private navigationToggle(): Locator {
+    return this.page.getByRole("button", { name: "Kalendernavigatie" });
   }
 
   /**

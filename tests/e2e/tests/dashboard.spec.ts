@@ -15,6 +15,8 @@ import { OverviewPage } from "../pages/OverviewPage.ts";
 test("User sees an overview of all rooms and their bookings", async ({ authedPage }) => {
   const overview = await new OverviewPage(authedPage).goto();
 
+  await overview.assertNoEmptyHeader();
+  await overview.assertNavigationIsOpen();
   await overview.assertShowsAllRooms();
   await overview.assertShowsBooking("Kletshok 03 - Willem");
 });
