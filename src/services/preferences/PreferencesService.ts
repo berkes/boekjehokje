@@ -76,24 +76,25 @@ export class PreferencesService implements PreferencesPort {
   }
 
   /**
-   * The hidden room ids. Invalid or missing data yields an empty set:
-   * all columns visible.
+   * The hidden room ids. Missing or invalid data yields null, so the
+   * caller can apply its own default; a stored empty array yields an
+   * empty set (the user explicitly unhid every room).
    */
-  getHiddenRooms(): ReadonlySet<string> {
+  getHiddenRooms(): ReadonlySet<string> | null {
     const serialized = this.read(HIDDEN_ROOMS_STORAGE_KEY);
     if (serialized === null) {
-      return new Set();
+      return null;
     }
     try {
       const parsed: unknown = JSON.parse(serialized);
       if (!Array.isArray(parsed)) {
-        return new Set();
+        return null;
       }
       return new Set(
         parsed.filter((id): id is string => typeof id === "string"),
       );
     } catch {
-      return new Set();
+      return null;
     }
   }
 
