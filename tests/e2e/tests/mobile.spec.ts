@@ -34,31 +34,31 @@ test("User can read the board in portrait mode without landscape", async ({ auth
 });
 
 /**
- * Given I am on a phone and the navigation is in the slide-in drawer
- * When I open the menu
- * Then the drawer slides in with the long date, previous/today/next
- * and the day buttons
+ * Given I am on a phone
+ * When the week overview loads
+ * Then the navigation block is collapsed by default: the chevron is in
+ * its closed state and the day buttons are hidden
+ * And when I tap the chevron
+ * Then the navigation block expands with previous/today/next and the
+ * day buttons, styled like on desktop
  * And when I pick "donderdag 29 oktober 2026"
- * Then the board shows that day and the drawer closes
- * And when I reopen the drawer and tap the long date
- * Then the board returns to today and the drawer closes
- * So that I can browse the week with one hand.
+ * Then the board shows that day
+ * And when I tap the long date in the header
+ * Then the board returns to today
+ * So that I can browse the week from the collapsed header on mobile.
  */
-test("User can navigate days from the slide-in drawer on mobile", async ({ authedPage }) => {
+test("User can expand the collapsed navigation block on mobile", async ({ authedPage }) => {
   const overview = await new OverviewPage(authedPage).goto();
 
-  await overview.assertNavigationDrawerIsClosed();
-  await overview.openNavigationMenu();
-  await overview.assertNavigationDrawerIsOpen();
+  await overview.assertNavigationIsClosed();
+  await overview.toggleNavigation();
+  await overview.assertNavigationIsOpen();
   await overview.assertShowsDay("woensdag 28 oktober 2026");
 
-  await overview.selectDayInNavigation("donderdag 29 oktober 2026");
-  await overview.assertNavigationDrawerIsClosed();
+  await overview.selectDay("donderdag 29 oktober 2026");
   await overview.assertShowsDay("donderdag 29 oktober 2026");
 
-  await overview.openNavigationMenu();
-  await overview.tapLongDateInNavigation("woensdag 28 oktober 2026");
-  await overview.assertNavigationDrawerIsClosed();
+  await overview.tapLongDate("woensdag 28 oktober 2026");
   await overview.assertShowsDay("woensdag 28 oktober 2026");
 });
 

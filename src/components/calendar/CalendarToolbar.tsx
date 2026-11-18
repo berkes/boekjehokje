@@ -5,16 +5,26 @@
  * quick navigation to the working days of the current week.
  * Works with plain Date objects only; no third-party date library.
  *
- * Two layouts (issue #63): "row" lays everything out in one wrapping
- * row (desktop); "column" stacks the long date first — tapping it jumps
- * to today — then the previous/today/next buttons and the day buttons,
- * for the slide-in navigation drawer on mobile.
+ * The navigation is a collapsible block (review of #63): a header row
+ * with a chevron in its expanded/collapsed state plus the long date
+ * (tapping the date jumps to today), controlling the navigation
+ * buttons below it. All viewports are styled the same; the only
+ * difference is the default state — open on desktop, closed on mobile.
+ * The expanded/collapsed state lives in memory only, it is not
+ * persisted.
  */
-import { ChevronLeft, ChevronRight } from "@mui/icons-material";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ExpandLess,
+  ExpandMore,
+} from "@mui/icons-material";
+import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import Collapse from "@mui/material/Collapse";
 import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
-import React from "react";
+import React, { useState } from "react";
 import {
   type ClockPort,
   isSameDay,
@@ -39,44 +49,27 @@ export interface CalendarToolbarProps {
   onSelectDate: (date: Date) => void;
   /** The injected clock, used for "today" and week calculation */
   clock: ClockPort;
-  /** "row" for the desktop bar, "column" stacked date-first for the mobile drawer */
-  layout?: "row" | "column";
+  /**
+   * Whether the navigation block starts expanded: open on desktop,
+   * closed on mobile. The state itself is kept in memory only
+   */
+  defaultOpen?: boolean;
 }
 
 /**
  * Calendar toolbar component
  */
 export function CalendarToolbar(
-  { selectedDate, onSelectDate, clock, layout = "row" }: CalendarToolbarProps,
+  { selectedDate, onSelectDate, clock, defaultOpen = true }:
+    CalendarToolbarProps,
 ): React.JSX.Element {
+  const [open, setOpen] = useState(defaultOpen);
   const now = clock.now();
   const weekDays = weekdayOptions(startOfWeek(now));
   const isPastDay = (day: Date): boolean =>
     day.getTime() < now.getTime() &&
     !isSameDay(day, now);
   const goToday = (): void => onSelectDate(startOfDay(now));
-
-  /**
-   * The long date label; tapping it jumps back to today (issue #63).
-   * In the row layout it carries the aria-live region announcing the
-   * shown day.
-   */
-  const dateButton = (
-    <Button
-      variant="text"
-      size="small"
-      onClick={goToday}
-      aria-live={layout === "row" ? "polite" : undefined}
-      sx={{
-        color: "text.primary",
-        textTransform: "none",
-        fontSize: "1rem",
-        ...(layout === "row" ? { ml: 1 } : null),
-      }}
-    >
-      {longDateLabel(selectedDate)}
-    </Button>
-  );
 
   const navigationButtons = (
     <React.Fragment>
@@ -123,35 +116,42 @@ export function CalendarToolbar(
     </Button>
   ));
 
-  if (layout === "column") {
-    return (
-      <Stack spacing={1} sx={{ alignItems: "flex-start" }}>
-        {dateButton}
-        <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
-          {navigationButtons}
-        </Stack>
+  return (
+    <Box>
+      <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+        <IconButton
+          size="small"
+          aria-label="Kalendernavigatie"
+          aria-expanded={open}
+          onClick={() => setOpen((previous) => !previous)}
+        >
+          {open ? <ExpandLess /> : <ExpandMore />}
+        </IconButton>
+        <Button
+          variant="text"
+          size="small"
+          onClick={goToday}
+          aria-live="polite"
+          sx={{
+            color: "text.primary",
+            textTransform: "none",
+            fontSize: "1rem",
+          }}
+        >
+          {longDateLabel(selectedDate)}
+        </Button>
+      </Stack>
+      <Collapse in={open}>
         <Stack
           direction="row"
           spacing={0.5}
-          useFlexGap
-          sx={{ flexWrap: "wrap" }}
+          sx={{ alignItems: "center", flexWrap: "wrap", gap: 0.5, pt: 0.5 }}
         >
+          {navigationButtons}
           {dayButtons}
         </Stack>
-      </Stack>
-    );
-  }
-
-  return (
-    <Stack
-      direction="row"
-      spacing={0.5}
-      sx={{ alignItems: "center", flexWrap: "wrap", gap: 0.5 }}
-    >
-      {navigationButtons}
-      {dayButtons}
-      {dateButton}
-    </Stack>
+      </Collapse>
+    </Box>
   );
 }
 
