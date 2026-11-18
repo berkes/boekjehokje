@@ -108,6 +108,7 @@ export function CalendarToolbar(
     <Button
       key={date.getTime()}
       size="small"
+      aria-label={longDateLabel(date)}
       variant={isSameDay(date, selectedDate) ? "contained" : "outlined"}
       onClick={() => onSelectDate(date)}
       sx={{

@@ -38,7 +38,7 @@ test("User can read the board in portrait mode without landscape", async ({ auth
  * When I open the menu
  * Then the drawer slides in with the long date, previous/today/next
  * and the day buttons
- * And when I pick "do" (donderdag)
+ * And when I pick "donderdag 29 oktober 2026"
  * Then the board shows that day and the drawer closes
  * And when I reopen the drawer and tap the long date
  * Then the board returns to today and the drawer closes
@@ -52,7 +52,7 @@ test("User can navigate days from the slide-in drawer on mobile", async ({ authe
   await overview.assertNavigationDrawerIsOpen();
   await overview.assertShowsDay("woensdag 28 oktober 2026");
 
-  await overview.selectDayInNavigation("do");
+  await overview.selectDayInNavigation("donderdag 29 oktober 2026");
   await overview.assertNavigationDrawerIsClosed();
   await overview.assertShowsDay("donderdag 29 oktober 2026");
 

@@ -153,6 +153,10 @@ export class OverviewPage {
     await expect(
       drawer.getByRole("button", { name: "Volgende" }),
     ).toBeVisible();
+    // The day buttons of the current week, labelled with the full date
+    await expect(
+      drawer.getByRole("button", { name: "maandag 26 oktober 2026" }),
+    ).toBeVisible();
   }
 
   /**
@@ -164,18 +168,24 @@ export class OverviewPage {
 
   /**
    * Press a day button in the open navigation drawer; the drawer closes.
+   * The day buttons carry the full date as their accessible name; when
+   * the label matches the shown day too, the day button is the last
+   * match (the long date button comes first in the drawer).
    */
   async selectDayInNavigation(label: string): Promise<this> {
-    await this.navigationDrawer().getByRole("button", { name: label }).click();
+    await this.navigationDrawer().getByRole("button", { name: label }).last()
+      .click();
     return this;
   }
 
   /**
    * Tap the long date in the open navigation drawer; it jumps to today
-   * and the drawer closes (issue #63).
+   * and the drawer closes (issue #63). The long date button is the
+   * first button in the drawer.
    */
   async tapLongDateInNavigation(label: string): Promise<this> {
-    await this.navigationDrawer().getByRole("button", { name: label }).click();
+    await this.navigationDrawer().getByRole("button", { name: label }).first()
+      .click();
     return this;
   }
 
