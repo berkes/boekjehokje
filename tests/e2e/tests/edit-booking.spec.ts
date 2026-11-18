@@ -18,7 +18,8 @@ const MY_EVENT_ID = "Stilteruimte - Bèr-2-11:00";
 /**
  * Given I am signed in as Bèr and the board shows my booking
  * "Stilteruimte - Bèr" on Wednesday 11:00-14:00
- * When I click its edit icon
+ * When I tap it (issue #63: context-aware tap opens the edit form for
+ * own bookings, there are no icons anymore)
  * Then the same booking form opens, titled "Boeking bewerken" and prefilled
  * with room "Stilteruimte (Stilteruimte)", van "2026-10-28T11:00", tot
  * "2026-10-28T14:00", booker "Bèr" and summary preview "Stilteruimte | Bèr"
@@ -69,7 +70,8 @@ test("User can save an edited booking, which is patched to the calendar API", as
 /**
  * Given I am signed in as Bèr and the board shows my booking
  * "Stilteruimte - Bèr"
- * When I click its delete icon
+ * When I tap it and press "Verwijderen" in the edit form that opens
+ * (issue #63: the delete lives in the form, not on the bar)
  * Then a DELETE is sent to the calendar API for event
  * "Stilteruimte - Bèr-2-11:00", without any confirmation
  * So that my booking is removed from the shared calendar (#14; a timed

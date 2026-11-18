@@ -130,6 +130,99 @@ export class OverviewPage {
   }
 
   /**
+   * Open the slide-in navigation drawer (mobile layout, issue #63).
+   */
+  async openNavigationMenu(): Promise<this> {
+    await this.page.getByRole("button", { name: "Menu openen" }).click();
+    return this;
+  }
+
+  /**
+   * Assert the navigation drawer is open, with the long date, the
+   * previous/today/next buttons and the day buttons in it.
+   */
+  async assertNavigationDrawerIsOpen(): Promise<void> {
+    const drawer = this.navigationDrawer();
+    await expect(drawer).toBeVisible();
+    await expect(
+      drawer.getByRole("button", { name: "Vorige" }),
+    ).toBeVisible();
+    await expect(
+      drawer.getByRole("button", { name: "Vandaag" }),
+    ).toBeVisible();
+    await expect(
+      drawer.getByRole("button", { name: "Volgende" }),
+    ).toBeVisible();
+  }
+
+  /**
+   * Assert the navigation drawer is closed.
+   */
+  async assertNavigationDrawerIsClosed(): Promise<void> {
+    await expect(this.navigationDrawer()).toHaveCount(0);
+  }
+
+  /**
+   * Press a day button in the open navigation drawer; the drawer closes.
+   */
+  async selectDayInNavigation(label: string): Promise<this> {
+    await this.navigationDrawer().getByRole("button", { name: label }).click();
+    return this;
+  }
+
+  /**
+   * Tap the long date in the open navigation drawer; it jumps to today
+   * and the drawer closes (issue #63).
+   */
+  async tapLongDateInNavigation(label: string): Promise<this> {
+    await this.navigationDrawer().getByRole("button", { name: label }).click();
+    return this;
+  }
+
+  /**
+   * Assert the page fits the viewport width: no horizontal scrolling in
+   * portrait mode (issue #63).
+   */
+  async assertBoardFitsViewport(): Promise<void> {
+    const fits = await this.page.evaluate(() => {
+      const doc = document.documentElement;
+      const board = document.querySelector('[data-slot="header"]')
+        ?.parentElement ?? null;
+      return doc.scrollWidth <= globalThis.innerWidth &&
+        (board === null || board.scrollWidth <= board.clientWidth + 1);
+    });
+    expect(fits, "the page overflows the viewport horizontally").toBe(true);
+  }
+
+  /**
+   * Assert the room header row sticks to the top of the board while the
+   * board scrolls down (issue #63).
+   */
+  async assertRoomHeaderIsSticky(): Promise<void> {
+    const header = this.page.locator('[data-slot="header"]');
+    await expect(header).toBeVisible();
+    const before = await header.boundingBox();
+    await this.page.evaluate(() => {
+      const headerEl = document.querySelector('[data-slot="header"]');
+      let scroller: Element | null = headerEl?.parentElement ?? null;
+      while (scroller && scroller.scrollHeight <= scroller.clientHeight) {
+        scroller = scroller.parentElement;
+      }
+      if (scroller) {
+        scroller.scrollTop = scroller.scrollHeight;
+      }
+    });
+    const after = await header.boundingBox();
+    expect(before, "header has no box before scrolling").not.toBeNull();
+    expect(after, "header has no box after scrolling").not.toBeNull();
+    expect(
+      Math.abs((after?.y ?? 0) - (before?.y ?? 0)),
+      "the room header row did not stay at the top while scrolling",
+    ).toBeLessThan(5);
+    await expect(header).toBeVisible();
+  }
+
+  /**
    * Hide a room's column and its bookings.
    */
   async hideRoom(room: string): Promise<this> {
@@ -202,12 +295,8 @@ export class OverviewPage {
    * Assert a room appears on the board.
    */
   async assertShowsRoom(room: string): Promise<void> {
-    const column = this.roomColumn(room);
-    if (column !== null) {
-      await expect(column).toBeVisible();
-    } else {
-      await expect(this.roomChip(room)).toBeVisible();
-    }
+    await expect(this.roomColumn(room)).toBeVisible();
+    await expect(this.roomChip(room)).toBeVisible();
   }
 
   /**
@@ -228,10 +317,7 @@ export class OverviewPage {
    * Assert a room's column and bookings are gone from the board.
    */
   async assertRoomIsHidden(room: string): Promise<void> {
-    const column = this.roomColumn(room);
-    if (column !== null) {
-      await expect(column).toBeHidden();
-    }
+    await expect(this.roomColumn(room)).toHaveCount(0);
     await expect(this.bookingsOfRoom(room)).toHaveCount(0);
   }
 
@@ -239,10 +325,7 @@ export class OverviewPage {
    * Assert a room's column and bookings are on the board.
    */
   async assertRoomIsVisible(room: string): Promise<void> {
-    const column = this.roomColumn(room);
-    if (column !== null) {
-      await expect(column).toBeVisible();
-    }
+    await expect(this.roomColumn(room)).toBeVisible();
     await expect(this.bookingsOfRoom(room).first()).toBeVisible();
   }
 
@@ -324,24 +407,38 @@ export class OverviewPage {
   }
 
   /**
-   * Assert a booking offers to edit and delete.
+   * Assert tapping an own booking opens the edit form, which carries the
+   * delete button (issue #63: no action icons on the bar anymore).
    */
   async assertBookingIsEditable(booking: string): Promise<void> {
     const bar = this.bookingBar(booking);
     await expect(bar).toBeVisible();
-    await expect(bar.getByRole("button", { name: "edit" })).toBeVisible();
-    await expect(bar.getByRole("button", { name: "delete" })).toBeVisible();
+    await bar.click();
+    await expect(
+      this.page.getByRole("heading", { name: "Boeking bewerken" }),
+    ).toBeVisible();
+    await expect(
+      this.page.getByRole("button", { name: "Verwijderen" }),
+    ).toBeVisible();
+    await this.closeBookingDetails();
   }
 
   /**
-   * Assert a booking offers details only.
+   * Assert tapping someone else's booking opens the details only, with
+   * no delete button anywhere (ADR-0004, issue #63).
    */
   async assertBookingIsReadOnly(booking: string): Promise<void> {
     const bar = this.bookingBar(booking);
     await expect(bar).toBeVisible();
-    await expect(bar.getByRole("button", { name: "info" })).toBeVisible();
-    await expect(bar.getByRole("button", { name: "edit" })).toBeHidden();
-    await expect(bar.getByRole("button", { name: "delete" })).toBeHidden();
+    await bar.click();
+    await expect(this.detailsTerm("Beschrijving")).toBeVisible();
+    await expect(
+      this.page.getByRole("heading", { name: "Boeking bewerken" }),
+    ).toHaveCount(0);
+    await expect(
+      this.page.getByRole("button", { name: "Verwijderen" }),
+    ).toHaveCount(0);
+    await this.closeBookingDetails();
   }
 
   /**
@@ -467,20 +564,21 @@ export class OverviewPage {
   }
 
   /**
-   * Click the edit icon of a booking's bar on the board.
+   * Tap a booking's bar: for an own booking this opens the edit form
+   * (issue #63's context-aware tap).
    */
   async clickEditOn(booking: string): Promise<this> {
-    await this.bookingBar(booking).getByRole("button", { name: "edit" })
-      .click();
+    await this.bookingBar(booking).click();
     return this;
   }
 
   /**
-   * Click the delete icon of a booking's bar on the board.
+   * Delete a booking through the edit form's "Verwijderen" button: tap
+   * the bar to open the edit form, then press the button (issue #63).
    */
   async clickDeleteOn(booking: string): Promise<this> {
-    await this.bookingBar(booking).getByRole("button", { name: "delete" })
-      .click();
+    await this.clickEditOn(booking);
+    await this.page.getByRole("button", { name: "Verwijderen" }).click();
     return this;
   }
 
@@ -489,6 +587,24 @@ export class OverviewPage {
    */
   async assertBookingFormIsClosed(): Promise<void> {
     await expect(this.bookingFormTitle()).toBeHidden();
+  }
+
+  /**
+   * Assert no delete button is offered anywhere (read-only context).
+   */
+  async assertNoDeleteButton(): Promise<void> {
+    await expect(
+      this.page.getByRole("button", { name: "Verwijderen" }),
+    ).toHaveCount(0);
+  }
+
+  /**
+   * Assert the edit form carries the delete button.
+   */
+  async assertDeleteButtonIsOffered(): Promise<void> {
+    await expect(
+      this.page.getByRole("button", { name: "Verwijderen" }),
+    ).toBeVisible();
   }
 
   /**
@@ -728,10 +844,22 @@ export class OverviewPage {
   }
 
   /**
-   * The toolbar of the loaded overview: proof the board is up.
+   * The toolbar of the loaded overview: proof the board is up. On
+   * desktop that is the "Vandaag" button, on mobile the menu button of
+   * the slide-in navigation drawer (issue #63).
    */
   private toolbar(): Locator {
-    return this.page.getByRole("button", { name: "Vandaag" });
+    return this.page.getByRole("button", { name: "Vandaag" }).or(
+      this.page.getByRole("button", { name: "Menu openen" }),
+    );
+  }
+
+  /**
+   * The slide-in navigation drawer (mobile layout); a temporary MUI
+   * Drawer unmounts while closed, so it exists only when open.
+   */
+  private navigationDrawer(): Locator {
+    return this.page.locator(".MuiDrawer-paper");
   }
 
   /**
@@ -756,24 +884,33 @@ export class OverviewPage {
   }
 
   /**
-   * The chip toggling a room's column.
+   * The chip toggling a room's column. Chips show the room's short,
+   * number-first label (issue #63), so they are told apart from the
+   * board's column headers by role: a chip is a button.
    */
   private roomChip(room: string): Locator {
-    return this.page.getByText(room, { exact: true }).first();
+    const label = room === UNMATCHED_GROUP
+      ? UNMATCHED_GROUP
+      : ROOM_COLUMNS[room];
+    if (label === undefined) {
+      throw new Error(`Unknown room: ${room}`);
+    }
+    return this.page.getByRole("button", { name: label, exact: true });
   }
 
   /**
-   * The column header of a room, or null when it cannot be told apart
-   * from the chip (the room whose column header repeats its name).
+   * The column header cell of a room on the board (super-calendar's
+   * resourceLabel slot), showing the short name.
    */
-  private roomColumn(room: string): Locator | null {
+  private roomColumn(room: string): Locator {
     const column = ROOM_COLUMNS[room];
-    if (column === undefined) {
+    if (column === undefined && room !== UNMATCHED_GROUP) {
       throw new Error(`Unknown room: ${room}`);
     }
-    return column === room
-      ? null
-      : this.page.getByText(column, { exact: true });
+    const label = room === UNMATCHED_GROUP ? UNMATCHED_GROUP : column!;
+    return this.page
+      .locator('[data-slot="resourceLabel"]')
+      .filter({ hasText: label });
   }
 
   /**
