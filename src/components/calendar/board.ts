@@ -107,13 +107,14 @@ export function roomDescription(room: { canonicalName: string }): string {
 }
 
 /**
- * Label of a room column: the full canonical name, except for the
- * Unknown room whose description is too long for a label
+ * Label of a room's visibility pill: the short name, so the pill starts
+ * with the room number and fits on one line, like the column header
+ * (issue #63); the full canonical name stays available as the tooltip
  */
 export function roomLabel(
   room: { canonicalName: string; shortName: string },
 ): string {
-  return isUnknownRoom(room) ? room.shortName : room.canonicalName;
+  return room.shortName;
 }
 
 /**
