@@ -389,7 +389,7 @@ Deno.test("serialize omits the description when there is no contact", () => {
     start: new Date("2026-10-28T10:00:00Z"),
     end: new Date("2026-10-28T11:00:00Z"),
   });
-  assertEquals(event.summary, "Stilteruimte | Bèr");
+  assertEquals(event.summary, "SR | Bèr");
   assert(!("description" in event), "no empty description is written");
 });
 

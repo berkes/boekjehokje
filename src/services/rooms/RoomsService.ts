@@ -82,7 +82,7 @@ const ROOM_CONFIGS: RoomDefinition[] = [
   },
   {
     canonicalName: "Stilteruimte",
-    shortName: "Stilteruimte",
+    shortName: "SR",
     aliases: [
       "stilteruimte",
       "stilteruimte 02",

@@ -8,7 +8,7 @@ const ROOM_COLUMNS: Readonly<Record<string, string>> = {
   "Kletshok 03": "03 KH",
   "Kletshok 04": "04 KH",
   "Kletshok 05": "05 KH",
-  "Stilteruimte": "Stilteruimte",
+  "Stilteruimte": "SR",
   "Tuinkamer": "TK",
   "Vergaderruimte C3": "VG C3",
 };
@@ -920,7 +920,7 @@ export class OverviewPage {
     const label = room === UNMATCHED_GROUP ? UNMATCHED_GROUP : column!;
     return this.page
       .locator('[data-slot="resourceLabel"]')
-      .filter({ hasText: label });
+      .getByText(label, { exact: true });
   }
 
   /**
