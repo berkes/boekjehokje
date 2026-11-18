@@ -227,7 +227,7 @@ service method, so they are folded into one diagram.
 ```mermaid
 sequenceDiagram
   actor User
-  participant UI as Edit form / delete icon (board actions)
+  participant UI as Edit form (opened by tapping the booking, with the delete button inside it, issue #63)
   participant Service as CalendarService
   participant Repo as CalendarEventRepositoryPort
   participant Google as GoogleCalendarRepositoryAdapter

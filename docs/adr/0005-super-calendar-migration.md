@@ -128,10 +128,11 @@ MUI, Google Calendar as source of truth, Deno toolchain) is unchanged.
   dependencies (`date-fns`, `@legendapp/list`).
 - Bad, because `ResourceTimeline` renders exactly one day; a multi-day room
   board would need a different view or composition.
-- Bad, because known rough edges remain: the icon buttons inside event bars are
-  pointer-only (nested real buttons are invalid HTML inside the library's event
-  `<button>`), drag-and-drop of own bookings stays visual-only until issue #14,
-  and the bundle grows.
+- Bad, because known rough edges remain: drag-and-drop of own bookings stays
+  visual-only until issue #14, and the bundle grows. (The icon buttons inside
+  event bars were removed in issue #63: tapping a bar is context-aware instead —
+  edit form for own bookings, details for others — because the icons hid behind
+  the title text on narrow screens.)
 
 ## Features That Must Be Re-implemented
 
