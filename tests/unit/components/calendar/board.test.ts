@@ -234,10 +234,10 @@ Deno.test("roomDescription uses the canonical name for known rooms", () => {
   );
 });
 
-Deno.test("roomLabel uses the full canonical name for known rooms", () => {
+Deno.test("roomLabel uses the short name so the pill starts with the number (issue #63)", () => {
   assertEquals(
     roomLabel({ canonicalName: "Kletshok 05", shortName: "05 KH" }),
-    "Kletshok 05",
+    "05 KH",
   );
 });
 
