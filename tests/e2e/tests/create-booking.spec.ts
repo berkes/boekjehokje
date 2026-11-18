@@ -23,7 +23,7 @@ const ROOM_OPTIONS = [
   "Kletshok 03 (03 KH)",
   "Kletshok 04 (04 KH)",
   "Kletshok 05 (05 KH)",
-  "Stilteruimte (Stilteruimte)",
+  "Stilteruimte (SR)",
   "Tuinkamer (TK)",
   "Vergaderruimte C3 (VG C3)",
 ];
@@ -139,8 +139,8 @@ test("User can open the booking form by dragging a free range", async ({ authedP
  * When I open the room select
  * Then it offers all six rooms as "full name (short name)" and no Unknown
  * group
- * And when I pick "Stilteruimte (Stilteruimte)"
- * Then the summary preview updates to "Stilteruimte | Bèr"
+ * And when I pick "Stilteruimte (SR)"
+ * Then the summary preview updates to "SR | Bèr"
  * So that I can book any room for the selected time (time-first, ADR-0002).
  */
 test("User can pick another room in the booking form", async ({ authedPage }) => {
@@ -149,13 +149,13 @@ test("User can pick another room in the booking form", async ({ authedPage }) =>
   await overview.clickFreeSlot("Kletshok 03", "10:30");
   await overview.assertRoomOptions(ROOM_OPTIONS);
 
-  await overview.selectRoom("Stilteruimte (Stilteruimte)");
+  await overview.selectRoom("Stilteruimte (SR)");
   await overview.assertBookingFormIsOpen({
-    room: "Stilteruimte (Stilteruimte)",
+    room: "Stilteruimte (SR)",
     from: "2026-10-28T10:00",
     to: "2026-10-28T10:55",
     booker: "Bèr",
-    summary: "Stilteruimte | Bèr",
+    summary: "SR | Bèr",
   });
 });
 
@@ -260,7 +260,7 @@ test("The board previews the form's draft and drops it for a hidden room", async
   await overview.assertSelectedSlotIsHighlighted("Kletshok 03");
   await overview.assertNoPreviewSlotIn("Kletshok 03");
 
-  await overview.selectRoom("Stilteruimte (Stilteruimte)");
+  await overview.selectRoom("Stilteruimte (SR)");
   await overview.assertPreviewSlotIsShownIn("Stilteruimte");
   await overview.assertNoPreviewSlotIn("Kletshok 03");
   await overview.assertSelectedSlotIsHighlighted("Kletshok 03");

@@ -21,8 +21,8 @@ const MY_EVENT_ID = "Stilteruimte - Bèr-2-11:00";
  * When I tap it (issue #63: context-aware tap opens the edit form for
  * own bookings, there are no icons anymore)
  * Then the same booking form opens, titled "Boeking bewerken" and prefilled
- * with room "Stilteruimte (Stilteruimte)", van "2026-10-28T11:00", tot
- * "2026-10-28T14:00", booker "Bèr" and summary preview "Stilteruimte | Bèr"
+ * with room "Stilteruimte (SR)", van "2026-10-28T11:00", tot
+ * "2026-10-28T14:00", booker "Bèr" and summary preview "SR | Bèr"
  * So that I can adjust my own booking without leaving the app.
  */
 test("User can open the edit form prefilled from their own booking", async ({ authedPage }) => {
@@ -30,11 +30,11 @@ test("User can open the edit form prefilled from their own booking", async ({ au
 
   await overview.clickEditOn(MY_BOOKING);
   await overview.assertEditFormIsOpen({
-    room: "Stilteruimte (Stilteruimte)",
+    room: "Stilteruimte (SR)",
     from: "2026-10-28T11:00",
     to: "2026-10-28T14:00",
     booker: "Bèr",
-    summary: "Stilteruimte | Bèr",
+    summary: "SR | Bèr",
   });
 });
 
@@ -43,7 +43,7 @@ test("User can open the edit form prefilled from their own booking", async ({ au
  * 11:00-14:00 (Anneke's booking follows at 14:00)
  * When I change Tot to "2026-10-28T13:30", fill in my contact and confirm
  * Then a PATCH is sent to the calendar API for event
- * "Stilteruimte - Bèr-2-11:00" with summary "Stilteruimte | Bèr", the
+ * "Stilteruimte - Bèr-2-11:00" with summary "SR | Bèr", the
  * contact in the description, start "2026-10-28T11:00:00.000Z" and end
  * "2026-10-28T13:30:00.000Z", and the form closes
  * So that my change is saved to the shared calendar (#14).
@@ -59,7 +59,7 @@ test("User can save an edited booking, which is patched to the calendar API", as
   await overview.assertBookingWasWritten({
     method: "PATCH",
     eventId: MY_EVENT_ID,
-    summary: "Stilteruimte | Bèr",
+    summary: "SR | Bèr",
     description: "ber@boekjehokje.test",
     start: "2026-10-28T11:00:00.000Z",
     end: "2026-10-28T13:30:00.000Z",
