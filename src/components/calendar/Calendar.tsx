@@ -102,6 +102,10 @@ export interface CalendarProps {
   onUpdateBooking: (booking: BookingUpdate) => Promise<void>;
   /** Delete a booking through the calendar service (#14); undo is #36 */
   onDeleteBooking: (bookingId: string) => Promise<void>;
+  /** Whether the collapsible navigation block is expanded (in-memory state, review of #63) */
+  navOpen: boolean;
+  /** Toggle the navigation block expanded/collapsed */
+  onToggleNav: () => void;
 }
 
 /**
@@ -264,6 +268,8 @@ export function Calendar(
     onCreateBooking,
     onUpdateBooking,
     onDeleteBooking,
+    navOpen,
+    onToggleNav,
   }: CalendarProps,
 ): React.JSX.Element {
   const [sidebarState, setSidebarState] = useState<SidebarState>(null);
@@ -600,7 +606,8 @@ export function Calendar(
         selectedDate={selectedDate}
         onSelectDate={onSelectDate}
         clock={clock}
-        defaultOpen={isDesktop}
+        open={navOpen}
+        onToggleOpen={onToggleNav}
       />
       <RoomVisibilityControls rooms={rooms} hidden={hidden} onToggle={toggle} />
       <ResourceTimeline<BoardEventMeta>
@@ -650,7 +657,15 @@ export function Calendar(
 export function CalendarView(): React.JSX.Element {
   const { load, rooms, isLoading, error } = useCalendar();
   const clock = useClock();
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
   const [selectedDate, setSelectedDate] = useState(() => clock.now());
+  /**
+   * The collapsible navigation block starts open on desktop and closed
+   * on mobile; the state lives in memory only and survives the board's
+   * loading remounts (review of #63)
+   */
+  const [navOpen, setNavOpen] = useState(isDesktop);
 
   /**
    * (Re)load the board whenever the selected day changes: on mount and
@@ -754,6 +769,8 @@ export function CalendarView(): React.JSX.Element {
         onCreateBooking={createBooking}
         onUpdateBooking={updateBooking}
         onDeleteBooking={deleteBooking}
+        navOpen={navOpen}
+        onToggleNav={() => setNavOpen((previous) => !previous)}
       />
     </Box>
   );

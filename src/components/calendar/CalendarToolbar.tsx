@@ -24,7 +24,7 @@ import Button from "@mui/material/Button";
 import Collapse from "@mui/material/Collapse";
 import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
-import React, { useState } from "react";
+import React from "react";
 import {
   type ClockPort,
   isSameDay,
@@ -50,20 +50,22 @@ export interface CalendarToolbarProps {
   /** The injected clock, used for "today" and week calculation */
   clock: ClockPort;
   /**
-   * Whether the navigation block starts expanded: open on desktop,
-   * closed on mobile. The state itself is kept in memory only
+   * Whether the navigation block is expanded. The state lives in
+   * memory only (it starts open on desktop, closed on mobile), it is
+   * not persisted
    */
-  defaultOpen?: boolean;
+  open: boolean;
+  /** Toggle the navigation block expanded/collapsed */
+  onToggleOpen: () => void;
 }
 
 /**
  * Calendar toolbar component
  */
 export function CalendarToolbar(
-  { selectedDate, onSelectDate, clock, defaultOpen = true }:
+  { selectedDate, onSelectDate, clock, open, onToggleOpen }:
     CalendarToolbarProps,
 ): React.JSX.Element {
-  const [open, setOpen] = useState(defaultOpen);
   const now = clock.now();
   const weekDays = weekdayOptions(startOfWeek(now));
   const isPastDay = (day: Date): boolean =>
@@ -123,7 +125,7 @@ export function CalendarToolbar(
           size="small"
           aria-label="Kalendernavigatie"
           aria-expanded={open}
-          onClick={() => setOpen((previous) => !previous)}
+          onClick={onToggleOpen}
         >
           {open ? <ExpandLess /> : <ExpandMore />}
         </IconButton>
