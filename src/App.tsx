@@ -194,17 +194,6 @@ function AppContent(): React.JSX.Element {
 
   return (
     <Box>
-      <Box
-        component="header"
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          py: 2,
-        }}
-      >
-      </Box>
-
       <Box component="main">
         {isLoggedIn ? <MainContent /> : <Landing />}
       </Box>
