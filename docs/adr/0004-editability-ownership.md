@@ -60,6 +60,9 @@ components with an `editable` flag; components never inline the comparison.
 - Bad, because events created with an alias email that differs from the profile
   email would be considered read-only even if made by the same person (not
   observed in practice for this Workspace).
+- The board's tap is context-aware on top of this rule (issue #63): tapping an
+  own booking opens the edit form (with the delete button inside it), tapping
+  someone else's booking opens the read-only details.
 
 ## Validation
 
