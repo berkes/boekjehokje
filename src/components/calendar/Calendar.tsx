@@ -12,10 +12,12 @@ import {
   type ResourceEventArgs,
   ResourceTimeline,
 } from "@super-calendar/dom";
-import { Add } from "@mui/icons-material";
+import { Add, Menu } from "@mui/icons-material";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
+import Drawer from "@mui/material/Drawer";
+import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
 import { useTheme } from "@mui/material/styles";
 import Typography from "@mui/material/Typography";
@@ -32,6 +34,7 @@ import {
   type Booking,
   type BookingUpdate,
   isSameDay,
+  longDateLabel,
   type NewBooking,
 } from "../../services/index.ts";
 import { BookingForm } from "./BookingForm.tsx";
@@ -79,6 +82,12 @@ const BOARD_HEIGHT = 640;
  * without scrolling. Bookings before this hour are outside the window.
  */
 const START_HOUR = 8;
+
+/**
+ * Width of the time gutter on mobile: narrower than the library's default
+ * 56px, so the room columns keep more of the narrow screen (issue #63)
+ */
+const MOBILE_GUTTER_WIDTH = 44;
 
 /**
  * Props for Calendar component
@@ -269,6 +278,7 @@ export function Calendar(
   const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
   const clock = useClock();
   const overlaps = useOverlapsService();
+  const [navOpen, setNavOpen] = useState(false);
 
   const { rooms: visibleRooms, hidden, toggle } = useRoomVisibility(rooms);
 
@@ -575,13 +585,76 @@ export function Calendar(
     </SidebarShell>
   );
 
-  const calendar = (
-    <React.Fragment>
+  /**
+   * Selecting a day in the mobile navigation drawer also closes it
+   */
+  const selectDateFromNav = useCallback(
+    (date: Date): void => {
+      onSelectDate(date);
+      setNavOpen(false);
+    },
+    [onSelectDate],
+  );
+
+  /**
+   * Date navigation: the full toolbar in a row on desktop; on mobile a
+   * menu button with the current day, opening a slide-in drawer from
+   * the right (~70% of the screen) with the stacked toolbar (issue #63)
+   */
+  const navigation = isDesktop
+    ? (
       <CalendarToolbar
         selectedDate={selectedDate}
         onSelectDate={onSelectDate}
         clock={clock}
       />
+    )
+    : (
+      <React.Fragment>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <IconButton
+            aria-label="Menu openen"
+            onClick={() => setNavOpen(true)}
+          >
+            <Menu />
+          </IconButton>
+          <Typography variant="body1" aria-live="polite">
+            {longDateLabel(selectedDate)}
+          </Typography>
+        </Stack>
+        <Drawer
+          anchor="right"
+          open={navOpen}
+          onClose={() => setNavOpen(false)}
+        >
+          <Box sx={{ p: 2, width: "70vw", maxWidth: 360 }}>
+            <CalendarToolbar
+              layout="column"
+              selectedDate={selectedDate}
+              onSelectDate={selectDateFromNav}
+              clock={clock}
+            />
+          </Box>
+        </Drawer>
+      </React.Fragment>
+    );
+
+  /**
+   * On mobile the time gutter is narrower, so the room columns keep more
+   * of the narrow screen (issue #63)
+   */
+  const boardSlotStyles = useMemo(
+    () =>
+      isDesktop ? undefined : {
+        corner: { width: MOBILE_GUTTER_WIDTH },
+        timeAxis: { width: MOBILE_GUTTER_WIDTH },
+      },
+    [isDesktop],
+  );
+
+  const calendar = (
+    <React.Fragment>
+      {navigation}
       <RoomVisibilityControls rooms={rooms} hidden={hidden} onToggle={toggle} />
       <ResourceTimeline<BoardEventMeta>
         orientation="vertical"
@@ -591,6 +664,7 @@ export function Calendar(
         events={events}
         theme={domTheme}
         style={{ height: BOARD_HEIGHT }}
+        styles={boardSlotStyles}
         renderEvent={BoardEventBar}
         renderResourceHeader={renderResourceHeader}
         onPressEvent={onPressBoardEvent}
