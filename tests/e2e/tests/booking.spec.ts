@@ -33,8 +33,9 @@ test("User can view the details of the booking 'Kletshok 04 - Dirk'", async ({ a
 /**
  * Given I am signed in as Bèr and the week overview shows my booking
  * "Stilteruimte - Bèr" next to Willem's booking "Kletshok 03 - Willem"
- * When I look at the bookings on the board
- * Then mine offers to edit and delete, and Willem's only offers details
+ * When I tap the bookings on the board (issue #63: context-aware tap)
+ * Then mine opens the edit form with a delete button, and Willem's only
+ * opens the details
  * So that I cannot accidentally change someone else's booking.
  */
 test("User can only edit their own booking 'Stilteruimte - Bèr'", async ({ authedPage }) => {

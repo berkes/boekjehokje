@@ -29,17 +29,23 @@ test("User can hide the room 'Kletshok 04' from the overview", async ({ authedPa
 /**
  * Given bookings exist that could not be matched to a room
  * When I look at the overview
- * Then the booking "Werkplaats overleg - Sanne" appears in a separate
- * "Unknown" group, set apart from the named rooms
- * And when I hide that group with its chip
- * Then its column disappears from the board, while the named rooms keep
- * their bookings
- * So that a typo in a booking never makes it invisible, and I can still
- * tuck the odd ones away.
+ * Then the "Unknown" group is hidden by default (issue #63): only its
+ * chip shows, and "Werkplaats overleg - Sanne" is not on the board
+ * And when I enable the group with its chip
+ * Then its column appears, set apart from the named rooms, with the
+ * booking on it
+ * And when I hide it again with the chip
+ * Then its column disappears, while the named rooms keep their bookings
+ * So that a typo in a booking never clutters the board, yet stays one
+ * tap away.
  */
-test("User sees unmatched bookings in a separate group", async ({ authedPage }) => {
+test("User sees unmatched bookings in a separate group, hidden by default", async ({ authedPage }) => {
   const overview = await new OverviewPage(authedPage).goto();
 
+  await overview.assertUnmatchedGroupIsHidden();
+  await overview.assertShowsNoBooking("Werkplaats overleg - Sanne");
+
+  await overview.showRoom("Unknown");
   await overview.assertShowsUnmatchedGroup();
   await overview.assertShowsBooking("Werkplaats overleg - Sanne");
 
