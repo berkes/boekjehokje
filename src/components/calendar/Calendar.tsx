@@ -507,6 +507,8 @@ export function Calendar(
    */
   const renderResourceHeader = useCallback(
     (resource: Resource): React.JSX.Element => {
+      // TODO: remove isCalendarResource and the logic and just ensure that we always pass CalendarResources
+      // from the service.
       const description = isCalendarResource(resource)
         ? resource.description
         : resource.title ?? resource.id;
