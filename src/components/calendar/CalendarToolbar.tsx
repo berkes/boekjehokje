@@ -1,4 +1,5 @@
-/**
+/*
+*
  * Calendar toolbar
  *
  * Date navigation for the calendar view: previous/today/next and
@@ -31,8 +32,10 @@ import {
   longDateLabel,
   startOfDay,
   startOfWeek,
-  weekdayOptions,
+  weekdayOptions
 } from "../../services/index.ts";
+import { type CalendarRoom } from "./board.ts";
+import { RoomVisibilityControls } from "./RoomVisibilityControls.tsx";
 
 /**
  * Minimum touch target for the quick navigation buttons
@@ -57,13 +60,20 @@ export interface CalendarToolbarProps {
   open: boolean;
   /** Toggle the navigation block expanded/collapsed */
   onToggleOpen: () => void;
+
+  /** Rooms to display */
+  rooms: CalendarRoom[];
+  /** Hidden rooms */
+  roomHidden: ReadonlySet<string>;
+  /** Toggle room visibility */
+  onToggleRoom: (roomId: string) => void;
 }
 
 /**
  * Calendar toolbar component
  */
 export function CalendarToolbar(
-  { selectedDate, onSelectDate, clock, open, onToggleOpen }:
+  { selectedDate, onSelectDate, clock, open, onToggleOpen, rooms, roomHidden, onToggleRoom }:
     CalendarToolbarProps,
 ): React.JSX.Element {
   const now = clock.now();
@@ -74,7 +84,7 @@ export function CalendarToolbar(
   const goToday = (): void => onSelectDate(startOfDay(now));
 
   const navigationButtons = (
-    <React.Fragment>
+    <Stack direction="row" spacing={0.5}>
       <IconButton
         size="small"
         aria-label="Vorige"
@@ -96,27 +106,35 @@ export function CalendarToolbar(
       >
         <ChevronRight />
       </IconButton>
-    </React.Fragment>
+    </Stack>
   );
 
-  const dayButtons = weekDays.map(({ label, date }) => (
-    <Button
-      key={date.getTime()}
-      size="small"
-      aria-label={longDateLabel(date)}
-      variant={isSameDay(date, selectedDate) ? "contained" : "outlined"}
-      onClick={() => onSelectDate(date)}
-      sx={{
-        minWidth: DAY_BUTTON_MIN_WIDTH,
-        ...(isPastDay(date) && !isSameDay(date, selectedDate) && {
-          color: "text.disabled",
-          borderColor: "action.disabledBackground",
-        }),
-      }}
+  const dayButtons = (
+    <Stack
+      direction="row"
+      spacing={0.5}
+      sx={{ justifyContent: "left" }}
     >
-      {label}
-    </Button>
-  ));
+      { weekDays.map(({ label, date }) => (
+        <Button
+          key={date.getTime()}
+          size="small"
+          aria-label={longDateLabel(date)}
+          variant={isSameDay(date, selectedDate) ? "contained" : "outlined"}
+          onClick={() => onSelectDate(date)}
+          sx={{
+            minWidth: DAY_BUTTON_MIN_WIDTH,
+            ...(isPastDay(date) && !isSameDay(date, selectedDate) && {
+              color: "text.disabled",
+              borderColor: "action.disabledBackground",
+            }),
+          }}
+        >
+          {label}
+        </Button>
+      ))}
+    </Stack>
+  );
 
   return (
     <Box>
@@ -147,11 +165,16 @@ export function CalendarToolbar(
         <Stack
           direction="row"
           spacing={0.5}
-          sx={{ alignItems: "center", flexWrap: "wrap", gap: 0.5, pt: 0.5 }}
+          sx={{ alignItems: "left", flexWrap: "wrap", gap: 0.5, pt: 0.5, mb: 2, ml: 0}}
         >
           {navigationButtons}
           {dayButtons}
         </Stack>
+        <RoomVisibilityControls
+          rooms={rooms}
+          hidden={roomHidden}
+          onToggle={onToggleRoom}
+        />
       </Collapse>
     </Box>
   );
