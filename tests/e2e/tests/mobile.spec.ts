@@ -21,6 +21,9 @@ test.use({ viewport: { width: 390, height: 844 } });
 test("User can read the board in portrait mode without landscape", async ({ authedPage }) => {
   const overview = await new OverviewPage(authedPage).goto();
 
+  await overview.toggleNavigation();
+  await overview.assertNavigationIsOpen();
+
   await overview.assertBoardFitsViewport();
   await overview.assertShowsAllRooms();
   await overview.assertShowsBooking("Kletshok 03 - Willem");
