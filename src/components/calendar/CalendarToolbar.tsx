@@ -1,5 +1,4 @@
 /*
-*
  * Calendar toolbar
  *
  * Date navigation for the calendar view: previous/today/next and
@@ -32,7 +31,7 @@ import {
   longDateLabel,
   startOfDay,
   startOfWeek,
-  weekdayOptions
+  weekdayOptions,
 } from "../../services/index.ts";
 import { type CalendarRoom } from "./board.ts";
 import { RoomVisibilityControls } from "./RoomVisibilityControls.tsx";
@@ -73,8 +72,16 @@ export interface CalendarToolbarProps {
  * Calendar toolbar component
  */
 export function CalendarToolbar(
-  { selectedDate, onSelectDate, clock, open, onToggleOpen, rooms, roomHidden, onToggleRoom }:
-    CalendarToolbarProps,
+  {
+    selectedDate,
+    onSelectDate,
+    clock,
+    open,
+    onToggleOpen,
+    rooms,
+    roomHidden,
+    onToggleRoom,
+  }: CalendarToolbarProps,
 ): React.JSX.Element {
   const now = clock.now();
   const weekDays = weekdayOptions(startOfWeek(now));
@@ -115,7 +122,7 @@ export function CalendarToolbar(
       spacing={0.5}
       sx={{ justifyContent: "left" }}
     >
-      { weekDays.map(({ label, date }) => (
+      {weekDays.map(({ label, date }) => (
         <Button
           key={date.getTime()}
           size="small"
@@ -165,7 +172,14 @@ export function CalendarToolbar(
         <Stack
           direction="row"
           spacing={0.5}
-          sx={{ alignItems: "left", flexWrap: "wrap", gap: 0.5, pt: 0.5, mb: 2, ml: 0}}
+          sx={{
+            alignItems: "left",
+            flexWrap: "wrap",
+            gap: 0.5,
+            pt: 0.5,
+            mb: 2,
+            ml: 0,
+          }}
         >
           {navigationButtons}
           {dayButtons}

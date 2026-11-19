@@ -281,7 +281,9 @@ export function Calendar(
   const clock = useClock();
   const overlaps = useOverlapsService();
 
-  const { rooms: visibleRooms, hidden, toggle: toggleRoom } = useRoomVisibility(rooms);
+  const { rooms: visibleRooms, hidden, toggle: toggleRoom } = useRoomVisibility(
+    rooms,
+  );
 
   /** Fresh data from Google Calendar discards local drag changes */
   useEffect(() => {
