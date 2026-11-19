@@ -107,17 +107,6 @@ export function roomDescription(room: { canonicalName: string }): string {
 }
 
 /**
- * Label of a room's visibility pill: the short name, so the pill starts
- * with the room number and fits on one line, like the column header
- * (issue #63); the full canonical name stays available as the tooltip
- */
-export function roomLabel(
-  room: { canonicalName: string; shortName: string },
-): string {
-  return room.shortName;
-}
-
-/**
  * Rooms in display order: the Unknown room always last
  */
 export function withUnknownLast(rooms: CalendarRoom[]): CalendarRoom[] {

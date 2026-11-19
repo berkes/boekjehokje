@@ -17,7 +17,6 @@ import {
   type CalendarRoom,
   isUnknownRoom,
   roomDescription,
-  roomLabel,
   withUnknownLast,
 } from "./board.ts";
 
@@ -53,7 +52,7 @@ export function RoomVisibilityControls(
           <Chip
             key={room.canonicalName}
             size="small"
-            label={roomLabel(room)}
+            label={room.shortName}
             variant={visible ? "filled" : "outlined"}
             color={visible ? "primary" : "default"}
             icon={unknown ? <HelpOutlined /> : undefined}
