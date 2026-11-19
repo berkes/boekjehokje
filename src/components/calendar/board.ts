@@ -119,6 +119,8 @@ export function withUnknownLast(rooms: CalendarRoom[]): CalendarRoom[] {
  * Map rooms to resource timeline lanes, with Unknown always last.
  * The header shows the short name in bold with the full description
  * (canonical name) as subtitle and tooltip.
+ *
+ * TODO: service should handle the correct sorting and the resource casting
  */
 export function toResources(rooms: CalendarRoom[]): CalendarResource[] {
   return withUnknownLast(rooms).map((room) => ({
