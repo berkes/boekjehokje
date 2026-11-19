@@ -38,7 +38,6 @@ import { BookingForm } from "./BookingForm.tsx";
 import { BookingSidebar } from "./BookingSidebar.tsx";
 import { CalendarToolbar } from "./CalendarToolbar.tsx";
 import { SidebarShell } from "./SidebarShell.tsx";
-import { RoomVisibilityControls } from "./RoomVisibilityControls.tsx";
 import {
   applyMovedEvents,
   type BoardEvent,
@@ -282,7 +281,7 @@ export function Calendar(
   const clock = useClock();
   const overlaps = useOverlapsService();
 
-  const { rooms: visibleRooms, hidden, toggle } = useRoomVisibility(rooms);
+  const { rooms: visibleRooms, hidden, toggle: toggleRoom } = useRoomVisibility(rooms);
 
   /** Fresh data from Google Calendar discards local drag changes */
   useEffect(() => {
@@ -610,8 +609,10 @@ export function Calendar(
         clock={clock}
         open={navOpen}
         onToggleOpen={onToggleNav}
+        rooms={rooms}
+        roomHidden={hidden}
+        onToggleRoom={toggleRoom}
       />
-      <RoomVisibilityControls rooms={rooms} hidden={hidden} onToggle={toggle} />
       <ResourceTimeline<BoardEventMeta>
         orientation="vertical"
         date={selectedDate}
@@ -640,14 +641,14 @@ export function Calendar(
         {sidebarShell}
       </Stack>
     );
+  } else {
+    return (
+      <Stack spacing={1}>
+        {calendar}
+        {sidebarShell}
+      </Stack>
+    );
   }
-
-  return (
-    <Stack spacing={1}>
-      {calendar}
-      {sidebarShell}
-    </Stack>
-  );
 }
 
 /**
