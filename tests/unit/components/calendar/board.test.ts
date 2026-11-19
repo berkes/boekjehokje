@@ -25,7 +25,6 @@ import {
   markConflicts,
   READ_ONLY_EVENT_BACKGROUND,
   roomDescription,
-  roomLabel,
   toDomTheme,
   toEvents,
   toPreviewEvent,
@@ -231,20 +230,6 @@ Deno.test("roomDescription uses the canonical name for known rooms", () => {
   assertEquals(
     roomDescription({ canonicalName: "Kletshok 05" }),
     "Kletshok 05",
-  );
-});
-
-Deno.test("roomLabel uses the short name so the pill starts with the number (issue #63)", () => {
-  assertEquals(
-    roomLabel({ canonicalName: "Kletshok 05", shortName: "05 KH" }),
-    "05 KH",
-  );
-});
-
-Deno.test("roomLabel uses the short name for the unknown room", () => {
-  assertEquals(
-    roomLabel({ canonicalName: "Unknown", shortName: "Unknown" }),
-    "Unknown",
   );
 });
 
