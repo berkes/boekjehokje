@@ -1,21 +1,16 @@
-import HelpIcon from "@mui/icons-material/Help";
-import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
 import Container from "@mui/material/Container";
 import CssBaseline from "@mui/material/CssBaseline";
-import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import { ThemeProvider } from "@mui/material/styles";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import React, { useMemo } from "react";
 import type { ReactNode } from "react";
-import { BrowserRouter as Router, Link, Route, Routes } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import "./App.scss";
-import logoUrl from "./assets/logo.svg";
+import { AppHeader } from "./components/AppHeader.tsx";
 import { CalendarView } from "./components/calendar/index.ts";
-import { ProfileMenu } from "./components/ProfileMenu.tsx";
 import { ProtectedRoute } from "./components/ProtectedRoute.tsx";
 import {
   DemoCalendar,
@@ -61,33 +56,7 @@ function App(): React.JSX.Element {
       <GoogleOAuthProvider clientId={clientId}>
         <AppServices>
           <Router basename={import.meta.env.BASE_URL}>
-            <AppBar position="static" color="primary" enableColorOnDark>
-              <Toolbar>
-                <img
-                  src={logoUrl}
-                  alt="Logo"
-                  style={{ width: "40px", height: "40px", marginRight: "12px" }}
-                />
-                <Typography
-                  variant="h6"
-                  component={Link}
-                  to="/"
-                  sx={{ flexGrow: 1, textDecoration: "none", color: "inherit" }}
-                >
-                  Boek je Hokje
-                </Typography>
-                <Button
-                  component={Link}
-                  to="/faq"
-                  color="inherit"
-                  startIcon={<HelpIcon />}
-                  sx={{ mr: 1 }}
-                >
-                  Help
-                </Button>
-                <ProfileMenu />
-              </Toolbar>
-            </AppBar>
+            <AppHeader />
             <Container maxWidth="lg">
               <Routes>
                 <Route path="/" element={<AppContent />} />
