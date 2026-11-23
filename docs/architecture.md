@@ -18,7 +18,11 @@ Layers, top to bottom:
 - **Components** (`src/components/`) — MUI components, the pages
   (`components/pages/`) and the super-calendar board (`components/calendar/`).
   No API calls, no service wiring: domain types and pure helpers from the
-  services barrel, service instances only via hooks.
+  services barrel, service instances only via hooks. The app bar lives in
+  `components/AppHeader.tsx`: responsive via CSS breakpoints only (mobile:
+  hamburger left, avatar right, with "Ingelogd als"/Help in the avatar menu),
+  and it hides on scroll on every viewport via MUI's `useScrollTrigger` +
+  `Slide`.
 - **Hooks** (`src/hooks/`) — the React bridge. `ServicesProvider` provides the
   service tree; `useServices.ts` exposes typed accessors; `useSession`,
   `useCalendar` and `useRoomVisibility` call the services and manage the results
