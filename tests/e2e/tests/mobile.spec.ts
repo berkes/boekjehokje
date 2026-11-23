@@ -89,12 +89,15 @@ test("User can tap bookings context-aware and delete from the edit form on mobil
 });
 
 /**
- * Given I am on a phone and the board is taller than the screen
- * When I scroll the board down
- * Then the room header row stays stuck to the top
+ * Given I am on a phone and the board is taller than the screen (the
+ * window scrolls, the board has no internal scroll)
+ * When I scroll the page down
+ * Then the room header row stays stuck below the app bar
  * So that I always know which column I am looking at.
  */
 test("User sees the room header row stick while scrolling on mobile", async ({ authedPage }) => {
+  // A short viewport, so the page (the only scroller) actually scrolls
+  await authedPage.setViewportSize({ width: 390, height: 640 });
   const overview = await new OverviewPage(authedPage).goto();
 
   await overview.assertRoomHeaderIsSticky();

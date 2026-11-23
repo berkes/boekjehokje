@@ -69,15 +69,21 @@ import {
 } from "./board.ts";
 
 /**
- * Height of the board; the time track scrolls inside it
- */
-const BOARD_HEIGHT = 640;
-
-/**
- * First hour shown on the time axis, so the working day fits on screen
- * without scrolling. Bookings before this hour are outside the window.
+ * First hour shown on the time axis: the working day. Bookings before
+ * this hour are outside the window.
  */
 const START_HOUR = 8;
+
+/**
+ * Root style of the board: it grows to its full content height and does
+ * not scroll internally (overflow visible), so the window is the only
+ * scroller — which also makes the app bar's hide-on-scroll work on the
+ * board page, and lets the sticky room header stick to the viewport.
+ */
+const BOARD_STYLE: React.CSSProperties = {
+  height: "auto",
+  overflowY: "visible",
+};
 
 /**
  * Width of the time gutter on mobile: narrower than the library's default
@@ -590,16 +596,18 @@ export function Calendar(
     </SidebarShell>
   );
 
-  /**
-   * On mobile the time gutter is narrower, so the room columns keep more
-   * of the narrow screen (issue #63)
-   */
   const boardSlotStyles = useMemo(
-    () =>
-      isDesktop ? undefined : {
+    () => ({
+      // The room header row sticks right below the fixed app bar (toolbar
+      // height: 56px on mobile, 64px on desktop) while the window scrolls
+      header: { top: isDesktop ? 64 : 56 },
+      // On mobile the time gutter is narrower, so the room columns keep
+      // more of the narrow screen (issue #63)
+      ...(isDesktop ? {} : {
         corner: { width: MOBILE_GUTTER_WIDTH },
         timeAxis: { width: MOBILE_GUTTER_WIDTH },
-      },
+      }),
+    }),
     [isDesktop],
   );
 
@@ -622,7 +630,7 @@ export function Calendar(
         resources={resources}
         events={events}
         theme={domTheme}
-        style={{ height: BOARD_HEIGHT }}
+        style={BOARD_STYLE}
         styles={boardSlotStyles}
         renderEvent={BoardEventBar}
         renderResourceHeader={renderResourceHeader}
