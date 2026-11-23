@@ -219,30 +219,24 @@ export class OverviewPage {
   }
 
   /**
-   * Assert the room header row sticks to the top of the board while the
-   * board scrolls down (issue #63).
+   * Assert the room header row sticks below the app bar while the window
+   * scrolls: the board has no internal scroll anymore, the page scrolls
+   * (issue #63, updated for the single window scroller).
    */
   async assertRoomHeaderIsSticky(): Promise<void> {
     const header = this.page.locator('[data-slot="header"]');
     await expect(header).toBeVisible();
     const before = await header.boundingBox();
-    await this.page.evaluate(() => {
-      const headerEl = document.querySelector('[data-slot="header"]');
-      let scroller: Element | null = headerEl?.parentElement ?? null;
-      while (scroller && scroller.scrollHeight <= scroller.clientHeight) {
-        scroller = scroller.parentElement;
-      }
-      if (scroller) {
-        scroller.scrollTop = scroller.scrollHeight;
-      }
-    });
+    await this.page.evaluate(() => window.scrollTo(0, 600));
     const after = await header.boundingBox();
+    const scrollY = await this.page.evaluate(() => window.scrollY);
+    expect(scrollY, "the window scrolled").toBeGreaterThan(0);
     expect(before, "header has no box before scrolling").not.toBeNull();
     expect(after, "header has no box after scrolling").not.toBeNull();
     expect(
-      Math.abs((after?.y ?? 0) - (before?.y ?? 0)),
-      "the room header row did not stay at the top while scrolling",
-    ).toBeLessThan(5);
+      after?.y ?? 0,
+      "the room header row did not stick to the top while the window scrolled",
+    ).toBeLessThanOrEqual(57); // sticky top: 56px, right below the app bar
     await expect(header).toBeVisible();
   }
 
