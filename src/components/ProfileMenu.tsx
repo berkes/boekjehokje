@@ -7,10 +7,13 @@ import MenuItem from "@mui/material/MenuItem";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import { useSession } from "../hooks/useSession.tsx";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 /**
- * Main Google authentication button component
+ * Profile menu in the app bar: the avatar button with "Ingelogd als
+ * <name>" on desktop; on mobile just the avatar, and "Ingelogd als" and
+ * Help appear as (mobile-only) items in this menu instead — the
+ * visibility switch is pure CSS, no viewport if/else (see AppHeader).
  * Uses Dutch text per project plan
  */
 export function ProfileMenu(): React.JSX.Element {
@@ -48,15 +51,20 @@ export function ProfileMenu(): React.JSX.Element {
             sx={{ p: 0 }}
             color="inherit"
           >
-            <Typography sx={{ paddingRight: "0.5em" }}>
-              Ingelogd als
-            </Typography>
-            <Typography
-              sx={{ paddingRight: "1em", fontWeight: "bold" }}
-              color="palette.primary.contrastText"
+            <Box
+              component="span"
+              sx={{ display: { xs: "none", md: "inline" } }}
             >
-              {user?.name || "Onbekend"}
-            </Typography>
+              <Typography sx={{ paddingRight: "0.5em" }}>
+                Ingelogd als
+              </Typography>
+              <Typography
+                sx={{ paddingRight: "1em", fontWeight: "bold" }}
+                color="palette.primary.contrastText"
+              >
+                {user?.name || "Onbekend"}
+              </Typography>
+            </Box>
             <Avatar
               alt={user?.name || "Onbekend"}
               src={user?.picture}
@@ -86,6 +94,24 @@ export function ProfileMenu(): React.JSX.Element {
           open={Boolean(anchorElUser)}
           onClose={handleCloseUserMenu}
         >
+          <MenuItem
+            key="logged-in-as"
+            disabled
+            sx={{ display: { xs: "flex", md: "none" } }}
+          >
+            <Typography sx={{ textAlign: "center" }}>
+              Ingelogd als {user?.name || "Onbekend"}
+            </Typography>
+          </MenuItem>
+          <MenuItem
+            key="help"
+            component={Link}
+            to="/faq"
+            onClick={handleCloseUserMenu}
+            sx={{ display: { xs: "flex", md: "none" } }}
+          >
+            <Typography sx={{ textAlign: "center" }}>Help</Typography>
+          </MenuItem>
           <MenuItem key="account" onClick={handleNavigateToSettings}>
             <Typography sx={{ textAlign: "center" }}>Mijn account</Typography>
           </MenuItem>
@@ -98,7 +124,11 @@ export function ProfileMenu(): React.JSX.Element {
   } else {
     return (
       <Box sx={{ flexGrow: 0 }}>
-        <Typography sx={{ textAlign: "center" }}>Niet ingelogd</Typography>
+        <Typography
+          sx={{ textAlign: "center", display: { xs: "none", md: "block" } }}
+        >
+          Niet ingelogd
+        </Typography>
       </Box>
     );
   }
