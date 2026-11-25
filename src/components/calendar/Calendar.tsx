@@ -597,9 +597,6 @@ export function Calendar(
 
   const boardSlotStyles = useMemo(
     () => ({
-      // The room header row sticks right below the fixed app bar (toolbar
-      // height: 56px on mobile, 64px on desktop) while the window scrolls
-      header: { top: isDesktop ? 64 : 56 },
       // On mobile the time gutter is narrower, so the room columns keep
       // more of the narrow screen (issue #63)
       ...(isDesktop ? {} : {
@@ -631,6 +628,7 @@ export function Calendar(
         theme={domTheme}
         style={BOARD_STYLE}
         styles={boardSlotStyles}
+        showNowIndicator
         renderEvent={BoardEventBar}
         renderResourceHeader={renderResourceHeader}
         onPressEvent={onPressBoardEvent}
