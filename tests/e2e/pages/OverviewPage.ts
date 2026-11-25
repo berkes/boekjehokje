@@ -22,7 +22,6 @@ const UNMATCHED_GROUP = "Unknown";
  * Geometry of the board's time axis: the first hour shown and the
  * pixels per hour, so tests can click the lane at a concrete time.
  */
-const START_HOUR = 8;
 const HOUR_HEIGHT_PX = 48;
 
 /**
@@ -986,7 +985,7 @@ export class OverviewPage {
   ): Promise<{ x: number; y: number }> {
     const lane = this.page.locator(`[data-resource-id="${room}"]`);
     const [hours, minutes] = hhmm.split(":").map(Number);
-    const offsetPx = ((hours - START_HOUR) * 60 + minutes) / 60 *
+    const offsetPx = (hours * 60 + minutes) / 60 *
       HOUR_HEIGHT_PX;
     // Scroll the board so the target time is comfortably inside the
     // viewport, then map the time axis onto the lane's bounding box
