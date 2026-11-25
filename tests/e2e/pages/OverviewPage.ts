@@ -113,6 +113,28 @@ export class OverviewPage {
   }
 
   /**
+   * Assert the window is scrolled so the 08:00 hour tick (the start of
+   * business hours) sits at the top of the viewport, right below the
+   * sticky room header — not 00:00.
+   */
+  async assertScrolledToBusinessHoursStart(): Promise<void> {
+    await expect.poll(
+      () => this.page.evaluate(() => window.scrollY),
+      "the window scrolled past midnight",
+    ).toBeGreaterThan(6 * HOUR_HEIGHT_PX);
+    await expect.poll(
+      () =>
+        this.page.evaluate(() => {
+          const tick = document.querySelectorAll('[data-slot="hourTick"]')[8];
+          return tick
+            ? tick.getBoundingClientRect().top
+            : Number.POSITIVE_INFINITY;
+        }),
+      "the 08:00 tick is at the top of the viewport",
+    ).toBeLessThanOrEqual(80);
+  }
+
+  /**
    * Move the board one day back.
    */
   async previousDay(): Promise<this> {
