@@ -119,7 +119,7 @@ export class OverviewPage {
    */
   async assertScrolledToBusinessHoursStart(): Promise<void> {
     await expect.poll(
-      () => this.page.evaluate(() => window.scrollY),
+      () => this.page.evaluate(() => globalThis.scrollY),
       "the window scrolled past midnight",
     ).toBeGreaterThan(6 * HOUR_HEIGHT_PX);
     await expect.poll(
@@ -248,9 +248,9 @@ export class OverviewPage {
     const header = this.page.locator('[data-slot="header"]');
     await expect(header).toBeVisible();
     const before = await header.boundingBox();
-    await this.page.evaluate(() => window.scrollTo(0, 600));
+    await this.page.evaluate(() => globalThis.scrollTo(0, 600));
     const after = await header.boundingBox();
-    const scrollY = await this.page.evaluate(() => window.scrollY);
+    const scrollY = await this.page.evaluate(() => globalThis.scrollY);
     expect(scrollY, "the window scrolled").toBeGreaterThan(0);
     expect(before, "header has no box before scrolling").not.toBeNull();
     expect(after, "header has no box after scrolling").not.toBeNull();
@@ -317,7 +317,7 @@ export class OverviewPage {
    * the app bar (hide on scroll) — scroll back to the top first.
    */
   async openSettingsViaProfileMenu(): Promise<SettingsPage> {
-    await this.page.evaluate(() => window.scrollTo(0, 0));
+    await this.page.evaluate(() => globalThis.scrollTo(0, 0));
     const profileButton = this.page.getByRole("button", {
       name: "Instellingen openen",
     });
