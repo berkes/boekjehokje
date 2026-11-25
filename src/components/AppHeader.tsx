@@ -18,8 +18,8 @@ import { ProfileMenu } from "./ProfileMenu.tsx";
  *   <Toolbar /> rendered after it keeps the page content below the bar.
  * - Desktop (md and up): logo + title, the Help button and the profile
  *   menu with "Ingelogd als" + avatar.
- * - Mobile (xs): a hamburger on the left and the avatar on the right;
- *   "Ingelogd als" and Help move into the avatar's menu (ProfileMenu).
+ * - Mobile (xs): the avatar on the right; "Ingelogd als" and Help move
+ *   into the avatar's menu (ProfileMenu).
  *
  * The mobile/desktop switch is pure CSS (sx display breakpoints), so the
  * component itself has no viewport if/else branches.
