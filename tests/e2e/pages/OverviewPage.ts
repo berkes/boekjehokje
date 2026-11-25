@@ -313,10 +313,16 @@ export class OverviewPage {
 
   /**
    * Continue to the settings page through the profile menu.
+   * The overview auto-scrolls to business hours on load, which hides
+   * the app bar (hide on scroll) — scroll back to the top first.
    */
   async openSettingsViaProfileMenu(): Promise<SettingsPage> {
-    await this.page.getByRole("button", { name: "Instellingen openen" })
-      .click();
+    await this.page.evaluate(() => window.scrollTo(0, 0));
+    const profileButton = this.page.getByRole("button", {
+      name: "Instellingen openen",
+    });
+    await expect(profileButton).toBeVisible();
+    await profileButton.click();
     await this.page.getByRole("menuitem", { name: "Mijn account" }).click();
     return await new SettingsPage(this.page).waitUntilOpen();
   }
