@@ -22,6 +22,23 @@ test("User sees an overview of all rooms and their bookings", async ({ authedPag
 });
 
 /**
+ * Given the board renders the whole day from 00:00 (so bookings before
+ * business hours are possible)
+ * When I open the overview, and when I navigate to another day
+ * Then the view is scrolled so 08:00 (start of business hours) is at
+ * the top, not 00:00
+ * So that I don't waste the top of the screen on the empty night hours.
+ */
+test("User lands scrolled to the start of business hours, not midnight", async ({ authedPage }) => {
+  const overview = await new OverviewPage(authedPage).goto();
+  await overview.assertScrolledToBusinessHoursStart();
+
+  await overview.nextDay();
+  await overview.assertShowsDay("donderdag 29 oktober 2026");
+  await overview.assertScrolledToBusinessHoursStart();
+});
+
+/**
  * Given the Google Calendar service fails to answer
  * When I open the week overview
  * Then it tells me something went wrong and offers to try again

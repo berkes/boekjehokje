@@ -495,3 +495,24 @@ export function toDomTheme(
     eventText: palette.text.primary,
   };
 }
+
+/**
+ * Scroll the window so the given hour's line sits at the top of the
+ * viewport, right below the sticky room header row. The board renders
+ * the whole day (00:00-24:00) with no internal scroll, so without this
+ * the top of the screen would be wasted on the empty night hours.
+ *
+ * `firstHour` is the first hour the board shows (the hour ticks are
+ * indexed from it).
+ */
+export function scrollWindowToHour(hour: number, firstHour = 0): void {
+  const tick = document
+    .querySelectorAll<HTMLElement>('[data-slot="hourTick"]')[hour - firstHour];
+  if (!tick) return;
+  const stickyHeader = document.querySelector<HTMLElement>(
+    '[data-slot="header"]',
+  );
+  const headerHeight = stickyHeader?.getBoundingClientRect().height ?? 0;
+  const top = tick.getBoundingClientRect().top + window.scrollY - headerHeight;
+  window.scrollTo(0, Math.max(0, top));
+}

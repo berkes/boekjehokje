@@ -61,6 +61,7 @@ import {
   type MovedEvent,
   READ_ONLY_EVENT_BACKGROUND,
   READ_ONLY_EVENT_BORDER,
+  scrollWindowToHour,
   toDomTheme,
   toEvents,
   toFreeSlotEvents,
@@ -294,6 +295,15 @@ export function Calendar(
   useEffect(() => {
     setMoved((prev) => prev.size === 0 ? prev : new Map());
   }, [rooms]);
+
+  /**
+   * On opening the overview or navigating to another day the board
+   * remounts (the loading state swaps it out): scroll the window so the
+   * start of business hours is at the top, not 00:00
+   */
+  useEffect(() => {
+    scrollWindowToHour(BUSINESS_HOURS().start);
+  }, []);
 
   const resources = useMemo(() => toResources(visibleRooms), [visibleRooms]);
   const domTheme = useMemo(() => toDomTheme(theme.palette), [theme.palette]);
