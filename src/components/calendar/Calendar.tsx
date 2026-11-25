@@ -69,12 +69,6 @@ import {
 } from "./board.ts";
 
 /**
- * First hour shown on the time axis: the working day. Bookings before
- * this hour are outside the window.
- */
-const START_HOUR = 8;
-
-/**
  * Root style of the board: it grows to its full content height and does
  * not scroll internally (overflow visible), so the window is the only
  * scroller — which also makes the app bar's hide-on-scroll work on the
@@ -90,6 +84,11 @@ const BOARD_STYLE: React.CSSProperties = {
  * 56px, so the room columns keep more of the narrow screen (issue #63)
  */
 const MOBILE_GUTTER_WIDTH = 44;
+
+/**
+ * Business Hours
+ */
+const BUSINESS_HOURS = () => ({ start: 8, end: 18 });
 
 /**
  * Props for Calendar component
@@ -626,7 +625,7 @@ export function Calendar(
       <ResourceTimeline<BoardEventMeta>
         orientation="vertical"
         date={selectedDate}
-        startHour={START_HOUR}
+        businessHours={BUSINESS_HOURS}
         resources={resources}
         events={events}
         theme={domTheme}
