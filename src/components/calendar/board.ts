@@ -513,6 +513,7 @@ export function scrollWindowToHour(hour: number, firstHour = 0): void {
     '[data-slot="header"]',
   );
   const headerHeight = stickyHeader?.getBoundingClientRect().height ?? 0;
-  const top = tick.getBoundingClientRect().top + window.scrollY - headerHeight;
-  window.scrollTo(0, Math.max(0, top));
+  const top = tick.getBoundingClientRect().top + globalThis.scrollY -
+    headerHeight;
+  globalThis.scrollTo(0, Math.max(0, top));
 }
