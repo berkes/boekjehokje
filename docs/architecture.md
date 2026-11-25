@@ -20,9 +20,12 @@ Layers, top to bottom:
   No API calls, no service wiring: domain types and pure helpers from the
   services barrel, service instances only via hooks. The app bar lives in
   `components/AppHeader.tsx`: responsive via CSS breakpoints only (mobile:
-  hamburger left, avatar right, with "Ingelogd als"/Help in the avatar menu),
-  and it hides on scroll on every viewport via MUI's `useScrollTrigger` +
-  `Slide`.
+  avatar right, with "Ingelogd als"/Help in the avatar menu), and it hides on
+  scroll on every viewport via MUI's `useScrollTrigger` + `Slide`. The board
+  renders the whole day with no internal scroll — the window is the only
+  scroller — and on opening the overview or switching days it scrolls so the
+  start of business hours (08:00) is at the top (`scrollWindowToHour` in
+  `components/calendar/board.ts`).
 - **Hooks** (`src/hooks/`) — the React bridge. `ServicesProvider` provides the
   service tree; `useServices.ts` exposes typed accessors; `useSession`,
   `useCalendar` and `useRoomVisibility` call the services and manage the results
