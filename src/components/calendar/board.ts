@@ -120,7 +120,7 @@ export function withUnknownLast(rooms: CalendarRoom[]): CalendarRoom[] {
  * The header shows the short name in bold with the full description
  * (canonical name) as subtitle and tooltip.
  *
- * TODO: service should handle the correct sorting and the resource casting
+ * TODO (#72): service should handle the correct sorting and the resource casting
  */
 export function toResources(rooms: CalendarRoom[]): CalendarResource[] {
   return withUnknownLast(rooms).map((room) => ({
