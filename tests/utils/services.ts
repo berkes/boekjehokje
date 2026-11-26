@@ -12,6 +12,8 @@ import { CalendarService } from "../../src/services/calendar/CalendarService.ts"
 import type { StoredEvent } from "../../src/services/calendar/CalendarEventRepositoryPort.ts";
 import { EventFormatService } from "../../src/services/eventformat/EventFormatService.ts";
 import { OverlapsService } from "../../src/services/overlaps/OverlapsService.ts";
+import { PendingActionsService } from "../../src/services/pendingactions/PendingActionsService.ts";
+import type { PendingActionsPort } from "../../src/services/pendingactions/PendingActionsPort.ts";
 import { PermissionService } from "../../src/services/permissions/PermissionService.ts";
 import { PreferencesService } from "../../src/services/preferences/PreferencesService.ts";
 import { RoomsService } from "../../src/services/rooms/RoomsService.ts";
@@ -28,6 +30,7 @@ import { FakeAuthenticationService, fakeSession } from "./authentication.ts";
 import { FakeCalendarEventRepository } from "./calendar.ts";
 import { FakeClock } from "./clock.ts";
 import { InMemoryKeyValueStore, InMemorySessionStorage } from "./storage.ts";
+import { FakeTimer } from "./timers.ts";
 
 /**
  * A test tree: the composed services plus the fakes behind them
@@ -42,6 +45,7 @@ export interface TestServices {
     rooms: RoomsPort;
     clock: ClockPort;
     preferences: PreferencesPort;
+    pendingActions: PendingActionsPort;
   };
   fakes: {
     authentication: FakeAuthenticationService;
@@ -49,6 +53,7 @@ export interface TestServices {
     clock: FakeClock;
     store: InMemoryKeyValueStore;
     sessionStorage: InMemorySessionStorage;
+    timer: FakeTimer;
   };
 }
 
@@ -90,6 +95,12 @@ export function buildTestServices(
   });
   const store = new InMemoryKeyValueStore();
   const preferences = new PreferencesService({ store });
+  const timer = new FakeTimer();
+  const pendingActions = new PendingActionsService({
+    calendar,
+    rooms,
+    timer,
+  });
 
   return {
     services: {
@@ -101,7 +112,8 @@ export function buildTestServices(
       rooms,
       clock,
       preferences,
+      pendingActions,
     },
-    fakes: { authentication, events, clock, store, sessionStorage },
+    fakes: { authentication, events, clock, store, sessionStorage, timer },
   };
 }

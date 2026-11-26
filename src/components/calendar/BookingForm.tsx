@@ -60,10 +60,10 @@ export interface BookingFormProps {
   /** End of the selected slot */
   initialEnd: Date;
   /** Save the booking through the calendar service; with the edited booking's id when editing */
-  onSubmit: (booking: NewBooking, bookingId?: string) => Promise<void>;
+  onSubmit: (booking: NewBooking, bookingId?: string) => void;
   /** Called whenever the draft (room/start/end) changes, so the board can preview it */
   onDraftChange?: (draft: { room: string; start: Date; end: Date }) => void;
-  /** Delete the booking being edited immediately, without confirmation (#14, undo is #36); only offered in edit mode */
+  /** Delete the booking being edited without confirmation (#14); the write is queued with a timed undo (#36); only offered in edit mode */
   onDelete?: (bookingId: string) => void;
 }
 
@@ -126,14 +126,14 @@ export function BookingForm(
     });
   }, [room, from, to, onDraftChange]);
 
-  const handleSubmit = async (event: React.FormEvent): Promise<void> => {
+  const handleSubmit = (event: React.FormEvent): void => {
     event.preventDefault();
     setError(null);
     setIsSubmitting(true);
     try {
       const trimmedBooker = booker.trim();
       const trimmedContact = contact.trim();
-      await onSubmit(
+      onSubmit(
         {
           room,
           booker: trimmedBooker,

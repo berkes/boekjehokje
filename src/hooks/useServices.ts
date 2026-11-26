@@ -14,6 +14,7 @@ import type {
   ClockPort,
   EventFormatPort,
   OverlapsPort,
+  PendingActionsPort,
   PermissionServicePort,
   PreferencesPort,
   RoomsPort,
@@ -90,4 +91,11 @@ export function useOverlapsService(): OverlapsPort {
  */
 export function useEventFormatService(): EventFormatPort {
   return useServices().eventFormat;
+}
+
+/**
+ * Access the pending actions service (the delayed, undoable writes, #36)
+ */
+export function usePendingActionsService(): PendingActionsPort {
+  return useServices().pendingActions;
 }

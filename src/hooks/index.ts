@@ -13,6 +13,7 @@ export {
   useClock,
   useEventFormatService,
   useOverlapsService,
+  usePendingActionsService,
   usePermissionService,
   usePreferences,
   useRoomsService,
@@ -20,5 +21,11 @@ export {
 } from "./useServices.ts";
 export { SessionProvider, useSession } from "./useSession.tsx";
 export { useCalendar, type UseCalendarReturn } from "./useCalendar.ts";
+export {
+  type ActionToast,
+  usePendingActions,
+  type UsePendingActionsOptions,
+  type UsePendingActionsReturn,
+} from "./usePendingActions.ts";
 export { toggleHiddenRoom, visibleRooms } from "./roomVisibility.ts";
 export { type RoomVisibility, useRoomVisibility } from "./useRoomVisibility.ts";

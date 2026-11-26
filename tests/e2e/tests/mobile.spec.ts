@@ -73,7 +73,7 @@ test("User can expand the collapsed navigation block on mobile", async ({ authed
  * And when I tap my own booking
  * Then the edit form opens with a "Verwijderen" button
  * And when I press "Verwijderen"
- * Then a DELETE is sent for my booking's event
+ * Then a DELETE is sent for my booking's event after the undo delay
  * So that I can act on a booking by tapping it, without tiny icons.
  */
 test("User can tap bookings context-aware and delete from the edit form on mobile", async ({ authedPage }) => {
@@ -85,6 +85,7 @@ test("User can tap bookings context-aware and delete from the edit form on mobil
   await overview.closeBookingDetails();
 
   await overview.clickDeleteOn("Stilteruimte - Bèr");
+  await overview.runPendingActions();
   await overview.assertBookingWasDeleted("Stilteruimte - Bèr-2-11:00");
 });
 

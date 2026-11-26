@@ -18,7 +18,9 @@ import { CalendarView } from "../calendar/index.ts";
 import {
   CalendarService,
   DemoCalendarRepositoryAdapter,
+  PendingActionsService,
   type Services,
+  SystemTimerAdapter,
 } from "../../services/index.ts";
 
 /**
@@ -39,15 +41,21 @@ export function DemoCalendar(): React.JSX.Element {
       user,
       clock: services.clock,
     });
+    const calendar = new CalendarService({
+      events,
+      authentication: services.authentication,
+      permissions: services.permissions,
+      clock: services.clock,
+      eventFormat: services.eventFormat,
+      rooms: services.rooms,
+    });
     return {
       ...services,
-      calendar: new CalendarService({
-        events,
-        authentication: services.authentication,
-        permissions: services.permissions,
-        clock: services.clock,
-        eventFormat: services.eventFormat,
+      calendar,
+      pendingActions: new PendingActionsService({
+        calendar,
         rooms: services.rooms,
+        timer: new SystemTimerAdapter(),
       }),
     };
   }, [services, user]);
