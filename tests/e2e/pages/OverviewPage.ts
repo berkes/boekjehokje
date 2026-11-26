@@ -318,13 +318,27 @@ export class OverviewPage {
   /**
    * Continue to the settings page through the profile menu.
    * The overview auto-scrolls to business hours on load, which hides
-   * the app bar (hide on scroll) — scroll back to the top first.
+   * the app bar (hide on scroll) — scroll back to the top first and
+   * let the app bar's slide transition finish: the fixed page clock
+   * freezes CSS transitions, so after runPendingActions advanced it,
+   * the transition timers need a nudge to complete.
    */
   async openSettingsViaProfileMenu(): Promise<SettingsPage> {
-    await this.page.evaluate(() => globalThis.scrollTo(0, 0));
     const profileButton = this.page.getByRole("button", {
       name: "Instellingen openen",
     });
+    await this.page.evaluate(() => globalThis.scrollTo(0, 0));
+    // The fixed page clock freezes the app bar's slide transition (and
+    // runPendingActions may have advanced past it), so nudge the clock
+    // until the transition timers ran and the app bar is shown again
+    for (
+      let attempt = 0;
+      attempt < 5 && !(await profileButton.isVisible());
+      attempt++
+    ) {
+      await this.page.waitForTimeout(100);
+      await this.page.clock.runFor(1_000);
+    }
     await expect(profileButton).toBeVisible();
     await profileButton.click();
     await this.page.getByRole("menuitem", { name: "Mijn account" }).click();
@@ -894,10 +908,13 @@ export class OverviewPage {
 
   /**
    * Let the undo delay pass: advance the fixed page clock past the
-   * pending-action delay, so queued writes are performed (issue #36).
+   * pending-action delay, so queued writes are performed (issue #36),
+   * and wait out the settle — a performed write reloads the board,
+   * which must finish before the test interacts with the board again.
    */
   async runPendingActions(): Promise<this> {
     await this.page.clock.runFor(DEFAULT_PENDING_ACTION_DELAY_MS);
+    await expect(this.toolbar().or(this.errorState())).toBeVisible();
     return this;
   }
 
