@@ -60,7 +60,7 @@ export class PendingActionsService implements PendingActionsPort {
   private calendar: CalendarServicePort;
   private rooms: RoomsPort;
   private timer: TimerPort;
-  private delayMs: number;
+  readonly delayMs: number;
   private entries = new Map<string, QueuedEntry>();
   private listeners = new Set<PendingActionListener>();
   private nextId = 1;

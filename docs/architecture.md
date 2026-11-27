@@ -289,7 +289,7 @@ sequenceDiagram
   UI->>Hook: queueCreate / queueUpdate / queueDelete
   Hook->>Pending: queue the action (timer scheduled, 30s)
   Pending-->>Hook: event "queued"
-  Hook-->>UI: toast "Boeking \"03 KH\" wordt binnenkort aangemaakt." + "Ongedaan maken"
+  Hook-->>UI: toast "Boeking \"03 KH\" wordt aangemaakt." + "Ongedaan maken"
   alt user presses "Ongedaan maken" before the delay
     UI->>Hook: undo
     Hook->>Pending: cancelAll()

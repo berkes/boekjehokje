@@ -55,6 +55,8 @@ export interface UsePendingActionsReturn {
   dismissToast: () => void;
   /** How many actions are currently queued */
   pendingCount: number;
+  /** The delay after which a queued action is performed (from the service) */
+  delayMs: number;
 }
 
 /**
@@ -142,5 +144,6 @@ export function usePendingActions(
     toast: event === null ? null : { event, open: !dismissed },
     dismissToast,
     pendingCount,
+    delayMs: service.delayMs,
   };
 }

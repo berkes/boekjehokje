@@ -21,7 +21,7 @@ import { OverviewPage } from "../pages/OverviewPage.ts";
  * 10:00 block in Kletshok 03
  * When I fill in my contact and confirm
  * Then a toast shows that the booking is queued ("Boeking \"03 KH\" wordt
- * binnenkort aangemaakt.") with an "Ongedaan maken" link, and no write
+ * aangemaakt.") with an "Ongedaan maken" link, and no write
  * has reached the calendar API yet
  * When I press "Ongedaan maken"
  * Then the toast shows "Boeking \"03 KH\" aanmaken is geannuleerd."
@@ -85,7 +85,7 @@ test("User sees the queued toast disappear after the delay, the write is perform
  * Given the board shows my booking "Stilteruimte - Bèr" 11:00-14:00
  * When I press "Verwijderen" in its edit form
  * Then a toast shows that the delete is queued ("Boeking \"SR\" wordt
- * binnenkort verwijderd.") and no DELETE has been sent yet
+ * verwijderd.") and no DELETE has been sent yet
  * When I press "Ongedaan maken" and the undo delay passes
  * Then still no DELETE was sent and my booking is still on the board
  * So that an accidental delete never reaches the shared calendar.

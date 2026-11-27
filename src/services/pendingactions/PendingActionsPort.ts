@@ -56,6 +56,11 @@ export type PendingActionListener = (event: PendingActionEvent) => void;
  */
 export interface PendingActionsPort {
   /**
+   * The delay after which a queued action is performed (30 seconds by
+   * default, issue #36)
+   */
+  readonly delayMs: number;
+  /**
    * Queue a create: the booking is written to the calendar source only
    * after the delay, unless cancelled before
    */

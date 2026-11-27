@@ -719,6 +719,7 @@ export function CalendarView(): React.JSX.Element {
     toast,
     dismissToast,
     pendingCount,
+    delayMs,
   } = usePendingActions({ onSettled });
 
   const createBooking = useCallback(
@@ -803,6 +804,7 @@ export function CalendarView(): React.JSX.Element {
       <PendingActionToasts
         toast={toast}
         pendingCount={pendingCount}
+        delayMs={delayMs}
         onUndo={undo}
         onDismiss={dismissToast}
       />

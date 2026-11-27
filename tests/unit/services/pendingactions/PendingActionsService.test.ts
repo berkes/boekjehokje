@@ -81,6 +81,7 @@ Deno.test("queueCreate emits queued, writes nothing yet and schedules the 30 sec
     DEFAULT_PENDING_ACTION_DELAY_MS,
   ]);
   assertEquals(DEFAULT_PENDING_ACTION_DELAY_MS, 30_000);
+  assertEquals(services.pendingActions.delayMs, 30_000);
 });
 
 Deno.test("a queued create is written after the delay and emits performed", async () => {
@@ -194,6 +195,7 @@ Deno.test("the delay is configurable through the dependencies", () => {
   service.queueCreate(newBooking());
 
   assertEquals(timer.scheduledDelays(), [5_000]);
+  assertEquals(service.delayMs, 5_000);
 });
 
 Deno.test("unsubscribing stops the events", () => {

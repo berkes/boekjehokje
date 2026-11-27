@@ -328,14 +328,10 @@ export class OverviewPage {
       name: "Instellingen openen",
     });
     await this.page.evaluate(() => globalThis.scrollTo(0, 0));
-    // The fixed page clock freezes the app bar's slide transition (and
-    // runPendingActions may have advanced past it), so nudge the clock
-    // until the transition timers ran and the app bar is shown again
-    for (
-      let attempt = 0;
-      attempt < 5 && !(await profileButton.isVisible());
-      attempt++
-    ) {
+    // The fixed page clock freezes the app bar's slide transition, so
+    // nudge the clock until the transition timers ran and the app bar
+    // is shown again and at rest
+    for (let attempt = 0; attempt < 3; attempt++) {
       await this.page.waitForTimeout(100);
       await this.page.clock.runFor(1_000);
     }
@@ -909,12 +905,16 @@ export class OverviewPage {
   /**
    * Let the undo delay pass: advance the fixed page clock past the
    * pending-action delay, so queued writes are performed (issue #36),
-   * and wait out the settle — a performed write reloads the board,
-   * which must finish before the test interacts with the board again.
+   * and wait out the settle — a performed write reloads the board (and
+   * its scroll-to-business-hours), which must finish, and its
+   * transition timers must run, before the test interacts with the
+   * board again: the fixed clock freezes them otherwise.
    */
   async runPendingActions(): Promise<this> {
     await this.page.clock.runFor(DEFAULT_PENDING_ACTION_DELAY_MS);
     await expect(this.toolbar().or(this.errorState())).toBeVisible();
+    await this.page.waitForTimeout(100);
+    await this.page.clock.runFor(1_000);
     return this;
   }
 
@@ -952,7 +952,7 @@ export class OverviewPage {
     await expect(toast).toContainText(
       this.pendingActionMessage(label, kind, "performed"),
     );
-    await expect(toast).not.toContainText("wordt binnenkort");
+    await expect(toast).not.toContainText("wordt");
   }
 
   /**
@@ -1005,9 +1005,9 @@ export class OverviewPage {
   ): string {
     const subject = `Boeking "${label}"`;
     if (phase === "queued") {
-      if (kind === "create") return `${subject} wordt binnenkort aangemaakt.`;
-      if (kind === "update") return `${subject} wordt binnenkort bijgewerkt.`;
-      return `${subject} wordt binnenkort verwijderd.`;
+      if (kind === "create") return `${subject} wordt aangemaakt.`;
+      if (kind === "update") return `${subject} wordt bijgewerkt.`;
+      return `${subject} wordt verwijderd.`;
     }
     if (phase === "performed") {
       if (kind === "create") return `${subject} is aangemaakt.`;

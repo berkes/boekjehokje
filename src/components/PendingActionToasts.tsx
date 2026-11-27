@@ -24,6 +24,8 @@ export interface PendingActionToastsProps {
   toast: ActionToast | null;
   /** How many actions are still queued; while > 0 the undo action shows */
   pendingCount: number;
+  /** The pending-action delay from the service: the queued toast hides after it */
+  delayMs: number;
   /** Undo: cancel every pending action */
   onUndo: () => void;
   /** Dismiss the toast */
@@ -37,12 +39,12 @@ function QueuedMessage(
   { action }: { action: PendingAction },
 ): React.JSX.Element {
   if (action.kind === "create") {
-    return <>Boeking "{action.label}" wordt binnenkort aangemaakt.</>;
+    return <>Boeking "{action.label}" wordt aangemaakt.</>;
   }
   if (action.kind === "update") {
-    return <>Boeking "{action.label}" wordt binnenkort bijgewerkt.</>;
+    return <>Boeking "{action.label}" wordt bijgewerkt.</>;
   }
-  return <>Boeking "{action.label}" wordt binnenkort verwijderd.</>;
+  return <>Boeking "{action.label}" wordt verwijderd.</>;
 }
 
 /**
@@ -108,7 +110,7 @@ function severityOf(event: PendingActionEvent): AlertColor {
  * while actions are still queued (issue #36)
  */
 export function PendingActionToasts(
-  { toast, pendingCount, onUndo, onDismiss }: PendingActionToastsProps,
+  { toast, pendingCount, delayMs, onUndo, onDismiss }: PendingActionToastsProps,
 ): React.JSX.Element | null {
   if (toast === null) {
     return null;
@@ -120,7 +122,7 @@ export function PendingActionToasts(
     <Snackbar
       open={toast.open}
       anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-      autoHideDuration={queued ? null : 6000}
+      autoHideDuration={queued ? delayMs : 6000}
       onClose={(_, reason) => {
         if (reason !== "clickaway") onDismiss();
       }}
