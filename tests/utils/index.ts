@@ -24,6 +24,7 @@ export {
   type RecordedWrite,
   storedEvent,
 } from "./calendar.ts";
+export { FakeTimer } from "./timers.ts";
 export {
   buildTestServices,
   type TestServices,

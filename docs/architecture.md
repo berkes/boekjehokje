@@ -38,7 +38,10 @@ Layers, top to bottom:
   user from the authentication service), **calendar** (`CalendarService` over a
   `CalendarEventRepositoryPort` + the authentication service + the permission
   service + the clock), **clock** (`SystemClock`), **preferences**
-  (`PreferencesService` over a `KeyValueStorePort`).
+  (`PreferencesService` over a `KeyValueStorePort`), **pendingactions**
+  (`PendingActionsService` over the calendar service + the rooms service + a
+  `TimerPort`; queues the booking writes and performs them after a configurable
+  delay — 30 seconds by default — so they can be undone, issue #36).
 - **Adapters / repositories** — inside the service modules:
   `GoogleCalendarRepositoryAdapter` (REST GET/POST/PATCH/DELETE
   `.../calendars/{id}/events` against `CALENDAR_ID`, reading the OAuth token
@@ -199,11 +202,15 @@ sequenceDiagram
 
 ## Sequence: how a booking is created
 
+The write is queued on the pending actions service first (see the undo sequence
+below): the POST happens after the undo delay, not immediately.
+
 ```mermaid
 sequenceDiagram
   actor User
   participant Form as BookingForm
   participant Board as CalendarView (components/calendar/Calendar.tsx)
+  participant Pending as PendingActionsService (queues the write, issue #36)
   participant Service as CalendarService
   participant Format as eventFormat service
   participant Repo as CalendarEventRepositoryPort
@@ -212,7 +219,9 @@ sequenceDiagram
 
   User->>Form: pick a slot, fill in contact, confirm
   Form->>Board: onSubmit(NewBooking)
-  Board->>Service: createBooking(NewBooking)
+  Board->>Pending: queueCreate(NewBooking) (undo toast shown meanwhile)
+  Note over Pending: after the 30s delay, unless undone
+  Pending->>Service: createBooking(NewBooking)
   Service->>Format: eventFormat.serialize(booking)
   Format-->>Service: EventDraft (summary "03 KH | Bèr", description = contact)
   Service->>Repo: createEvent(draft)
@@ -220,8 +229,8 @@ sequenceDiagram
   Google->>API: POST /calendars/&lt;id&gt;/events
   API-->>Google: created event (mapped to StoredEvent)
   Google-->>Service: StoredEvent
-  Service-->>Board: created Booking (parsed back to domain language)
-  Board->>Service: getDay(selectedDay) (refresh board)
+  Service-->>Pending: created Booking (parsed back to domain language)
+  Pending-->>Board: event "performed" -> getDay(selectedDay) (refresh board)
   Service-->>Board: updated rooms
   Board-->>User: board shows the new booking
 ```
@@ -257,6 +266,43 @@ sequenceDiagram
   Service-->>UI: Booking (update) or void (delete)
   UI->>Service: getDay(selectedDay) (refresh board)
   Service-->>UI: updated rooms
+```
+
+## Sequence: how a booking write is queued, performed or undone (issue #36)
+
+Create, update and delete go through the pending actions service, not straight
+to the calendar service: the write is queued and performed after a configurable
+delay (30 seconds), while a toast offers "Ongedaan maken" to cancel every
+pending action. Closing the window while actions are queued triggers the
+browser's beforeunload alert.
+
+```mermaid
+sequenceDiagram
+  actor User
+  participant UI as Board + undo toast (components/calendar/Calendar.tsx)
+  participant Hook as usePendingActions (hook)
+  participant Pending as PendingActionsService
+  participant Service as CalendarService
+  participant API as Google Calendar API
+
+  User->>UI: confirm the form / press "Verwijderen"
+  UI->>Hook: queueCreate / queueUpdate / queueDelete
+  Hook->>Pending: queue the action (timer scheduled, 30s)
+  Pending-->>Hook: event "queued"
+  Hook-->>UI: toast "Boeking \"03 KH\" wordt aangemaakt." + "Ongedaan maken"
+  alt user presses "Ongedaan maken" before the delay
+    UI->>Hook: undo
+    Hook->>Pending: cancelAll()
+    Pending-->>Hook: event "cancelled" per pending action
+    Hook-->>UI: toast "Boeking \"03 KH\" aanmaken is geannuleerd."
+    Note over Pending,API: no write is ever sent
+  else the delay passes
+    Pending->>Service: createBooking / updateBooking / deleteBooking
+    Service->>API: POST / PATCH / DELETE .../events
+    Pending-->>Hook: event "performed" (or "failed" with the error)
+    Hook->>Hook: reload the shown day (onSettled)
+    Hook-->>UI: toast "Boeking \"03 KH\" is aangemaakt." (or the error toast)
+  end
 ```
 
 ## The standardized event format

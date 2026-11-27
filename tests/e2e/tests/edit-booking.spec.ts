@@ -42,7 +42,7 @@ test("User can open the edit form prefilled from their own booking", async ({ au
  * Given the edit form is open for my booking "Stilteruimte - Bèr"
  * 11:00-14:00 (Anneke's booking follows at 14:00)
  * When I change Tot to "2026-10-28T13:30", fill in my contact and confirm
- * Then a PATCH is sent to the calendar API for event
+ * Then after the undo delay a PATCH is sent to the calendar API for event
  * "Stilteruimte - Bèr-2-11:00" with summary "SR | Bèr", the
  * contact in the description, start "2026-10-28T11:00:00.000Z" and end
  * "2026-10-28T13:30:00.000Z", and the form closes
@@ -55,6 +55,7 @@ test("User can save an edited booking, which is patched to the calendar API", as
   await overview.setDateTime("Tot", "2026-10-28T13:30");
   await overview.fillContact("ber@boekjehokje.test");
   await overview.submitEditForm();
+  await overview.runPendingActions();
 
   await overview.assertBookingWasWritten({
     method: "PATCH",
@@ -73,14 +74,16 @@ test("User can save an edited booking, which is patched to the calendar API", as
  * When I tap it and press "Verwijderen" in the edit form that opens
  * (issue #63: the delete lives in the form, not on the bar)
  * Then a DELETE is sent to the calendar API for event
- * "Stilteruimte - Bèr-2-11:00", without any confirmation
- * So that my booking is removed from the shared calendar (#14; a timed
- * undo is issue #36).
+ * "Stilteruimte - Bèr-2-11:00" after the undo delay, without any
+ * confirmation
+ * So that my booking is removed from the shared calendar (#14; the
+ * write is queued with a timed undo, issue #36).
  */
 test("User can delete their own booking without confirmation", async ({ authedPage }) => {
   const overview = await new OverviewPage(authedPage).goto();
 
   await overview.clickDeleteOn(MY_BOOKING);
+  await overview.runPendingActions();
 
   await overview.assertBookingWasDeleted(MY_EVENT_ID);
 });

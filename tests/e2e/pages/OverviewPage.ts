@@ -1,4 +1,8 @@
 import { expect, type Locator, type Page } from "@playwright/test";
+import {
+  DEFAULT_PENDING_ACTION_DELAY_MS,
+  type PendingActionKind,
+} from "../../../src/services/index.ts";
 import { SettingsPage } from "./SettingsPage.ts";
 
 /**
@@ -314,13 +318,23 @@ export class OverviewPage {
   /**
    * Continue to the settings page through the profile menu.
    * The overview auto-scrolls to business hours on load, which hides
-   * the app bar (hide on scroll) — scroll back to the top first.
+   * the app bar (hide on scroll) — scroll back to the top first and
+   * let the app bar's slide transition finish: the fixed page clock
+   * freezes CSS transitions, so after runPendingActions advanced it,
+   * the transition timers need a nudge to complete.
    */
   async openSettingsViaProfileMenu(): Promise<SettingsPage> {
-    await this.page.evaluate(() => globalThis.scrollTo(0, 0));
     const profileButton = this.page.getByRole("button", {
       name: "Instellingen openen",
     });
+    await this.page.evaluate(() => globalThis.scrollTo(0, 0));
+    // The fixed page clock freezes the app bar's slide transition, so
+    // nudge the clock until the transition timers ran and the app bar
+    // is shown again and at rest
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await this.page.waitForTimeout(100);
+      await this.page.clock.runFor(1_000);
+    }
     await expect(profileButton).toBeVisible();
     await profileButton.click();
     await this.page.getByRole("menuitem", { name: "Mijn account" }).click();
@@ -886,6 +900,123 @@ export class OverviewPage {
         ),
       { timeout: 5000 },
     ).toBe(true);
+  }
+
+  /**
+   * Let the undo delay pass: advance the fixed page clock past the
+   * pending-action delay, so queued writes are performed (issue #36),
+   * and wait out the settle — a performed write reloads the board (and
+   * its scroll-to-business-hours), which must finish, and its
+   * transition timers must run, before the test interacts with the
+   * board again: the fixed clock freezes them otherwise.
+   */
+  async runPendingActions(): Promise<this> {
+    await this.page.clock.runFor(DEFAULT_PENDING_ACTION_DELAY_MS);
+    await expect(this.toolbar().or(this.errorState())).toBeVisible();
+    await this.page.waitForTimeout(100);
+    await this.page.clock.runFor(1_000);
+    return this;
+  }
+
+  /**
+   * Assert no write (POST/PATCH/DELETE) reached the calendar API at all.
+   */
+  async assertNoCalendarWrites(): Promise<void> {
+    await expect.poll(() => this.calendarWrites.length, { timeout: 500 })
+      .toBe(0);
+  }
+
+  /**
+   * Assert the undo toast shows the queued message for the action on the
+   * room label, with the "Ongedaan maken" action offered (issue #36).
+   */
+  async assertQueuedToastIsShown(
+    label: string,
+    kind: PendingActionKind,
+  ): Promise<void> {
+    await expect(this.pendingActionToast()).toContainText(
+      this.pendingActionMessage(label, kind, "queued"),
+    );
+    await this.assertUndoIsOffered();
+  }
+
+  /**
+   * Assert the undo toast shows the performed message for the action on
+   * the room label (the write succeeded after the delay, issue #36).
+   */
+  async assertPerformedToastIsShown(
+    label: string,
+    kind: PendingActionKind,
+  ): Promise<void> {
+    const toast = this.pendingActionToast();
+    await expect(toast).toContainText(
+      this.pendingActionMessage(label, kind, "performed"),
+    );
+    await expect(toast).not.toContainText("wordt");
+  }
+
+  /**
+   * Assert the undo toast shows the cancelled message for the action on
+   * the room label (issue #36).
+   */
+  async assertCancelledToastIsShown(
+    label: string,
+    kind: PendingActionKind,
+  ): Promise<void> {
+    await expect(this.pendingActionToast()).toContainText(
+      this.pendingActionMessage(label, kind, "cancelled"),
+    );
+  }
+
+  /**
+   * Assert the "Ongedaan maken" action is offered in the undo toast.
+   */
+  async assertUndoIsOffered(): Promise<void> {
+    await expect(
+      this.page.getByRole("button", { name: "Ongedaan maken" }),
+    ).toBeVisible();
+  }
+
+  /**
+   * Press "Ongedaan maken" in the undo toast: cancels every pending
+   * action (issue #36).
+   */
+  async clickUndo(): Promise<this> {
+    await this.page.getByRole("button", { name: "Ongedaan maken" }).click();
+    return this;
+  }
+
+  /**
+   * The undo toast: the alert inside the snackbar (the booking form's
+   * warning alerts live outside the snackbar).
+   */
+  private pendingActionToast(): Locator {
+    return this.page.locator(".MuiSnackbar-root").getByRole("alert");
+  }
+
+  /**
+   * The toast's message for a pending action on the room label, in the
+   * app's Dutch UI language: queued, performed or cancelled (issue #36).
+   */
+  private pendingActionMessage(
+    label: string,
+    kind: PendingActionKind,
+    phase: "queued" | "performed" | "cancelled",
+  ): string {
+    const subject = `Boeking "${label}"`;
+    if (phase === "queued") {
+      if (kind === "create") return `${subject} wordt aangemaakt.`;
+      if (kind === "update") return `${subject} wordt bijgewerkt.`;
+      return `${subject} wordt verwijderd.`;
+    }
+    if (phase === "performed") {
+      if (kind === "create") return `${subject} is aangemaakt.`;
+      if (kind === "update") return `${subject} is bijgewerkt.`;
+      return `${subject} is verwijderd.`;
+    }
+    if (kind === "create") return `${subject} aanmaken is geannuleerd.`;
+    if (kind === "update") return `${subject} bijwerken is geannuleerd.`;
+    return `${subject} verwijderen is geannuleerd.`;
   }
 
   /**

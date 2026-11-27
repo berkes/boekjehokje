@@ -77,9 +77,12 @@ The conventions, in short:
 - **Assertions are reproducible.** Because the clock is fixed, every assertion
   holds the same value no matter when the suite runs. If the WireMock seeds
   change, the expected strings in the tests change with them.
-- **Booking specs cover the create write**: confirming the booking form POSTs
-  the standardized event to the mocked events endpoint (issue #14); the
-  update/delete UI flows are issue #13.
+- **Booking specs cover the writes**: confirming the booking form POSTs the
+  standardized event to the mocked events endpoint (issue #14), the
+  update/delete flows are issue #13. Since the undo feature (issue #36) the
+  writes are queued and only sent after the 30 second undo delay, so the write
+  specs advance the fixed page clock past it with `runPendingActions()`; the
+  timed undo toast itself is covered by `undo.spec.ts`.
 
 `deno lint` and `deno fmt --check` cover `tests/e2e/` together with the rest of
 the repository. Type-checking does not: `deno task build` (tsc) only covers

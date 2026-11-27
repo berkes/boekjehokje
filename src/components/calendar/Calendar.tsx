@@ -22,11 +22,8 @@ import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useCalendar } from "../../hooks/useCalendar.ts";
-import {
-  useCalendarService,
-  useClock,
-  useOverlapsService,
-} from "../../hooks/useServices.ts";
+import { usePendingActions } from "../../hooks/usePendingActions.ts";
+import { useClock, useOverlapsService } from "../../hooks/useServices.ts";
 import { useRoomVisibility } from "../../hooks/useRoomVisibility.ts";
 import {
   type Booking,
@@ -34,6 +31,7 @@ import {
   isSameDay,
   type NewBooking,
 } from "../../services/index.ts";
+import { PendingActionToasts } from "../PendingActionToasts.tsx";
 import { BookingForm } from "./BookingForm.tsx";
 import { BookingSidebar } from "./BookingSidebar.tsx";
 import { CalendarToolbar } from "./CalendarToolbar.tsx";
@@ -101,12 +99,12 @@ export interface CalendarProps {
   selectedDate: Date;
   /** Select another day (previous/next/today/quick buttons) */
   onSelectDate: (date: Date) => void;
-  /** Save a new booking through the calendar service (issue #15) */
-  onCreateBooking: (booking: NewBooking) => Promise<void>;
-  /** Save changes to an existing booking through the calendar service (#14) */
-  onUpdateBooking: (booking: BookingUpdate) => Promise<void>;
-  /** Delete a booking through the calendar service (#14); undo is #36 */
-  onDeleteBooking: (bookingId: string) => Promise<void>;
+  /** Queue a new booking as a pending action with undo (#36, form of #15) */
+  onCreateBooking: (booking: NewBooking) => void;
+  /** Queue the booking's update as a pending action with undo (#36, write of #14) */
+  onUpdateBooking: (booking: BookingUpdate) => void;
+  /** Queue the booking's delete as a pending action with undo (#36) */
+  onDeleteBooking: (booking: Booking) => void;
   /** Whether the collapsible navigation block is expanded (in-memory state, review of #63) */
   navOpen: boolean;
   /** Toggle the navigation block expanded/collapsed */
@@ -467,16 +465,17 @@ export function Calendar(
   );
 
   /**
-   * Confirming the booking form saves it through the calendar service and
-   * closes the sidebar; the service persists it to the calendar source.
-   * With a booking id the form edits that booking, without it creates one.
+   * Confirming the booking form queues the booking as a pending action
+   * and closes the sidebar; the write happens after the undo delay
+   * (issue #36). With a booking id the form edits that booking, without
+   * it creates one.
    */
   const handleFormSubmit = useCallback(
-    async (booking: NewBooking, bookingId?: string): Promise<void> => {
+    (booking: NewBooking, bookingId?: string): void => {
       if (bookingId === undefined) {
-        await onCreateBooking(booking);
+        onCreateBooking(booking);
       } else {
-        await onUpdateBooking({ ...booking, id: bookingId });
+        onUpdateBooking({ ...booking, id: bookingId });
       }
       setSidebarState(null);
     },
@@ -484,15 +483,14 @@ export function Calendar(
   );
 
   /**
-   * The delete button of the edit form deletes the booking immediately,
-   * without confirmation, and closes the sidebar (a timed undo is
-   * issue #36)
+   * The delete button of the edit form queues the booking's delete
+   * without confirmation and closes the sidebar; the write happens after
+   * the undo delay, with a toast to undo it meanwhile (issue #36)
    */
   const handleDeleteBooking = useCallback(
     (booking: Booking): void => {
-      onDeleteBooking(booking.id)
-        .catch((err: unknown) => console.error("Verwijderen mislukt:", err))
-        .then(() => setSidebarState(null));
+      onDeleteBooking(booking);
+      setSidebarState(null);
     },
     [onDeleteBooking],
   );
@@ -704,34 +702,45 @@ export function CalendarView(): React.JSX.Element {
   }, []);
 
   /**
-   * Saving, updating or deleting a booking goes through the service port
-   * and refreshes the shown day afterwards; the service persists it to
-   * the calendar source
+   * Saving, updating or deleting a booking queues it on the pending
+   * actions service (issue #36): the write is delayed so it can be
+   * undone from the toast, and the shown day reloads once the action
+   * settles
    */
-  const service = useCalendarService();
+  const onSettled = useCallback((): void => {
+    void load(selectedDate);
+  }, [load, selectedDate]);
+
+  const {
+    queueCreate,
+    queueUpdate,
+    queueDelete,
+    undo,
+    toast,
+    dismissToast,
+    pendingCount,
+    delayMs,
+  } = usePendingActions({ onSettled });
 
   const createBooking = useCallback(
-    async (booking: NewBooking): Promise<void> => {
-      await service.createBooking(booking);
-      await load(selectedDate);
+    (booking: NewBooking): void => {
+      queueCreate(booking);
     },
-    [service, load, selectedDate],
+    [queueCreate],
   );
 
   const updateBooking = useCallback(
-    async (booking: BookingUpdate): Promise<void> => {
-      await service.updateBooking(booking);
-      await load(selectedDate);
+    (booking: BookingUpdate): void => {
+      queueUpdate(booking);
     },
-    [service, load, selectedDate],
+    [queueUpdate],
   );
 
   const deleteBooking = useCallback(
-    async (bookingId: string): Promise<void> => {
-      await service.deleteBooking(bookingId);
-      await load(selectedDate);
+    (booking: Booking): void => {
+      queueDelete(booking);
     },
-    [service, load, selectedDate],
+    [queueDelete],
   );
 
   if (isLoading) {
@@ -791,6 +800,13 @@ export function CalendarView(): React.JSX.Element {
         onDeleteBooking={deleteBooking}
         navOpen={navOpen}
         onToggleNav={() => setNavOpen((previous) => !previous)}
+      />
+      <PendingActionToasts
+        toast={toast}
+        pendingCount={pendingCount}
+        delayMs={delayMs}
+        onUndo={undo}
+        onDismiss={dismissToast}
       />
     </Box>
   );

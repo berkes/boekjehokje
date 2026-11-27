@@ -32,10 +32,12 @@ import {
   LocalSessionStorageAdapter,
   LocalStorageAdapter,
   OverlapsService,
+  PendingActionsService,
   PermissionService,
   PreferencesService,
   RoomsService,
   type Services,
+  SystemTimerAdapter,
 } from "./services/index.ts";
 import { useGoogleLoginFlow } from "./hooks/index.ts";
 
@@ -117,6 +119,11 @@ function AppServices({ children }: { children: ReactNode }): React.JSX.Element {
     const preferences = new PreferencesService({
       store: new LocalStorageAdapter(),
     });
+    const pendingActions = new PendingActionsService({
+      calendar,
+      rooms,
+      timer: new SystemTimerAdapter(),
+    });
     return {
       authentication,
       calendar,
@@ -126,6 +133,7 @@ function AppServices({ children }: { children: ReactNode }): React.JSX.Element {
       rooms,
       clock,
       preferences,
+      pendingActions,
     };
   }, [initiateLogin, requestAccessToken]);
 

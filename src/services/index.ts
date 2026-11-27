@@ -96,11 +96,25 @@ export { LocalStorageAdapter } from "./preferences/LocalStorageAdapter.ts";
 export type { PreferencesPort } from "./preferences/PreferencesPort.ts";
 export { PreferencesService } from "./preferences/PreferencesService.ts";
 
+export {
+  DEFAULT_PENDING_ACTION_DELAY_MS,
+  type PendingAction,
+  type PendingActionEvent,
+  type PendingActionKind,
+  type PendingActionListener,
+  type PendingActionsPort,
+} from "./pendingactions/PendingActionsPort.ts";
+export { PendingActionsService } from "./pendingactions/PendingActionsService.ts";
+export type { PendingActionsServiceDeps } from "./pendingactions/PendingActionsService.ts";
+export type { TimerHandle, TimerPort } from "./pendingactions/TimerPort.ts";
+export { SystemTimerAdapter } from "./pendingactions/SystemTimerAdapter.ts";
+
 import type { AuthenticationServicePort } from "./authentication/AuthenticationServicePort.ts";
 import type { CalendarServicePort } from "./calendar/CalendarServicePort.ts";
 import type { ClockPort } from "./clock/ClockPort.ts";
 import type { EventFormatPort } from "./eventformat/EventFormatPort.ts";
 import type { OverlapsPort } from "./overlaps/OverlapsPort.ts";
+import type { PendingActionsPort } from "./pendingactions/PendingActionsPort.ts";
 import type { PermissionServicePort } from "./permissions/PermissionServicePort.ts";
 import type { PreferencesPort } from "./preferences/PreferencesPort.ts";
 import type { RoomsPort } from "./rooms/RoomsPort.ts";
@@ -127,4 +141,6 @@ export interface Services {
   clock: ClockPort;
   /** User preferences persisted on the device (never business data) */
   preferences: PreferencesPort;
+  /** Pending actions: the delayed, undoable booking writes (issue #36) */
+  pendingActions: PendingActionsPort;
 }

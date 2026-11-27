@@ -34,7 +34,7 @@
 │   ├── assets/         # Static assets (landing page screenshots)
 │   ├── components/     # UI components (incl. pages/ and the calendar board)
 │   ├── hooks/          # React bridge: ServicesProvider, useServices, useSession, useCalendar, ...
-│   ├── services/       # Service modules: authentication, calendar, permissions, clock, preferences
+│   ├── services/       # Service modules: authentication, calendar, permissions, clock, preferences, pendingactions
 │   │   └── <name>/     #   only <Name>Port.ts, <Name>Service.ts, adapters, index.ts (no other files)
 │   └── theme.ts        # MUI theme
 ├── package.json        # Dependencies & scripts

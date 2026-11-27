@@ -55,6 +55,7 @@ test("User can set the name and contact used for their bookings", async ({ authe
   });
   await overview.assertContactPrefilled("bèr@voorbeeld.nl");
   await overview.submitBookingForm();
+  await overview.runPendingActions();
 
   await overview.assertBookingWasWritten({
     method: "POST",
@@ -80,6 +81,7 @@ test("User can change the booker name in the booking form, which is stored as a 
   await overview.clickFreeSlot("Kletshok 03", "10:30");
   await overview.fillBooker("Sanne");
   await overview.submitBookingForm();
+  await overview.runPendingActions();
 
   await overview.assertBookingWasWritten({
     method: "POST",

@@ -165,8 +165,8 @@ test("User can pick another room in the booking form", async ({ authedPage }) =>
  * When I set the end time to 11:00, exactly when the next booking starts
  * Then the form warns that there is no five-minute margin (ADR-0006)
  * And when I fill in my contact and confirm anyway
- * Then the booking is written to the calendar API (POST) with summary
- * "03 KH | Bèr", the contact in the description, start
+ * Then after the undo delay the booking is written to the calendar API
+ * (POST) with summary "03 KH | Bèr", the contact in the description, start
  * "2026-10-28T10:00:00.000Z" and end "2026-10-28T11:00:00.000Z", and the
  * form closes
  * So that I can deliberately book without a margin after seeing the warning.
@@ -188,6 +188,7 @@ test("User is warned when booking without a margin, but can still confirm", asyn
 
   await overview.fillContact("ber@boekjehokje.test");
   await overview.submitBookingForm();
+  await overview.runPendingActions();
   await overview.assertBookingWasWritten({
     method: "POST",
     summary: "03 KH | Bèr",
@@ -206,9 +207,9 @@ test("User is warned when booking without a margin, but can still confirm", asyn
  * the preview block on the board is marked as conflicting
  * And the confirm button stays enabled
  * When I fill in my contact and confirm anyway
- * Then the booking is written to the calendar API (POST) with start
- * "2026-10-28T10:30:00.000Z" and end "2026-10-28T11:30:00.000Z", and the
- * form closes
+ * Then after the undo delay the booking is written to the calendar API
+ * (POST) with start "2026-10-28T10:30:00.000Z" and end
+ * "2026-10-28T11:30:00.000Z", and the form closes
  * So that I notice the double booking before confirming, but stay free to
  * book anyway (issue #16: the app guides, it does not block).
  */
@@ -232,6 +233,7 @@ test("User is warned about an overlap but can still confirm", async ({ authedPag
 
   await overview.fillContact("ber@boekjehokje.test");
   await overview.submitBookingForm();
+  await overview.runPendingActions();
   await overview.assertBookingWasWritten({
     method: "POST",
     summary: "03 KH | Bèr",
@@ -272,8 +274,8 @@ test("The board previews the form's draft and drops it for a hidden room", async
 /**
  * Given the booking form is open for Kletshok 03 at 10:00-10:55
  * When I fill in my contact "ber@boekjehokje.test" and confirm the booking
- * Then the booking is written to the calendar API (POST) with summary
- * "03 KH | Bèr", the contact in the description, start
+ * Then after the undo delay the booking is written to the calendar API
+ * (POST) with summary "03 KH | Bèr", the contact in the description, start
  * "2026-10-28T10:00:00.000Z" and end "2026-10-28T10:55:00.000Z", and the
  * form closes
  * So that my booking is registered on the shared calendar (#14).
@@ -284,6 +286,7 @@ test("User can confirm a booking, which is written to the calendar API", async (
   await overview.clickFreeSlot("Kletshok 03", "10:30");
   await overview.fillContact("ber@boekjehokje.test");
   await overview.submitBookingForm();
+  await overview.runPendingActions();
 
   await overview.assertBookingWasWritten({
     method: "POST",
